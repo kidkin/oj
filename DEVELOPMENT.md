@@ -20,12 +20,14 @@ powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\scripts\Start-De
 
 Ubuntu/Linux 开发环境需要 Docker Engine、Docker Compose v2.20 或更新版本、Git 和 OpenSSL，在仓库目录执行：
 
+新 Ubuntu 虚拟机可使用 [一键安装入口](./UBUNTU.md)，自动完成这些准备工作。
+
 ```sh
 sh scripts/dev.sh start
 sh scripts/dev.sh stop
 ```
 
-Linux 入口用于同一套开发环境；它只监听本机地址。阿里云公网发布、域名、HTTPS、备份和版本更新脚本将在发布阶段单独配置。
+Linux 入口用于同一套开发环境；默认只监听本机地址，虚拟机可按 Ubuntu 安装说明显式启用 `--lan`。阿里云公网发布、域名、HTTPS、备份和版本更新脚本将在发布阶段单独配置。
 
 ## 每次修改后的操作
 
