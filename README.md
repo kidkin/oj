@@ -6,6 +6,8 @@ Ubuntu 新虚拟机的一键安装与访问步骤见 [Ubuntu 安装说明](./UBU
 
 阿里云 ECS 无法下载构建镜像时，可使用[本地发布应用镜像、ECS 直接拉取运行](./RELEASE.md)的入口。
 
+在另一台 Ubuntu 虚拟机或云服务器部署已发布版本，见[新环境部署与更新步骤](./FRESH-DEPLOY.md)。
+
 ![logo](./logo.png)
 
 [![Java](https://img.shields.io/badge/Java-1.8-informational)](http://openjdk.java.net/)
