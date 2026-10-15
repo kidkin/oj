@@ -6,12 +6,15 @@ lan=0
 port=''
 image_source=''
 sequential_build=0
+prebuilt_registry=''
+release_version=''
 usage() {
-  echo 'Usage: bash install-ubuntu.sh [--dir PATH] [--lan] [--port PORT] [--image-source aliyun] [--sequential-build]'
-  echo 'Ubuntu 22.04/24.04 amd64 VM setup: Docker Engine, Compose, source build and startup.'
+  echo 'Usage: bash install-ubuntu.sh [--dir PATH] [--lan] [--port PORT] [--image-source aliyun] [--sequential-build] [--prebuilt-registry HOST/NAMESPACE --release VERSION]'
+  echo 'Ubuntu 22.04/24.04 amd64 setup: Docker Engine, Compose and HOJ.'
   echo '--lan publishes the website on all VM interfaces; default is VM localhost only.'
   echo '--image-source aliyun uses upstream HOJ images on Aliyun and official Maven/Node on Docker Hub.'
   echo '--sequential-build builds services one at a time to reduce peak memory use.'
+  echo '--prebuilt-registry and --release pull versioned application images without compiling on this server.'
 }
 while (($#)); do
   case "$1" in
@@ -20,10 +23,17 @@ while (($#)); do
     --port) [[ $# -ge 2 ]] || { usage; exit 2; }; port=$2; shift 2 ;;
     --image-source) [[ $# -ge 2 ]] || { usage; exit 2; }; image_source=$2; shift 2 ;;
     --sequential-build) sequential_build=1; shift ;;
+    --prebuilt-registry) [[ $# -ge 2 && -n "$2" ]] || { usage; exit 2; }; prebuilt_registry=${2%/}; shift 2 ;;
+    --release) [[ $# -ge 2 && -n "$2" ]] || { usage; exit 2; }; release_version=$2; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) usage; exit 2 ;;
   esac
 done
+if [[ -n "$prebuilt_registry" || -n "$release_version" ]]; then
+  if [[ ! "$prebuilt_registry" =~ ^[a-z0-9][a-z0-9.-]*(:[0-9]+)?/[a-z0-9][a-z0-9_./-]*$ || ! "$release_version" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$ ]]; then
+    echo 'Provide both --prebuilt-registry HOST/NAMESPACE (without https://) and --release VERSION.' >&2; exit 2
+  fi
+fi
 if [[ -n "$image_source" && "$image_source" != aliyun ]]; then
   echo 'Supported image source: aliyun.' >&2; exit 2
 fi
@@ -130,8 +140,18 @@ if [[ "$image_source" == aliyun ]]; then
   echo 'Selected upstream HOJ Aliyun images and official Docker Hub build images.'
 fi
 if ((sequential_build)); then set_env HOJ_BUILD_SEQUENTIAL true; fi
+if [[ -n "$prebuilt_registry" ]]; then
+  set_env HOJ_BACKEND_IMAGE "$prebuilt_registry/hoj-backend:$release_version"
+  set_env HOJ_FRONTEND_IMAGE "$prebuilt_registry/hoj-frontend:$release_version"
+  set_env HOJ_JUDGESERVER_IMAGE "$prebuilt_registry/hoj-judgeserver:$release_version"
+  set_env HOJ_DEPLOYMENT_MODE prebuilt
+fi
 
-echo '[5/5] Building the source and starting HOJ. Keep this terminal open.'
+if grep -qx 'HOJ_DEPLOYMENT_MODE=prebuilt' "$repo_dir/deploy/.env"; then
+  echo '[5/5] Pulling published application images and starting HOJ. No source compilation on this server.'
+else
+  echo '[5/5] Building the source and starting HOJ. Keep this terminal open.'
+fi
 sh "$repo_dir/scripts/dev.sh" start
 web_port=$(sed -n 's/^HOJ_WEB_PORT=//p' "$repo_dir/deploy/.env" | head -n 1)
 echo

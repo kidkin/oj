@@ -1,0 +1,9 @@
+# Used together with compose.dev.yml by scripts/dev.sh in prebuilt mode.
+# Startup always uses --no-build; the source build definitions remain available.
+services:
+  hoj-backend:
+    image: ${HOJ_BACKEND_IMAGE:?Set HOJ_BACKEND_IMAGE in deploy/.env}
+  hoj-frontend:
+    image: ${HOJ_FRONTEND_IMAGE:?Set HOJ_FRONTEND_IMAGE in deploy/.env}
+  hoj-judgeserver:
+    image: ${HOJ_JUDGESERVER_IMAGE:?Set HOJ_JUDGESERVER_IMAGE in deploy/.env}

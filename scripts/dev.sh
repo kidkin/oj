@@ -43,7 +43,16 @@ if command -v git >/dev/null && git -C "$repo_dir" rev-parse HEAD >/dev/null 2>&
   if [ -n "$(git -C "$repo_dir" status --porcelain)" ]; then SOURCE_REVISION="$SOURCE_REVISION-dirty"; fi
   export SOURCE_REVISION
 fi
-compose() { docker_run compose --project-directory "$deploy_dir" --env-file "$deploy_dir/.env" -f "$deploy_dir/compose.dev.yml" "$@"; }
+deployment_mode=${HOJ_DEPLOYMENT_MODE:-$(sed -n 's/^HOJ_DEPLOYMENT_MODE=//p' "$deploy_dir/.env" | head -n 1)}
+deployment_mode=${deployment_mode:-source}
+case "$deployment_mode" in source|prebuilt) ;; *) echo 'HOJ_DEPLOYMENT_MODE must be source or prebuilt.' >&2; exit 2 ;; esac
+compose() {
+  if [ "$deployment_mode" = prebuilt ]; then
+    docker_run compose --project-directory "$deploy_dir" --env-file "$deploy_dir/.env" -f "$deploy_dir/compose.dev.yml" -f "$deploy_dir/compose.prebuilt.yml" "$@"
+  else
+    docker_run compose --project-directory "$deploy_dir" --env-file "$deploy_dir/.env" -f "$deploy_dir/compose.dev.yml" "$@"
+  fi
+}
 compose config --quiet
 build_images() {
   sequential=${HOJ_BUILD_SEQUENTIAL:-$(sed -n 's/^HOJ_BUILD_SEQUENTIAL=//p' "$deploy_dir/.env" | head -n 1)}
@@ -56,7 +65,11 @@ build_images() {
 case "$action" in
   init) echo 'Development configuration is ready.' ;;
   start)
-    build_images
+    if [ "$deployment_mode" = prebuilt ]; then
+      compose pull hoj-backend hoj-frontend hoj-judgeserver
+    else
+      build_images
+    fi
     compose up --detach --no-build --wait --wait-timeout 360
     api_tmp=$(mktemp)
     trap 'rm -f -- "$api_tmp"' EXIT HUP INT TERM
@@ -66,9 +79,13 @@ case "$action" in
       exit 1
     fi
     web_port=${HOJ_WEB_PORT:-$(sed -n 's/^HOJ_WEB_PORT=//p' "$deploy_dir/.env" | head -n 1)}
-    echo "Source-built HOJ is ready: http://127.0.0.1:${web_port:-18081}"
+    echo "HOJ is ready ($deployment_mode): http://127.0.0.1:${web_port:-18081}"
     ;;
-  build) build_images ;;
+  build)
+    if [ "$deployment_mode" = prebuilt ]; then
+      echo 'This environment uses published images. Build application images on the development machine.' >&2; exit 2
+    fi
+    build_images ;;
   stop) compose stop ;;
   status) compose ps --all ;;
   logs) compose logs --tail 120 ;;

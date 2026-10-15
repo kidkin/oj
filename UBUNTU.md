@@ -113,6 +113,8 @@ bash scripts/install-ubuntu.sh --lan --port 80 --image-source aliyun --sequentia
 
 ## 7. 修改功能后怎样发布
 
+如果公共加速器无法提供 Node 等构建镜像，优先使用[本地构建、ECS 拉取运行](RELEASE.md)的入口，让服务器直接拉取自己的应用镜像。
+
 前端、后端和判题服务的源码在构建时被放入应用镜像。修改这些源码后，需要重新构建受影响的应用镜像；基础运行镜像和未变化的构建层可以通过缓存复用。
 
 当前源码测试环境可以使用 `git pull --ff-only` 后运行 `sh scripts/dev.sh start` 来重新构建和启动。已有数据库、题目及提交记录保留在数据卷中；数据库结构发生变化时仍需配套迁移和备份。
