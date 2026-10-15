@@ -1,5 +1,5 @@
 <template>
-  <div class="classes-page">
+  <div class="classes-page" :style="eduPageStyle">
     <el-card>
       <div slot="header" class="page-header"><h2>我的班级</h2><div><el-button v-if="access.isRoot" @click="teacherDialog = true">教师授权</el-button><el-button v-if="access.isTeacher" type="primary" @click="createDialog = true">创建班级</el-button></div></div>
       <el-form inline @submit.native.prevent="search">
@@ -28,7 +28,9 @@
 <script>
 import edu from '@/common/edu-api'
 import TeacherAdmin from './TeacherAdmin.vue'
+import eduLayout from '@/common/edu-layout'
 export default {
+  mixins: [eduLayout],
   components: {TeacherAdmin},
   data: () => ({access: {}, query: {page: 1, limit: 10, keyword: ''}, records: [], total: 0, loading: false, saving: false, createDialog: false, teacherDialog: false, form: {name: '', description: ''}}),
   async mounted () { try { this.access = await edu.me() } catch (_) {} await this.load() },

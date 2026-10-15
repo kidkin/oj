@@ -1,5 +1,5 @@
 <template>
-  <div class="class-page" v-loading="loading">
+  <div class="class-page" :style="eduPageStyle" v-loading="loading">
     <router-link to="/class">← 返回我的班级</router-link>
     <el-card v-if="detail" class="detail-card">
       <div slot="header" class="page-header"><h2>{{ detail.name }}</h2><div><el-tag :type="detail.status === 0 ? 'success' : 'info'">{{ detail.status === 0 ? '正常' : '已归档' }}</el-tag><el-button v-if="detail.canManage" class="edit-button" @click="edit">编辑班级</el-button></div></div>
@@ -40,7 +40,9 @@
 </template>
 <script>
 import edu from '@/common/edu-api'
+import eduLayout from '@/common/edu-layout'
 export default {
+  mixins: [eduLayout],
   data: () => ({detail: null, loading: false, membersLoading: false, saving: false, members: [], memberTotal: 0, memberPage: 1, editDialog: false, memberDialog: false, form: {}, memberForm: {role: 'STUDENT', names: ''}}),
   computed: {id () { return this.$route.params.classId }},
   watch: {id () { this.memberPage = 1; this.load() }},

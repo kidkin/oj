@@ -44,7 +44,7 @@ public class EduClassService {
 
     private static final String CLASS_COLUMNS = "SELECT c.id,c.name,c.description,c.status,c.owner_uid AS ownerUid," +
             "u.username AS ownerUsername,c.gmt_create AS gmtCreate,c.gmt_modified AS gmtModified," +
-            "(SELECT COUNT(*) FROM edu_class_member m WHERE m.class_id=c.id AND m.status=0 AND m.role='STUDENT') AS studentCount " +
+            "(SELECT COUNT(*) FROM edu_class_member m JOIN user_info enrolled ON enrolled.uuid=m.uid WHERE m.class_id=c.id AND m.status=0 AND m.role='STUDENT') AS studentCount " +
             "FROM edu_class c LEFT JOIN user_info u ON u.uuid=c.owner_uid ";
 
     public Map<String, Object> classes(int page, int limit, String keyword) {
@@ -116,7 +116,7 @@ public class EduClassService {
         page = Math.max(1, page); limit = Math.max(1, Math.min(limit, 100));
         if (page > 100000) throw new EduException(400, "页码过大");
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("total", count("SELECT COUNT(*) FROM edu_class_member WHERE class_id=? AND status=0", id));
+        result.put("total", count("SELECT COUNT(*) FROM edu_class_member m JOIN user_info u ON u.uuid=m.uid WHERE m.class_id=? AND m.status=0", id));
         result.put("records", db.queryForList("SELECT m.uid,m.role,u.username,u.nickname,u.realname,u.number,u.status AS accountStatus,m.gmt_create AS gmtCreate " +
                 "FROM edu_class_member m JOIN user_info u ON u.uuid=m.uid WHERE m.class_id=? AND m.status=0 ORDER BY m.role,m.id LIMIT ? OFFSET ?", id, limit, (page-1)*limit));
         return result;

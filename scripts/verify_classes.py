@@ -150,6 +150,11 @@ def main():
         clients["t1"].call("/api/edu/classes/%s" % a["id"], "PUT", {"name": "forbidden"}, 403)
         assert clients["t2"].call("/api/edu/me")["isTeacher"]
         passed("teacher revocation applies to the existing token without affecting others")
+        root.call("/api/admin/user/delete-user", "DELETE", {"ids": [uids["s2"]]})
+        assert root.call("/api/edu/classes/%s" % a["id"])["studentCount"] == 1
+        members = root.call("/api/edu/classes/%s/members" % a["id"])
+        assert members["total"] == len(members["records"]) == 2
+        passed("legacy account deletion keeps class counts and member pagination consistent")
         latest = original_ids()
         assert all(values.issubset(latest[key]) for key, values in baseline.items())
         passed("pre-existing accounts, problems and submission IDs are retained")
