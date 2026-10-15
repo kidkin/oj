@@ -15,3 +15,5 @@ Thumbs.db
 *.vhdx
 *.sql.gz
 backups/
+deploy/compose.dev-data.json
+__pycache__/

@@ -16,7 +16,10 @@ Start-Transcript -Path $logFile | Out-Null
 
 function Invoke-Compose {
     param([string[]]$ComposeArguments)
-    & $script:composeExe --project-directory $script:deployRoot --env-file $script:envFile -f $script:composeFile @ComposeArguments
+    $taskFiles = @('-f', $script:composeFile)
+    $taskDataOverride = Join-Path $script:deployRoot 'compose.dev-data.json'
+    if (Test-Path -LiteralPath $taskDataOverride) { $taskFiles += @('-f', $taskDataOverride) }
+    & $script:composeExe --project-directory $script:deployRoot --env-file $script:envFile @taskFiles @ComposeArguments
     if ($LASTEXITCODE -ne 0) { throw ('Docker Compose failed, exit code ' + $LASTEXITCODE) }
 }
 

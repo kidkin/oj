@@ -47,6 +47,14 @@ deployment_mode=${HOJ_DEPLOYMENT_MODE:-$(sed -n 's/^HOJ_DEPLOYMENT_MODE=//p' "$d
 deployment_mode=${deployment_mode:-source}
 case "$deployment_mode" in source|prebuilt) ;; *) echo 'HOJ_DEPLOYMENT_MODE must be source or prebuilt.' >&2; exit 2 ;; esac
 compose() {
+  if [ -f "$deploy_dir/compose.dev-data.json" ]; then
+    if [ "$deployment_mode" = prebuilt ]; then
+      docker_run compose --project-directory "$deploy_dir" --env-file "$deploy_dir/.env" -f "$deploy_dir/compose.dev.yml" -f "$deploy_dir/compose.prebuilt.yml" -f "$deploy_dir/compose.dev-data.json" "$@"
+    else
+      docker_run compose --project-directory "$deploy_dir" --env-file "$deploy_dir/.env" -f "$deploy_dir/compose.dev.yml" -f "$deploy_dir/compose.dev-data.json" "$@"
+    fi
+    return
+  fi
   if [ "$deployment_mode" = prebuilt ]; then
     docker_run compose --project-directory "$deploy_dir" --env-file "$deploy_dir/.env" -f "$deploy_dir/compose.dev.yml" -f "$deploy_dir/compose.prebuilt.yml" "$@"
   else

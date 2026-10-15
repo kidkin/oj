@@ -125,4 +125,4 @@ python scripts/hoj_backup.py start --directory '已完成恢复的目录'
 docker compose --project-name hoj-restore-ecs-check --file 恢复目录/compose.restore.json stop
 ```
 
-当前工具只提供恢复到全新环境，不提供覆盖现有站点的一键恢复。将本地数据正式迁移到 ECS、替换正在使用的数据库前，需要单独确认目标站点、保留目标原备份并安排切换。
+基础恢复工具只恢复到全新数据卷。将 ECS 备份接入当前 Windows 开发版，可按 [开发版恢复操作](RESTORE-DEV.md) 使用专用入口；该入口保留原卷并提供切回命令。正式替换 ECS 数据库仍应另行安排切换。

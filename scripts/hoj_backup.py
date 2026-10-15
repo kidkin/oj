@@ -167,6 +167,8 @@ def backup(docker, args):
                  if line.startswith("HOJ_DEPLOYMENT_MODE=")), "source")
     if mode == "prebuilt":
         files.append(repo / "deploy/compose.prebuilt.yml")
+    if (repo / "deploy/compose.dev-data.json").is_file():
+        files.append(repo / "deploy/compose.dev-data.json")
     config = json.loads(docker.compose(files, "config", "--format", "json", env_file=env))
     if set(config["services"]) != REQUIRED:
         raise RuntimeError("Unexpected service layout; this backup tool only supports this repository's HOJ stack.")
