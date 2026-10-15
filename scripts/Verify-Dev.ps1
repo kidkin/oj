@@ -2,7 +2,8 @@
     [string]$BaseUrl = 'http://127.0.0.1:18081',
     [string]$Username = 'root',
     [string]$Password = 'hoj123456',
-    [string]$ReportPath = ''
+    [string]$ReportPath = '',
+    [switch]$NoProxy
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
@@ -11,6 +12,13 @@ $taskProblemId = 'SOURCE_AB_BASELINE'
 $taskResults = @()
 $taskHeaders = @{}
 $taskSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$taskProxyOptions = @{}
+if ($NoProxy) {
+    if (-not (Get-Command Invoke-WebRequest).Parameters.ContainsKey('NoProxy')) {
+        throw '-NoProxy requires PowerShell 7 or newer.'
+    }
+    $taskProxyOptions.NoProxy = $true
+}
 
 function Invoke-HojApi {
     param([string]$Path, [string]$Method = 'GET', $Data = $null)
@@ -28,7 +36,7 @@ function Invoke-HojApi {
         $taskRequest.Body = [Text.Encoding]::UTF8.GetBytes(($Data | ConvertTo-Json -Depth 15 -Compress))
         $taskRequest.ContentType = 'application/json; charset=utf-8'
     }
-    $taskResponse = Invoke-WebRequest @taskRequest
+    $taskResponse = Invoke-WebRequest @taskRequest @taskProxyOptions
     $taskContent = [Text.Encoding]::UTF8.GetString($taskResponse.RawContentStream.ToArray()) | ConvertFrom-Json
     if ($taskContent.status -ne 200) { throw ('HOJ request failed: ' + $Path + ': ' + $taskContent.msg) }
     if ($taskResponse.Headers['Authorization']) {
@@ -37,7 +45,7 @@ function Invoke-HojApi {
     return $taskContent.data
 }
 
-$taskWeb = Invoke-WebRequest -Uri ($BaseUrl.TrimEnd('/') + '/') -UseBasicParsing -TimeoutSec 30
+$taskWeb = Invoke-WebRequest -Uri ($BaseUrl.TrimEnd('/') + '/') -UseBasicParsing -TimeoutSec 30 @taskProxyOptions
 if ($taskWeb.StatusCode -ne 200) { throw 'HOJ web page is not available.' }
 $taskAccount = Invoke-HojApi -Path '/api/login' -Method POST -Data @{ username=$Username; password=$Password }
 if (-not $taskHeaders.Authorization) { throw 'Login did not return an authentication token.' }

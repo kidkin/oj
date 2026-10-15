@@ -28,10 +28,10 @@ HOST_KEYS = {"MYSQL_SERVICE_HOST", "MYSQL_HOST", "MYSQL_PUBLIC_HOST",
              "REDIS_HOST", "NACOS_URL", "BACKEND_SERVER_HOST", "JUDGE_SERVER_IP"}
 
 
-def run(argv, capture=True, check=True):
+def run(argv, capture=True, check=True, stdin=None):
     result = subprocess.run([str(x) for x in argv], text=True, encoding="utf-8",
                             stdout=subprocess.PIPE if capture else None,
-                            stderr=subprocess.PIPE if capture else None)
+                            stderr=subprocess.PIPE if capture else None, input=stdin)
     if check and result.returncode:
         # Never print complete command arguments or resolved Compose secrets.
         detail = (result.stderr or "").strip()[-1800:]
@@ -140,6 +140,21 @@ def helper(docker, image, volume, folder, archive, restore=False):
             "-c", 'exec tar %s /backup/"$1" -C /volume .' % ("-xzpf" if restore else "-czf"),
             "hoj-backup", archive]
     docker.call(*args)
+    if restore:
+        # BusyBox tar restores regular file ownership, but not symlink ownership.
+        # MySQL's mysql.sock link commonly belongs to uid/gid 999; restore it
+        # without following its absolute target outside this data volume.
+        links = []
+        with tarfile.open(Path(folder) / archive, "r:gz") as stream:
+            for member in stream:
+                if member.issym():
+                    links += ["%d:%d" % (member.uid, member.gid),
+                              "/volume/" + str(PurePosixPath(member.name))]
+        if links:
+            docker.call("run", "--rm", "--network", "none", "--read-only", "--entrypoint", "/bin/sh",
+                        "--mount", "type=volume,source=%s,target=/volume" % volume, image,
+                        "-c", 'while [ "$#" -gt 0 ]; do chown -h "$1" "$2" || exit; shift 2; done',
+                        "hoj-link-owners", *links)
 
 
 def backup(docker, args):
@@ -148,7 +163,7 @@ def backup(docker, args):
     if not env.is_file():
         raise RuntimeError("deploy/.env is missing; do not generate new credentials for existing data.")
     files = [repo / "deploy/compose.dev.yml"]
-    mode = next((line.split("=", 1)[1].strip() for line in env.read_text().splitlines()
+    mode = next((line.split("=", 1)[1].strip() for line in env.read_text(encoding="utf-8-sig").splitlines()
                  if line.startswith("HOJ_DEPLOYMENT_MODE=")), "source")
     if mode == "prebuilt":
         files.append(repo / "deploy/compose.prebuilt.yml")
@@ -314,7 +329,8 @@ def isolated_config(source, manifest, project, subnet, port):
 
     result["name"] = project
     result["networks"] = {"hoj-network": {"name": project + "_hoj-network", "driver": "bridge",
-                                        "internal": True, "ipam": {"config": [{"subnet": str(network)}]}}}
+                                        "internal": True, "ipam": {"config": [{"subnet": str(network)}]}},
+                          "hoj-access": {"name": project + "_hoj-access", "driver": "bridge"}}
     result["volumes"] = {key: {"name": project + "_" + key} for key in result["volumes"]}
     for key, definition in result["services"].items():
         for forbidden in ("container_name", "build", "ports", "env_file", "devices", "volumes_from"):
@@ -333,6 +349,7 @@ def isolated_config(source, manifest, project, subnet, port):
         definition["networks"]["hoj-network"]["ipv4_address"] = addresses[definition["networks"]["hoj-network"]["ipv4_address"]]
     result["services"]["hoj-frontend"]["ports"] = [{"target": 80, "published": str(port),
                                                            "host_ip": "127.0.0.1", "protocol": "tcp"}]
+    result["services"]["hoj-frontend"]["networks"]["hoj-access"] = {}
     return result
 
 
@@ -344,12 +361,110 @@ def local_image(docker, record, service):
             image = docker.json("image", "inspect", candidate)[0]
             if signature(image) == record["Signature"]:
                 return image["Id"]
+    # Loading a Docker archive can change the manifest/index ID while retaining
+    # identical configuration and filesystem layers. Check cached signatures.
+    cached_ids = sorted(set(docker.call("image", "ls", "--quiet", "--no-trunc").split()))
+    if cached_ids:
+        for image in docker.json("image", "inspect", *cached_ids):
+            if signature(image) == record["Signature"]:
+                return image["Id"]
     print("Pulling exact backup image for " + service, flush=True)
     docker.call("pull", "--platform", "linux/amd64", record["Reference"], capture=False)
     image = docker.json("image", "inspect", record["Reference"])[0]
     if signature(image) != record["Signature"]:
         raise RuntimeError("Image configuration/layers differ from backup: " + service)
     return image["Id"]
+
+
+def rewrite_runtime_addresses(content, addresses):
+    pattern = re.compile(r"(?<![\d.])(?:" + "|".join(re.escape(x) for x in addresses) + r")(?![\d.])")
+    lines = []
+    for line in content.splitlines(keepends=True):
+        key = line.partition(":")[0].lower()
+        if any(word in key for word in ("password", "secret", "token")):
+            lines.append(line)
+        else:
+            lines.append(pattern.sub(lambda m: addresses[m.group()], line))
+    return "".join(lines)
+
+
+def start_restored(docker, destination):
+    destination = Path(destination).resolve()
+    compose_file = destination / "compose.restore.json"
+    config = read_json(compose_file)
+    source = read_json(destination / "source.compose.json")
+    project = config["name"]
+    if not re.fullmatch(r"hoj-restore-[a-z0-9][a-z0-9-]{0,40}", project):
+        raise RuntimeError("Only isolated hoj-restore-* projects can be started by this tool.")
+    if not config["networks"]["hoj-network"].get("internal"):
+        raise RuntimeError("Restore network must remain internal.")
+    # Docker Desktop's published-port forwarding needs an ordinary access
+    # network on the frontend. All business services stay on the internal net.
+    config["networks"]["hoj-access"] = {"name": project + "_hoj-access", "driver": "bridge"}
+    config["services"]["hoj-frontend"]["networks"]["hoj-access"] = {}
+    write_json(compose_file, config)
+    for key, definition in config["volumes"].items():
+        if definition != {"name": project + "_" + key}:
+            raise RuntimeError("Restore refuses shared or externally configured data volumes.")
+    for service in config["services"].values():
+        for mount in service.get("volumes", []):
+            if mount.get("type") != "volume" or mount.get("source") not in config["volumes"]:
+                raise RuntimeError("Unexpected mount in restore configuration.")
+        for port in service.get("ports", []):
+            if port.get("host_ip") != "127.0.0.1":
+                raise RuntimeError("Restored ports must remain on loopback.")
+    addresses = {service["networks"]["hoj-network"]["ipv4_address"]:
+                 config["services"][key]["networks"]["hoj-network"]["ipv4_address"]
+                 for key, service in source["services"].items()}
+    docker.compose([compose_file], "stop", "--timeout", "30", "hoj-frontend", "hoj-backend",
+                   "hoj-judgeserver", "hoj-nacos", project=project, capture=False)
+    docker.compose([compose_file], "up", "--detach", "--no-build", "--pull", "never", "--no-deps",
+                   "--wait", "--wait-timeout", "180", "hoj-mysql", project=project, capture=False)
+    container_id = docker.compose([compose_file], "ps", "--quiet", "hoj-mysql", project=project).strip()
+    container = docker.json("inspect", container_id)[0]
+    if container["Config"]["Labels"].get("com.docker.compose.project") != project:
+        raise RuntimeError("Unexpected MySQL project; no database changes made.")
+    mysql_volumes = [m.get("Name") for m in container["Mounts"] if m["Type"] == "volume"]
+    if mysql_volumes != [project + "_hoj-mysql-data"]:
+        raise RuntimeError("Unexpected MySQL data volume; no database changes made.")
+
+    def query(sql):
+        # SQL and the existing container password never appear in host argv/logs.
+        result = run([docker.exe, "exec", "-i", container_id, "/bin/sh", "-c",
+                      'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysql -uroot --batch --skip-column-names'],
+                     stdin=sql, check=False)
+        if result.returncode:
+            raise RuntimeError("Unable to rebind isolated database configuration; SQL details withheld.")
+        return result.stdout
+
+    updates = []
+    changed = 0
+    for row in query("SELECT id,HEX(content) FROM nacos.config_info;\n").splitlines():
+        config_id, content_hex = row.split("\t", 1)
+        if not config_id.isdecimal():
+            raise RuntimeError("Unexpected Nacos configuration identifier.")
+        content = bytes.fromhex(content_hex).decode("utf-8")
+        revised = rewrite_runtime_addresses(content, addresses)
+        if revised != content:
+            value = "CONVERT(0x%s USING utf8mb4)" % revised.encode("utf-8").hex()
+            updates.append("UPDATE nacos.config_info SET content=%s,md5=MD5(%s),gmt_modified=NOW() WHERE id=%s;"
+                           % (value, value, config_id))
+            changed += 1
+    # Stale worker registrations are operational metadata, not submissions.
+    # Rewrite their addresses so the restarted worker replaces its own old row.
+    for old, new in addresses.items():
+        old_hex, new_hex = old.encode().hex(), new.encode().hex()
+        updates.append("UPDATE hoj.judge_server SET ip=CONVERT(0x%s USING utf8mb4),"
+                       "url=REPLACE(url,CONVERT(0x%s USING utf8mb4),CONVERT(0x%s USING utf8mb4)) "
+                       "WHERE ip=CONVERT(0x%s USING utf8mb4);" % (new_hex, old_hex, new_hex, old_hex))
+    query("START TRANSACTION;\n" + "\n".join(updates) + "\nCOMMIT;\n")
+    write_json(destination / "runtime-rebind.json", {"Project": project, "NacosRowsChanged": changed,
+                                                     "AddressMap": addresses})
+    print("Rebound isolated Nacos configuration rows: %d" % changed, flush=True)
+    docker.compose([compose_file], "up", "--detach", "--no-build", "--pull", "never", "--wait",
+                   "--wait-timeout", "360", project=project, capture=False)
+    port = config["services"]["hoj-frontend"]["ports"][0]["published"]
+    print("RESTORE READY: http://127.0.0.1:%s" % port, flush=True)
 
 
 def restore(docker, args):
@@ -369,7 +484,8 @@ def restore(docker, args):
         manifest = unpack(archive, work, expected_sha256)
         config = isolated_config(read_json(work / "source.compose.json"), manifest, args.project, args.subnet, args.port)
         names = [v["name"] for v in config["volumes"].values()]
-        if any(docker.exists("volume", name) for name in names) or docker.exists("network", args.project + "_hoj-network"):
+        if any(docker.exists("volume", name) for name in names) or any(
+                docker.exists("network", definition["name"]) for definition in config["networks"].values()):
             raise RuntimeError("Restore project already has Docker resources; no existing volumes will be overwritten.")
         if docker.call("ps", "-aq", "--filter", "label=com.docker.compose.project=" + args.project).strip():
             raise RuntimeError("Restore project already has containers.")
@@ -386,6 +502,8 @@ def restore(docker, args):
         destination.mkdir(mode=0o700)
         shutil.copy2(work / "source.env", destination / "source.env")
         os.chmod(destination / "source.env", 0o600)
+        shutil.copy2(work / "source.compose.json", destination / "source.compose.json")
+        os.chmod(destination / "source.compose.json", 0o600)
         compose_file = destination / "compose.restore.json"
         write_json(compose_file, config)
         write_json(destination / "manifest.json", manifest)
@@ -404,11 +522,9 @@ def restore(docker, args):
             (work / verification).unlink()
         print("RESTORE DATA COMPLETE. Isolated configuration: " + str(compose_file), flush=True)
         if args.start:
-            docker.compose([compose_file], "up", "--detach", "--no-build", "--pull", "never", "--wait",
-                           "--wait-timeout", "360", project=args.project, capture=False)
-            print("RESTORE READY: http://127.0.0.1:%d" % args.port, flush=True)
+            start_restored(docker, destination)
         else:
-            print("Services have not been started. Use --start on a fresh restore to start automatically.")
+            print("Services have not been started. Run the start action with --directory to rebind and start this copy.")
 
 
 def main():
@@ -427,12 +543,16 @@ def main():
     recover.add_argument("--port", type=int, default=18082)
     recover.add_argument("--sha256")
     recover.add_argument("--start", action="store_true")
+    start = actions.add_parser("start", help="Rebind stored service addresses and start a completed isolated restore")
+    start.add_argument("--directory", required=True)
     args = parser.parse_args()
     docker = Docker()
     if args.action == "backup":
         backup(docker, args)
-    else:
+    elif args.action == "restore":
         restore(docker, args)
+    else:
+        start_restored(docker, args.directory)
 
 
 if __name__ == "__main__":
