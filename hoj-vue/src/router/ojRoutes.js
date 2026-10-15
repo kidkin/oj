@@ -47,6 +47,16 @@ import NotFound from "@/views/404.vue"
 
 const ojRoutes = [
   {
+    path: '/class', name: 'EduClassList',
+    component: () => import('@/views/oj/edu/ClassList.vue'),
+    meta: {title: '班级', requireAuth: true}
+  },
+  {
+    path: '/class/:classId', name: 'EduClassDetail',
+    component: () => import('@/views/oj/edu/ClassDetail.vue'),
+    meta: {title: '班级详情', requireAuth: true}
+  },
+  {
     path: '/',
     redirect: '/home',
     component: Home,

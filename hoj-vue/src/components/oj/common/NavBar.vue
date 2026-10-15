@@ -31,6 +31,7 @@
               ><i class="el-icon-s-grid"></i
               >{{ $t('m.NavBar_Problem') }}</el-menu-item
             >
+            <el-menu-item index="/class"><i class="el-icon-school"></i>班级</el-menu-item>
             <el-menu-item index="/training"
               ><i class="el-icon-s-claim"></i
               >{{ $t('m.NavBar_Training') }}</el-menu-item
@@ -448,6 +449,15 @@
             }}</mu-list-item-title>
           </mu-list-item>
 
+          <mu-list-item
+            button
+            to="/class"
+            @click="opendrawer = !opendrawer"
+            active-class="mobile-menu-active"
+          >
+            <mu-list-item-action><mu-icon value=":el-icon-school" size="24"></mu-icon></mu-list-item-action>
+            <mu-list-item-title>班级</mu-list-item-title>
+          </mu-list-item>
           <mu-list-item
             button
             to="/training"

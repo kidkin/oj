@@ -118,7 +118,9 @@ public class AdminUserManager {
         boolean updateUserInfo = userInfoEntityService.update(userInfoUpdateWrapper);
 
         QueryWrapper<UserRole> userRoleQueryWrapper = new QueryWrapper<>();
-        userRoleQueryWrapper.eq("uid", uid);
+        // Teaching is an additional business role, managed in the class UI.
+        // Editing the legacy site role must leave that grant intact.
+        userRoleQueryWrapper.eq("uid", uid).inSql("role_id", "SELECT id FROM role WHERE role <> 'teacher'");
         UserRole userRole = userRoleEntityService.getOne(userRoleQueryWrapper, false);
         boolean changeUserRole = false;
         int oldType = userRole.getRoleId().intValue();

@@ -1,0 +1,25 @@
+CREATE TABLE IF NOT EXISTS edu_class (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(128) NOT NULL,
+  description TEXT NOT NULL,
+  owner_uid VARCHAR(32) CHARACTER SET ${userCharset} COLLATE ${userCollation} NOT NULL,
+  status TINYINT NOT NULL DEFAULT 0,
+  gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_edu_class_owner (owner_uid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS edu_class_member (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  class_id BIGINT UNSIGNED NOT NULL,
+  uid VARCHAR(32) CHARACTER SET ${userCharset} COLLATE ${userCollation} NOT NULL,
+  role VARCHAR(16) NOT NULL,
+  status TINYINT NOT NULL DEFAULT 0,
+  gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_edu_class_member (class_id, uid),
+  KEY idx_edu_member_user (uid, status, class_id),
+  CONSTRAINT fk_edu_member_class FOREIGN KEY (class_id) REFERENCES edu_class(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

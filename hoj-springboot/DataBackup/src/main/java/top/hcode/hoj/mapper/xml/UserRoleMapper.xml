@@ -95,7 +95,7 @@
 
     <!-- 子查询 -->
     <select id="getUserListRoles" resultType="top.hcode.hoj.pojo.entity.user.Role">
-        select  r.* from role r,user_role ur where ur.uid=#{uuid} and ur.role_id = r.id
+        select  r.* from role r,user_role ur where ur.uid=#{uuid} and ur.role_id = r.id and r.role &lt;&gt; 'teacher'
     </select>
 
     <!-- 主查询 -->
