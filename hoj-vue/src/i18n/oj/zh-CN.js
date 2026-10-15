@@ -14,6 +14,7 @@ export const m = {
   // /components/oj/common/NavBar.vue 导航栏
   NavBar_Home: '首页',
   NavBar_Class: '班级',
+  NavBar_Course: '课程',
   NavBar_Problem: '题目',
   NavBar_Training: '训练',
   NavBar_Contest: '比赛',

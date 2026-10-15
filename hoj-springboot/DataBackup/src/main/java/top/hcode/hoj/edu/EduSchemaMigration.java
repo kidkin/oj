@@ -48,7 +48,10 @@ public class EduSchemaMigration implements ApplicationRunner {
             statement.execute("CREATE TABLE IF NOT EXISTS edu_schema_history (version VARCHAR(64) PRIMARY KEY, " +
                     "checksum CHAR(64) NOT NULL, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB");
         }
-        String version = "V001__class_members";
+        for (String version : new String[]{"V001__class_members", "V002__shared_courses"}) apply(connection, version);
+    }
+
+    private void apply(Connection connection, String version) throws Exception {
         byte[] bytes;
         try (java.io.InputStream input = new ClassPathResource("db/edu/" + version + ".sql").getInputStream()) {
             bytes = StreamUtils.copyToByteArray(input);
@@ -77,7 +80,7 @@ public class EduSchemaMigration implements ApplicationRunner {
             throw new IllegalStateException("Unexpected UUID character set");
         String sql = new String(bytes, StandardCharsets.UTF_8).replace("${userCharset}", charset).replace("${userCollation}", collation);
         ScriptUtils.executeSqlScript(connection, new EncodedResource(new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8));
-        try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM role WHERE role='teacher'")) {
+        if ("V001__class_members".equals(version)) try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM role WHERE role='teacher'")) {
             result.next();
             if (result.getInt(1) > 1) throw new IllegalStateException("Duplicate teacher roles require review");
             if (result.getInt(1) == 0) try (Statement insert = connection.createStatement()) {
@@ -88,6 +91,11 @@ public class EduSchemaMigration implements ApplicationRunner {
         try (Statement statement = connection.createStatement()) {
             statement.executeQuery("SELECT id,name,description,owner_uid,status,gmt_create,gmt_modified FROM edu_class LIMIT 0").close();
             statement.executeQuery("SELECT id,class_id,uid,role,status,gmt_create,gmt_modified FROM edu_class_member LIMIT 0").close();
+            if ("V002__shared_courses".equals(version)) {
+                statement.executeQuery("SELECT id,title,description,owner_uid,status,revision FROM edu_course LIMIT 0").close();
+                statement.executeQuery("SELECT id,class_id,course_id,sort_order,created_by FROM edu_class_course LIMIT 0").close();
+                statement.executeQuery("SELECT id,course_id,pid,sort_order FROM edu_course_problem LIMIT 0").close();
+            }
         }
         try (PreparedStatement statement = connection.prepareStatement("INSERT INTO edu_schema_history(version,checksum) VALUES (?,?)")) {
             statement.setString(1, version); statement.setString(2, digest.toString()); statement.executeUpdate();

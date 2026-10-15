@@ -14,6 +14,7 @@ export const m = {
   // /components/oj/common/NavBar.vue 導航欄
   NavBar_Home: '首頁',
   NavBar_Class: '班級',
+  NavBar_Course: '課程',
   NavBar_Problem: '題目',
   NavBar_Training: '訓練',
   NavBar_Contest: '比賽',

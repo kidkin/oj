@@ -6,6 +6,8 @@
       <p class="meta">创建者：{{ detail.ownerUsername }} · 学生 {{ detail.studentCount }} 人</p>
       <p class="description">{{ detail.description || '暂无班级介绍' }}</p>
       <p v-if="!detail.canManage" class="meta">你已加入此班级。</p>
+      <el-divider />
+      <ClassCourses :class-id="id" :can-manage="detail.canManage" :archived="detail.status !== 0" />
       <template v-if="detail.canManage">
         <el-divider />
         <div class="page-header"><h3>班级成员</h3><el-button type="primary" :disabled="detail.status !== 0" @click="memberDialog = true">添加成员</el-button></div>
@@ -41,8 +43,10 @@
 <script>
 import edu from '@/common/edu-api'
 import eduLayout from '@/common/edu-layout'
+import ClassCourses from './ClassCourses.vue'
 export default {
   mixins: [eduLayout],
+  components: {ClassCourses},
   data: () => ({detail: null, loading: false, membersLoading: false, saving: false, members: [], memberTotal: 0, memberPage: 1, editDialog: false, memberDialog: false, form: {}, memberForm: {role: 'STUDENT', names: ''}}),
   computed: {id () { return this.$route.params.classId }},
   watch: {id () { this.memberPage = 1; this.load() }},
