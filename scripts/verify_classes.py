@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import sys
@@ -92,7 +93,10 @@ def main():
         root.call("/api/admin/user/insert-batch-user", "POST", {"users": [[name, password, ""] for name in names.values()]})
         for key, name in names.items():
             rows = root.call("/api/admin/user/get-user-list?currentPage=1&limit=10&keyword=" + name)["records"]
-            uids[key] = next(row["uid"] for row in rows if row["username"] == name)
+            candidate = next(row["uid"] for row in rows if row["username"] == name)
+            if not re.fullmatch(r"[a-fA-F0-9]{32}", candidate):
+                raise RuntimeError("Unexpected fixture UUID; cleanup requires review")
+            uids[key] = candidate
         clients = {key: Client().login(name, password) for key, name in names.items()}
         for key in ("t1", "t2"):
             root.call("/api/edu/teachers", "POST", {"username": names[key]})

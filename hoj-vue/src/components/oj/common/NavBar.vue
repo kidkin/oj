@@ -31,7 +31,7 @@
               ><i class="el-icon-s-grid"></i
               >{{ $t('m.NavBar_Problem') }}</el-menu-item
             >
-            <el-menu-item index="/class"><i class="el-icon-school"></i>班级</el-menu-item>
+            <el-menu-item index="/class"><i class="el-icon-school"></i>{{ $t('m.NavBar_Class') }}</el-menu-item>
             <el-menu-item index="/training"
               ><i class="el-icon-s-claim"></i
               >{{ $t('m.NavBar_Training') }}</el-menu-item
@@ -456,7 +456,7 @@
             active-class="mobile-menu-active"
           >
             <mu-list-item-action><mu-icon value=":el-icon-school" size="24"></mu-icon></mu-list-item-action>
-            <mu-list-item-title>班级</mu-list-item-title>
+            <mu-list-item-title>{{ $t('m.NavBar_Class') }}</mu-list-item-title>
           </mu-list-item>
           <mu-list-item
             button
@@ -682,7 +682,7 @@ export default {
   methods: {
     ...mapActions(['changeModalStatus']),
     page_width() {
-      let screenWidth = window.screen.width;
+      let screenWidth = window.innerWidth;
       if (screenWidth < 992) {
         this.mobileNar = true;
       } else {
