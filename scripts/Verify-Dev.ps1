@@ -1,10 +1,12 @@
 ﻿param(
     [string]$BaseUrl = 'http://127.0.0.1:18081',
     [string]$Username = 'root',
-    [string]$Password = 'hoj123456'
+    [string]$Password = 'hoj123456',
+    [string]$ReportPath = ''
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
+if (-not $ReportPath) { $ReportPath = Join-Path $taskRoot 'logs\acceptance.json' }
 $taskProblemId = 'SOURCE_AB_BASELINE'
 $taskResults = @()
 $taskHeaders = @{}
@@ -103,8 +105,8 @@ foreach ($taskCase in @(@{Name='AC';Expected=0}, @{Name='WA';Expected=-1})) {
     [pscustomobject]@{
         Website=$BaseUrl; ProblemId=$taskProblemId; LoginVerified=$true
         Results=$taskResults; VerifiedAt=(Get-Date).ToString('o')
-    } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $taskRoot 'logs\acceptance.json') -Encoding UTF8
+    } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $ReportPath -Encoding UTF8
     $taskResult | Format-List | Out-String | Write-Output
-    if (-not $taskResult.Passed) { throw ('Acceptance failed for ' + $taskCase.Name + '. See logs/acceptance.json.') }
+    if (-not $taskResult.Passed) { throw ('Acceptance failed for ' + $taskCase.Name + '. See ' + $ReportPath) }
 }
 Write-Output 'PASS: Source-built HOJ web, login, AC and WA acceptance checks completed.'

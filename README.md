@@ -8,6 +8,8 @@ Ubuntu 新虚拟机的一键安装与访问步骤见 [Ubuntu 安装说明](./UBU
 
 在另一台 Ubuntu 虚拟机或云服务器部署已发布版本，见[新环境部署与更新步骤](./FRESH-DEPLOY.md)。
 
+数据备份与恢复到独立测试环境，见[备份恢复演练](./BACKUP.md)。
+
 ![logo](./logo.png)
 
 [![Java](https://img.shields.io/badge/Java-1.8-informational)](http://openjdk.java.net/)
