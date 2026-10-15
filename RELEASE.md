@@ -4,7 +4,7 @@
 
 此入口复用当前 HOJ 的服务配置和数据卷，解决试用 ECS 下载构建镜像受阻的问题；它还不是完整的生产发布系统。生产备份、HTTPS、数据库迁移、自动验收和回退流程仍需配置。
 
-当前已在 Windows PowerShell 5.1 中核对实际本地镜像并生成发布预览，在断网的临时 Ubuntu 容器中验证镜像配置、版本切换、密码保留及禁止构建的启动流程（拉取、启动和就绪检查为模拟）。自己的 ACR 仓库尚待创建，实际镜像推送及 ECS 启动、判题验收尚未完成。
+当前已在 Windows PowerShell 5.1 中核对实际本地镜像，在断网的临时 Ubuntu 容器中验证镜像配置、版本切换、密码保留及禁止构建的启动流程（拉取、启动和就绪检查为模拟）。2026-10-15 已向自己的 ACR 上传三个 `v0.1.0` 应用镜像，并回读核对运行平台、源码版本和文件系统层，均与本地镜像一致；ECS 启动和判题验收尚待完成。
 
 ## 1. 创建自己的 ACR 仓库
 
@@ -39,6 +39,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Publish-Images.ps1
 检查目标仓库和版本后，去掉 `-PlanOnly` 发布。脚本会检查三个本地应用镜像的源码版本与当前应用代码是否一致，然后为现有镜像添加发布标签并推送；它不会启动或停止本地 HOJ。发布记录保存在 Git 忽略的 `logs/release-images-版本.json` 中，不包含登录密码。
 
 当前面向 Ubuntu amd64 ECS，推送时指定 `linux/amd64` 平台，要求 Docker CLI 支持 `docker push --platform`（本机 Docker 29 已支持）。
+
+如果 Windows 可以登录 ACR，而 `docker push` 在认证接口发生 TLS 超时，可以使用 [Google 官方 crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) 从 Windows 客户端直连上传。先从官方 Release 下载 Windows 版本并核对校验值，再向发布脚本增加 `-CranePath C:\实际路径\crane.exe`。它复用 Docker 凭据助手中的既有登录，不需要把密码传给脚本。
+
+此方式将已核对的 `linux/amd64` 镜像临时导出到 `logs/image-archives/`，上传后读取远端配置，比对源码版本和每个文件系统层，并记录仓库摘要。验证成功后删除临时归档。直连设置仅作用于发布进程，不修改 Docker Desktop 的代理或重启服务；导出及上传需要额外的临时磁盘空间。
 
 已有镜像来自之前的 `616334a3827a` 源码构建，已完成本地 AC/WA 验收；当前前端和 Java 应用源码树与该版本相同。安装脚本后续的更改不代表应用本身发生了变更。增加功能后，应先提交应用代码并通过 `Start-Dev.cmd -Action Build` 构建新的本地镜像、完成验证，再以新的版本发布。发布脚本会阻止应用源码与现有镜像不一致的情况。
 

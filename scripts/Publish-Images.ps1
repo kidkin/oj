@@ -6,7 +6,8 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$')]
     [string]$Version,
-    [switch]$PlanOnly
+    [switch]$PlanOnly,
+    [string]$CranePath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,6 +20,16 @@ if ($dockerCommand) {
     $dockerExe = Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\resources\bin\docker.exe'
 }
 if (-not (Test-Path -LiteralPath $dockerExe)) { throw 'Docker CLI was not found. Start Docker Desktop first.' }
+$dockerBin = Split-Path -Parent $dockerExe
+$env:PATH = $dockerBin + ';' + $env:PATH
+if ($CranePath) {
+    $CranePath = (Resolve-Path -LiteralPath $CranePath).Path
+    if (-not (Test-Path -LiteralPath $CranePath -PathType Leaf)) { throw 'crane executable was not found.' }
+    # This affects this publisher process only, not Docker Desktop settings.
+    $registryHost = $RegistryNamespace.Split('/')[0]
+    $directHosts = $registryHost + ',.aliyuncs.com'
+    $env:NO_PROXY = $(if ($env:NO_PROXY) { $env:NO_PROXY + ',' + $directHosts } else { $directHosts })
+}
 $gitCommand = Get-Command git.exe -ErrorAction SilentlyContinue
 if (-not $gitCommand) { throw 'Git was not found. Open a new terminal after installing Git.' }
 $gitExe = $gitCommand.Source
@@ -57,6 +68,7 @@ foreach ($app in $applications) {
         LocalImageId = $image.Id
         SourceRevision = $revision
         ApplicationTree = $imageTree
+        RootFsDiffIds = @($image.RootFS.Layers)
         PublishedImage = ($RegistryNamespace + '/' + $app.Remote + ':' + $Version)
     }
 }
@@ -69,15 +81,41 @@ if (-not $PlanOnly -and (Test-Path -LiteralPath $reportPath)) { throw 'A release
 
 if (-not $PlanOnly) {
     foreach ($entry in $releaseImages) {
-        & $dockerExe tag $entry.LocalImage $entry.PublishedImage
+        & $dockerExe tag $entry.LocalImageId $entry.PublishedImage
         if ($LASTEXITCODE -ne 0) { throw ('Image tagging failed: ' + $entry.LocalImage) }
-        & $dockerExe push --platform linux/amd64 $entry.PublishedImage
-        if ($LASTEXITCODE -ne 0) { throw ('Image push failed. Check registry login and network access, then retry: ' + $entry.PublishedImage) }
+        if ($CranePath) {
+            $archiveRoot = Join-Path $logRoot 'image-archives'
+            New-Item -ItemType Directory -Force -Path $archiveRoot | Out-Null
+            $archiveName = $entry.LocalImage.Replace('/', '-').Replace(':', '-') + '-' + $Version + '.tar'
+            $archivePath = Join-Path $archiveRoot $archiveName
+            Write-Output ('Exporting and uploading: ' + $entry.PublishedImage)
+            & $dockerExe image save --platform linux/amd64 --output $archivePath $entry.PublishedImage
+            if ($LASTEXITCODE -ne 0) { throw ('Image export failed: ' + $entry.LocalImage) }
+            & $CranePath push --platform linux/amd64 $archivePath $entry.PublishedImage
+            if ($LASTEXITCODE -ne 0) { throw ('Direct registry upload failed: ' + $entry.PublishedImage) }
+            $remoteConfigText = & $CranePath config --platform linux/amd64 $entry.PublishedImage
+            if ($LASTEXITCODE -ne 0) { throw ('Could not verify published image: ' + $entry.PublishedImage) }
+            $remoteConfig = (($remoteConfigText | Out-String) | ConvertFrom-Json)
+            if ($remoteConfig.os -ne 'linux' -or $remoteConfig.architecture -ne 'amd64' -or
+                $remoteConfig.config.Labels.'org.opencontainers.image.revision' -ne $entry.SourceRevision -or
+                ($remoteConfig.rootfs.diff_ids -join ';') -cne ($entry.RootFsDiffIds -join ';')) {
+                throw ('Published image does not match the validated local image: ' + $entry.PublishedImage)
+            }
+            $remoteDigest = & $CranePath digest $entry.PublishedImage
+            if ($LASTEXITCODE -ne 0 -or $remoteDigest -notmatch '^sha256:[0-9a-f]{64}$') { throw 'Could not verify registry image digest.' }
+            $entry | Add-Member -NotePropertyName RemoteDigest -NotePropertyValue $remoteDigest
+            Remove-Item -LiteralPath $archivePath
+            Write-Output ('Verified published image: ' + $entry.PublishedImage)
+        } else {
+            & $dockerExe push --quiet --platform linux/amd64 $entry.PublishedImage
+            if ($LASTEXITCODE -ne 0) { throw ('Image push failed. Check registry login and network access, then retry: ' + $entry.PublishedImage) }
+        }
     }
 }
 $report = [pscustomobject]@{
     Version = $Version
     Status = $(if ($PlanOnly) { 'planned' } else { 'published' })
+    Transport = $(if ($CranePath) { 'crane' } else { 'docker' })
     Images = $releaseImages
 }
 $report | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $reportPath -Encoding UTF8
