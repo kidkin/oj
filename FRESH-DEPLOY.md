@@ -2,7 +2,7 @@
 
 本说明用于新建 Ubuntu 虚拟机或 ECS。安装相同版本只需要 Docker、Git、镜像仓库登录和本仓库脚本；应用在发布前已编译进镜像，服务器无需安装 Java、Maven、Node 或 IDE。
 
-当前已发布版本为 `v0.1.0`，三个应用镜像均已上传并核对内容。2026-10-15，Ubuntu 22.04 ECS 已返回安装完成，外部直连首页和 `/api/get-website-config` 均返回 HTTP 200，接口业务状态为 200。管理员登录和 AC/WA 判题由使用者自行验收，尚未记录为通过。
+当前已发布版本为 `v0.2.0`，三个应用镜像均已上传并核对内容，包含班级、共享课程和学生进度卡片。此前 `v0.1.0` 已在 Ubuntu 22.04 ECS 正常启动并由使用者确认可用；`v0.2.0` 的 ECS 更新结果另行验收，具体步骤见 [服务器更新](./UPDATE.md)。
 
 ## 1. 准备系统和访问范围
 
@@ -20,7 +20,7 @@
 
 ```bash
 apt-get update &&
-apt-get install -y ca-certificates curl git openssl
+apt-get install -y ca-certificates curl git openssl python3
 ```
 
 以下使用 [Docker 官方 Ubuntu apt 安装方法](https://docs.docker.com/engine/install/ubuntu/#install-using-the-apt-repository)。在全新系统执行；已有其他 Docker 安装时先核对，不要直接卸载正在使用的软件。
@@ -62,7 +62,7 @@ docker buildx version
 全新环境、`/root/oj` 尚不存在时执行：
 
 ```bash
-git -c http.version=HTTP/1.1 clone https://github.com/kidkin/oj.git /root/oj &&
+git -c http.version=HTTP/1.1 clone --branch v0.2.0 https://github.com/kidkin/oj.git /root/oj &&
 cd /root/oj
 ```
 
@@ -70,7 +70,8 @@ cd /root/oj
 
 ```bash
 cd /root/oj &&
-git -c http.version=HTTP/1.1 pull --ff-only
+git -c http.version=HTTP/1.1 fetch origin tag v0.2.0 &&
+git switch --detach v0.2.0
 ```
 
 ## 4. 登录自己的 ACR
@@ -87,7 +88,8 @@ GitHub 保存代码和部署脚本，私有 ACR 保存三个可运行的应用�
 
 ```bash
 cd /root/oj &&
-bash scripts/install-ubuntu.sh --lan --port 80 --image-source aliyun --prebuilt-registry crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj --release v0.1.0
+bash scripts/install-ubuntu.sh --lan --port 80 --image-source aliyun --prebuilt-registry crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj --release v0.2.0 &&
+python3 scripts/verify_release.py --release v0.2.0
 ```
 
 首次启动会下载应用及基础服务镜像、初始化数据库。出现 `Installation complete` 后访问：
@@ -113,21 +115,24 @@ sh scripts/dev.sh start
 
 ## 6. 发布新功能后的更新
 
-本地修改并提交代码，构建新镜像、完成本地验证，然后按照 [镜像发布说明](./RELEASE.md) 上传新的版本。三个应用仓库统一使用新的版本号，例如 `v0.1.1`；这个版本必须已实际发布，才能在服务器使用。
+本地修改并提交代码，构建新镜像、完成本地验证，然后按照 [镜像发布说明](./RELEASE.md) 上传新的版本。三个应用仓库统一使用新的版本号，并发布对应 Git 标签。完整操作及版本检查见 [服务器更新](./UPDATE.md)。
 
 更新前备份数据库、题目与测试数据、其他业务文件和 `deploy/.env`。[停机备份及独立恢复工具](./BACKUP.md)已完成一次 ECS → Windows 本地验收，数据库迁移、覆盖现有站点的恢复及自动发布回退仍需另外安排。准备好后，在原服务器执行：
 
 ```bash
 cd /root/oj &&
-git -c http.version=HTTP/1.1 pull --ff-only &&
-bash scripts/install-ubuntu.sh --lan --port 80 --image-source aliyun --prebuilt-registry crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj --release v0.1.1
+git -c http.version=HTTP/1.1 fetch origin tag v0.2.0 &&
+git switch --detach v0.2.0 &&
+python3 scripts/hoj_backup.py backup --output /root/hoj-backups &&
+bash scripts/install-ubuntu.sh --lan --port 80 --image-source aliyun --prebuilt-registry crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj --release v0.2.0 &&
+python3 scripts/verify_release.py --release v0.2.0
 ```
 
 安装器沿用原有服务密码和数据卷，并切换应用镜像版本。`git pull` 本身只更新代码与脚本，运行中的应用不会自动变成新功能版本。涉及数据库结构变化时，仍需配套迁移，不能只依赖切换镜像。
 
 ## 7. 区分重新部署和迁移数据
 
-新环境首次安装会建立独立数据库，账号、题目、课程、班级和提交记录不会从另一台电脑或服务器自动同步。班级和课程功能还需后续开发。
+新环境首次安装会建立独立数据库，账号、题目、课程、班级和提交记录不会从另一台电脑或服务器自动同步。班级和课程的操作见 [共享课程与学生卡片](./SHARED-COURSES.md)。
 
 如果只是再建一套空环境，按上面的流程部署即可。如果要将现有站点搬到新服务器，应另外安排停写或一致性备份、恢复全部业务数据和原 `deploy/.env`、验证后切换访问地址。GitHub 和 ACR 都不能代替业务数据备份。
 

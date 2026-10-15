@@ -78,6 +78,9 @@ New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
 $reportName = if ($PlanOnly) { 'release-plan-' + $Version + '.json' } else { 'release-images-' + $Version + '.json' }
 $reportPath = Join-Path $logRoot $reportName
 if (-not $PlanOnly -and (Test-Path -LiteralPath $reportPath)) { throw 'A release record already exists for this version. Review it and use a new version for changes.' }
+$publicReleaseRoot = Join-Path $repoRoot 'releases'
+$publicReleasePath = Join-Path $publicReleaseRoot ($Version + '.json')
+if (-not $PlanOnly -and (Test-Path -LiteralPath $publicReleasePath)) { throw 'A public release manifest already exists for this version. Use a new version.' }
 
 if (-not $PlanOnly) {
     foreach ($entry in $releaseImages) {
@@ -107,8 +110,11 @@ if (-not $PlanOnly) {
             Remove-Item -LiteralPath $archivePath
             Write-Output ('Verified published image: ' + $entry.PublishedImage)
         } else {
-            & $dockerExe push --quiet --platform linux/amd64 $entry.PublishedImage
+            $pushedDigest = & $dockerExe push --quiet --platform linux/amd64 $entry.PublishedImage
             if ($LASTEXITCODE -ne 0) { throw ('Image push failed. Check registry login and network access, then retry: ' + $entry.PublishedImage) }
+            $pushedDigest = ($pushedDigest | Out-String).Trim()
+            if ($pushedDigest -notmatch '^sha256:[0-9a-f]{64}$') { throw 'Docker push did not return a valid published digest.' }
+            $entry | Add-Member -NotePropertyName RemoteDigest -NotePropertyValue $pushedDigest
         }
     }
 }
@@ -119,6 +125,29 @@ $report = [pscustomobject]@{
     Images = $releaseImages
 }
 $report | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $reportPath -Encoding UTF8
+if (-not $PlanOnly) {
+    # This manifest is safe to commit: image identities and schema hashes only.
+    $publicImages = [ordered]@{}
+    foreach ($entry in $releaseImages) {
+        $service = $entry.PublishedImage.Split('/')[-1].Split(':')[0]
+        $publicImages[$service] = [ordered]@{
+            Reference = $entry.PublishedImage; Digest = $entry.RemoteDigest
+            SourceRevision = $entry.SourceRevision; RootFsDiffIds = @($entry.RootFsDiffIds)
+        }
+    }
+    $migrationHashes = [ordered]@{}
+    $migrationRoot = Join-Path $repoRoot 'hoj-springboot\DataBackup\src\main\resources\db\edu'
+    if (Test-Path -LiteralPath $migrationRoot) {
+        foreach ($migration in (Get-ChildItem -LiteralPath $migrationRoot -Filter 'V*.sql' | Sort-Object Name)) {
+            $migrationHashes[$migration.BaseName] = (Get-FileHash -LiteralPath $migration.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
+    }
+    $publicManifest = [ordered]@{ Version = $Version; ReleasedOn = (Get-Date -Format 'yyyy-MM-dd'); Images = $publicImages; Migrations = $migrationHashes }
+    New-Item -ItemType Directory -Force -Path $publicReleaseRoot | Out-Null
+    $manifestText = ($publicManifest | ConvertTo-Json -Depth 7).Replace("`r`n", "`n") + "`n"
+    [IO.File]::WriteAllText($publicReleasePath, $manifestText, (New-Object Text.UTF8Encoding($false)))
+    Write-Output ('Commit this release manifest with the matching Git tag: ' + $publicReleasePath)
+}
 $releaseImages | Format-Table PublishedImage, SourceRevision -AutoSize
 Write-Output ('Release record: ' + $reportPath)
 if ($PlanOnly) { Write-Output 'Plan only: no images were tagged or pushed.' }

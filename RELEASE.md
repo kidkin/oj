@@ -8,6 +8,8 @@
 
 在另一台全新 Ubuntu 环境安装 Docker、登录仓库并运行指定版本，见[新环境部署与更新步骤](./FRESH-DEPLOY.md)。
 
+`v0.2.0` 已发布班级、共享课程和学生进度卡片，应用源码版本为 `7d207eea3a2f`。本次 ECS 升级的具体命令、备份、自动版本检查及回退边界见 [服务器更新步骤](./UPDATE.md)。镜像上传完成与服务器更新完成分别验收；服务器执行结果尚需确认。
+
 ## 1. 创建自己的 ACR 仓库
 
 访问 [容器镜像服务控制台](https://cr.console.aliyun.com/)，在与 ECS 相同的地域创建个人版实例。个人版目前公测限额免费，官方限定用于开发测试，不用于正式生产业务；后续镜像托管服务应按实际使用阶段选择。单个账号个人版实例的数量有限，创建前确认地域。
@@ -40,13 +42,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Publish-Images.ps1
 
 检查目标仓库和版本后，去掉 `-PlanOnly` 发布。脚本会检查三个本地应用镜像的源码版本与当前应用代码是否一致，然后为现有镜像添加发布标签并推送；它不会启动或停止本地 HOJ。发布记录保存在 Git 忽略的 `logs/release-images-版本.json` 中，不包含登录密码。
 
+成功发布后还会生成 `releases/版本号.json`，只包含可提交的镜像地址、摘要、源码版本及迁移校验值。将它随代码提交并创建同名 Git 标签，再上传分支和标签；服务器的 `verify_release.py` 使用这个清单确认实际运行内容。不要覆盖已有版本清单。
+
 当前面向 Ubuntu amd64 ECS，推送时指定 `linux/amd64` 平台，要求 Docker CLI 支持 `docker push --platform`（本机 Docker 29 已支持）。
 
 如果 Windows 可以登录 ACR，而 `docker push` 在认证接口发生 TLS 超时，可以使用 [Google 官方 crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) 从 Windows 客户端直连上传。先从官方 Release 下载 Windows 版本并核对校验值，再向发布脚本增加 `-CranePath C:\实际路径\crane.exe`。它复用 Docker 凭据助手中的既有登录，不需要把密码传给脚本。
 
 此方式将已核对的 `linux/amd64` 镜像临时导出到 `logs/image-archives/`，上传后读取远端配置，比对源码版本和每个文件系统层，并记录仓库摘要。验证成功后删除临时归档。直连设置仅作用于发布进程，不修改 Docker Desktop 的代理或重启服务；导出及上传需要额外的临时磁盘空间。
 
-已有镜像来自之前的 `616334a3827a` 源码构建，已完成本地 AC/WA 验收；当前前端和 Java 应用源码树与该版本相同。安装脚本后续的更改不代表应用本身发生了变更。增加功能后，应先提交应用代码并通过 `Start-Dev.cmd -Action Build` 构建新的本地镜像、完成验证，再以新的版本发布。发布脚本会阻止应用源码与现有镜像不一致的情况。
+`v0.1.0` 应用源码版本为 `616334a3827a`；`v0.2.0` 为已完成本地 AC/WA、班级和课程验收的 `7d207eea3a2f`。增加功能后，应先提交应用代码并通过 `Start-Dev.cmd -Action Build` 构建新的本地镜像、完成验证，再以新的版本发布。发布脚本会阻止应用源码与现有镜像不一致的情况。
 
 ## 3. 在 ECS 上拉取并运行
 
