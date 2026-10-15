@@ -4,20 +4,29 @@ set -Eeuo pipefail
 install_dir="$HOME/oj"
 lan=0
 port=''
+image_source=''
+sequential_build=0
 usage() {
-  echo 'Usage: bash install-ubuntu.sh [--dir PATH] [--lan] [--port PORT]'
+  echo 'Usage: bash install-ubuntu.sh [--dir PATH] [--lan] [--port PORT] [--image-source aliyun] [--sequential-build]'
   echo 'Ubuntu 22.04/24.04 amd64 VM setup: Docker Engine, Compose, source build and startup.'
   echo '--lan publishes the website on all VM interfaces; default is VM localhost only.'
+  echo '--image-source aliyun uses upstream HOJ images on Aliyun and official Maven/Node on Docker Hub.'
+  echo '--sequential-build builds services one at a time to reduce peak memory use.'
 }
 while (($#)); do
   case "$1" in
     --dir) [[ $# -ge 2 ]] || { usage; exit 2; }; install_dir=$2; shift 2 ;;
     --lan) lan=1; shift ;;
     --port) [[ $# -ge 2 ]] || { usage; exit 2; }; port=$2; shift 2 ;;
+    --image-source) [[ $# -ge 2 ]] || { usage; exit 2; }; image_source=$2; shift 2 ;;
+    --sequential-build) sequential_build=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) usage; exit 2 ;;
   esac
 done
+if [[ -n "$image_source" && "$image_source" != aliyun ]]; then
+  echo 'Supported image source: aliyun.' >&2; exit 2
+fi
 if [[ -n "$port" ]] && { [[ ! "$port" =~ ^[0-9]{1,5}$ ]] || ((10#$port < 1 || 10#$port > 65535)); }; then
   echo 'Port must be an integer between 1 and 65535.' >&2; exit 2
 fi
@@ -101,13 +110,26 @@ echo '[4/5] Initializing independent application credentials.'
 sh "$repo_dir/scripts/dev.sh" init
 set_env() {
   if grep -q "^$1=" "$repo_dir/deploy/.env"; then
-    sed -i "s/^$1=.*/$1=$2/" "$repo_dir/deploy/.env"
+    sed -i "s|^$1=.*|$1=$2|" "$repo_dir/deploy/.env"
   else
     printf '\n%s=%s\n' "$1" "$2" >> "$repo_dir/deploy/.env"
   fi
 }
 if ((lan)); then set_env HOJ_WEB_BIND 0.0.0.0; fi
 if [[ -n "$port" ]]; then set_env HOJ_WEB_PORT "$port"; fi
+if [[ "$image_source" == aliyun ]]; then
+  while IFS='=' read -r key value || [[ -n "$key" ]]; do
+    [[ -z "$key" || "$key" == \#* ]] && continue
+    case "$key" in
+      MAVEN_IMAGE|NODE_IMAGE|BACKEND_RUNTIME_IMAGE|FRONTEND_RUNTIME_IMAGE|JUDGESERVER_RUNTIME_IMAGE|MYSQL_IMAGE|MYSQL_CHECKER_IMAGE) ;;
+      *) echo "Unexpected image setting: $key" >&2; exit 1 ;;
+    esac
+    [[ "$value" =~ ^[a-zA-Z0-9_./:@-]+$ ]] || { echo "Invalid image reference for $key" >&2; exit 1; }
+    set_env "$key" "$value"
+  done < "$repo_dir/deploy/images.aliyun.env"
+  echo 'Selected upstream HOJ Aliyun images and official Docker Hub build images.'
+fi
+if ((sequential_build)); then set_env HOJ_BUILD_SEQUENTIAL true; fi
 
 echo '[5/5] Building the source and starting HOJ. Keep this terminal open.'
 sh "$repo_dir/scripts/dev.sh" start

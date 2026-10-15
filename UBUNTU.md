@@ -90,3 +90,31 @@ sh scripts/dev.sh start
 - 不要执行带 `down -v` 或 `docker volume prune` 的清理命令来处理启动错误，这会删除业务数据。
 
 源代码由 Git 保存；数据库、上传文件、测试数据位于 Docker 数据卷中，和 `.env` 分别备份。Git 回退不会回退数据库。
+
+## 6. 阿里云 ECS 中选择镜像来源
+
+如果 GitHub 代码已经成功克隆，但构建日志显示 `mirror.gcr.io` 超时，或 Docker Hub 加速器对 `himitzh/hoj_*` 返回错误，可选择 HOJ 作者发布的阿里云 ACR 运行镜像。Maven 和 Node 改从 Docker Hub 官方仓库拉取；Nacos 和 Redis 仍使用原来的固定版本。
+
+已经克隆到 `/root/oj` 的 ECS 可以执行：
+
+```bash
+cd /root/oj &&
+git -c http.version=HTTP/1.1 pull --ff-only &&
+bash scripts/install-ubuntu.sh --lan --port 80 --image-source aliyun --sequential-build
+```
+
+`--image-source aliyun` 把 `deploy/images.aliyun.env` 中的公开镜像地址写入现有 `deploy/.env`，保留已有服务密码。镜像来源会持续生效；默认未选择该选项的本地开发环境保持原来的镜像配置。阿里云仓库与 Docker Hub 的镜像清单和内容可能不同，分别使用各自固定的摘要，不把 Docker Hub 摘要直接拼接到阿里云地址。
+
+`--sequential-build` 把 `HOJ_BUILD_SEQUENTIAL=true` 写入 `.env`，让后端、判题服务、前端逐个构建，适合 2 核 / 4 GiB 试用服务器。它降低多个服务同时编译的内存峰值，不能替代足够的物理内存；需要恢复同时构建时，将该值改为 `false`。
+
+2026-10-15 已核实上述五个 HOJ 阿里云镜像的公开清单可读取；ECS 已实际拉取后端、Maven、Nacos 和 Redis，Node 可以连接并下载镜像层，但尚未完成下载。配置切换、密码保留、重复执行、串行构建分发和缺失密码文件保护已在断网的临时 Ubuntu 容器中验证，测试中的构建和启动调用为模拟；使用这套来源的完整构建、启动和 AC/WA 判题仍需在 ECS 验收。
+
+外部访问还需要该实例的安全组放行网页 TCP 80 端口，初次验证时将来源限制为自己的公网 IP。浏览器使用 ECS 控制台中的公网 IP，安装器根据网卡输出的地址可能是内网 IP。首次登录后修改默认管理员密码，再按部署地域要求完成正式对外开放的准备。
+
+## 7. 修改功能后怎样发布
+
+前端、后端和判题服务的源码在构建时被放入应用镜像。修改这些源码后，需要重新构建受影响的应用镜像；基础运行镜像和未变化的构建层可以通过缓存复用。
+
+当前源码测试环境可以使用 `git pull --ff-only` 后运行 `sh scripts/dev.sh start` 来重新构建和启动。已有数据库、题目及提交记录保留在数据卷中；数据库结构发生变化时仍需配套迁移和备份。
+
+正式使用时应发布带明确版本号的应用镜像，例如 `v0.2.0`、`v0.2.1`，由服务器拉取指定版本更新。不要在运行中的容器里手工覆盖代码作为发布方式。此仓库目前尚未实现生产镜像发布、数据库迁移及自动回退流程。

@@ -45,10 +45,18 @@ if command -v git >/dev/null && git -C "$repo_dir" rev-parse HEAD >/dev/null 2>&
 fi
 compose() { docker_run compose --project-directory "$deploy_dir" --env-file "$deploy_dir/.env" -f "$deploy_dir/compose.dev.yml" "$@"; }
 compose config --quiet
+build_images() {
+  sequential=${HOJ_BUILD_SEQUENTIAL:-$(sed -n 's/^HOJ_BUILD_SEQUENTIAL=//p' "$deploy_dir/.env" | head -n 1)}
+  if [ "$sequential" = true ]; then
+    for service in hoj-backend hoj-judgeserver hoj-frontend; do compose build "$service"; done
+  else
+    compose build
+  fi
+}
 case "$action" in
   init) echo 'Development configuration is ready.' ;;
   start)
-    compose build
+    build_images
     compose up --detach --no-build --wait --wait-timeout 360
     api_tmp=$(mktemp)
     trap 'rm -f -- "$api_tmp"' EXIT HUP INT TERM
@@ -60,7 +68,7 @@ case "$action" in
     web_port=${HOJ_WEB_PORT:-$(sed -n 's/^HOJ_WEB_PORT=//p' "$deploy_dir/.env" | head -n 1)}
     echo "Source-built HOJ is ready: http://127.0.0.1:${web_port:-18081}"
     ;;
-  build) compose build ;;
+  build) build_images ;;
   stop) compose stop ;;
   status) compose ps --all ;;
   logs) compose logs --tail 120 ;;

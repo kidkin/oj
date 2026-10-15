@@ -16,7 +16,7 @@ services:
       retries: 10
 
   hoj-mysql:
-    image: himitzh/hoj_database@sha256:ddeb31743c1930553b07ccb7a5ee0828ffb4584842a0d599ffb09395a176af4d
+    image: ${MYSQL_IMAGE:-himitzh/hoj_database@sha256:ddeb31743c1930553b07ccb7a5ee0828ffb4584842a0d599ffb09395a176af4d}
     restart: unless-stopped
     volumes:
       - hoj-mysql-data:/var/lib/mysql
@@ -68,6 +68,8 @@ services:
       dockerfile: deploy/Dockerfile.java
       target: backend
       args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-mirror.gcr.io/library/maven:3.9.9-eclipse-temurin-8@sha256:e20e4fc05fb5480c884a1f750c362ed0e91aca15cec5736e12796713710ec9b3}
+        BACKEND_RUNTIME_IMAGE: ${BACKEND_RUNTIME_IMAGE:-himitzh/hoj_backend@sha256:66db67e00f2d0f33c742aaf64315e2145a2b02a9e20b0b03050f3764467cae8e}
         SOURCE_REVISION: ${SOURCE_REVISION:-working-tree}
     restart: unless-stopped
     depends_on:
@@ -140,6 +142,8 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile.frontend
       args:
+        NODE_IMAGE: ${NODE_IMAGE:-mirror.gcr.io/library/node:16.20.2-bullseye@sha256:cd59a61258b82b86c1ff0ead50c8a689f6c3483c5ed21036e11ee741add419eb}
+        FRONTEND_RUNTIME_IMAGE: ${FRONTEND_RUNTIME_IMAGE:-himitzh/hoj_frontend@sha256:d75a69da2e757620e559e08c66fcab6f00c309fd06c1d27158e10e95628e516f}
         SOURCE_REVISION: ${SOURCE_REVISION:-working-tree}
     restart: unless-stopped
     depends_on:
@@ -163,6 +167,8 @@ services:
       dockerfile: deploy/Dockerfile.java
       target: judgeserver
       args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-mirror.gcr.io/library/maven:3.9.9-eclipse-temurin-8@sha256:e20e4fc05fb5480c884a1f750c362ed0e91aca15cec5736e12796713710ec9b3}
+        JUDGESERVER_RUNTIME_IMAGE: ${JUDGESERVER_RUNTIME_IMAGE:-himitzh/hoj_judgeserver@sha256:29adf09477ea2840d7ecdec09a886e96ac126844782365b38ed97d098009ee0b}
         SOURCE_REVISION: ${SOURCE_REVISION:-working-tree}
     restart: unless-stopped
     depends_on:
@@ -203,7 +209,7 @@ services:
         ipv4_address: 172.21.0.7
 
   hoj-mysql-checker:
-    image: himitzh/hoj_database_checker@sha256:f75ee563eab07454bd5ccae99f8adb0b175ddef3c1d820b0deb29d22052e75fe
+    image: ${MYSQL_CHECKER_IMAGE:-himitzh/hoj_database_checker@sha256:f75ee563eab07454bd5ccae99f8adb0b175ddef3c1d820b0deb29d22052e75fe}
     depends_on:
       hoj-mysql:
         condition: service_healthy
