@@ -1,0 +1,235 @@
+name: hoj-dev
+services:
+  hoj-redis:
+    image: redis:5.0.9-alpine@sha256:6e0f8e768196dce1ed2d9b0d29c583ef9d51c606ba2b7c81a67781da4b703aaa
+    restart: unless-stopped
+    volumes:
+      - hoj-redis-data:/data
+    networks:
+      hoj-network:
+        ipv4_address: ${REDIS_HOST:-172.21.0.2}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-hoj123456} --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-hoj123456}", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  hoj-mysql:
+    image: himitzh/hoj_database@sha256:ddeb31743c1930553b07ccb7a5ee0828ffb4584842a0d599ffb09395a176af4d
+    restart: unless-stopped
+    volumes:
+      - hoj-mysql-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-hoj123456} # mysql数据库root账号的密码
+      - TZ=Asia/Shanghai
+      - NACOS_USERNAME=${NACOS_USERNAME:-root} # 后续nacos所用管理员账号
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-hoj123456} # 后续nacos所用管理员密码
+    networks:
+      hoj-network:
+        ipv4_address: ${MYSQL_HOST:-172.21.0.3}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-hoj123456}"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  hoj-nacos:
+    image: nacos/nacos-server:1.4.2@sha256:bc79fc0e0640afbec73958afd5fa0ffcb437cb320c33f645838905cf94b2f3dd
+    restart: unless-stopped
+    depends_on:
+      hoj-mysql:
+        condition: service_healthy
+    environment:
+      - JVM_XMX=384m
+      - JVM_XMS=384m
+      - JVM_XMN=192m
+      - MODE=standalone
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - MYSQL_SERVICE_HOST=${MYSQL_HOST:-172.21.0.3}
+      - MYSQL_SERVICE_PORT=3306
+      - MYSQL_SERVICE_USER=root
+      - MYSQL_SERVICE_PASSWORD=${MYSQL_ROOT_PASSWORD:-hoj123456} # 与上面数据库密码一致
+      - MYSQL_SERVICE_DB_NAME=nacos
+      - NACOS_AUTH_ENABLE=true # 开启鉴权
+    healthcheck:
+      test: curl -f http://${NACOS_HOST:-172.21.0.4}:8848/nacos/index.html || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    networks:
+      hoj-network:
+        ipv4_address: ${NACOS_HOST:-172.21.0.4}
+
+  hoj-backend:
+    image: hoj-local/backend:dev
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.java
+      target: backend
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-working-tree}
+    restart: unless-stopped
+    depends_on:
+      hoj-redis:
+        condition: service_healthy
+      hoj-mysql:
+        condition: service_healthy
+      hoj-nacos:
+        condition: service_healthy
+      hoj-mysql-checker:
+        condition: service_completed_successfully
+    volumes:
+      - hoj-files:/hoj/file
+      - hoj-testcases:/hoj/testcase
+      - hoj-backend-logs:/hoj/log/backend
+    environment:
+      - TZ=Asia/Shanghai
+      - JAVA_OPTS=-Xms192m -Xmx384m
+      - BACKEND_SERVER_PORT=${BACKEND_PORT:-6688}
+      - NACOS_URL=${NACOS_HOST:-172.21.0.4}:8848
+      - NACOS_USERNAME=${NACOS_USERNAME:-root} # 登录 http://ip:8848/nacos 分布式配置中心与注册中心的后台的账号
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-hoj123456} # 密码
+      - JWT_TOKEN_SECRET=${JWT_TOKEN_SECRET:-default} # token加密秘钥 默认则生成32位随机密钥
+      - JWT_TOKEN_EXPIRE=${JWT_TOKEN_EXPIRE:-86400} # token过期时间默认为24小时 86400s
+      - JWT_TOKEN_FRESH_EXPIRE=${JWT_TOKEN_FRESH_EXPIRE:-43200} # token默认12小时可自动刷新
+      - JUDGE_TOKEN=${JUDGE_TOKEN:-default} # 调用判题服务器的token 默认则生成32位随机密钥
+      - MYSQL_HOST=${MYSQL_HOST:-172.21.0.3}
+      - MYSQL_PUBLIC_HOST=${MYSQL_PUBLIC_HOST} # 如果判题服务是分布式，请提供当前mysql所在服务器的公网ip
+      - MYSQL_PUBLIC_PORT=${MYSQL_PUBLIC_PORT:-3306}
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE_NAME=hoj # 改动需要修改hoj-mysql镜像,默认为hoj
+      - MYSQL_USERNAME=root
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-hoj123456}
+      - EMAIL_SERVER_HOST=${EMAIL_SERVER_HOST:-smtp.qq.com} # 请使用邮件服务的域名或ip
+      - EMAIL_SERVER_PORT=${EMAIL_SERVER_PORT:-465} # 请使用邮件服务的端口号
+      - EMAIL_USERNAME=${EMAIL_USERNAME:-your_email_username} # 请使用对应邮箱账号
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-your_email_password} # 请使用对应邮箱密码
+      - REDIS_HOST=${REDIS_HOST:-172.21.0.2}
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-hoj123456}
+      - OPEN_REMOTE_JUDGE=false # 是否开启各个remote judge
+      - HDU_ACCOUNT_USERNAME_LIST=${HDU_ACCOUNT_USERNAME_LIST}
+      - HDU_ACCOUNT_PASSWORD_LIST=${HDU_ACCOUNT_PASSWORD_LIST}
+      - CF_ACCOUNT_USERNAME_LIST=${CF_ACCOUNT_USERNAME_LIST}
+      - CF_ACCOUNT_PASSWORD_LIST=${CF_ACCOUNT_PASSWORD_LIST}
+      - POJ_ACCOUNT_USERNAME_LIST=${POJ_ACCOUNT_USERNAME_LIST}
+      - POJ_ACCOUNT_PASSWORD_LIST=${POJ_ACCOUNT_PASSWORD_LIST}
+      - ATCODER_ACCOUNT_USERNAME_LIST=${ATCODER_ACCOUNT_USERNAME_LIST}
+      - ATCODER_ACCOUNT_PASSWORD_LIST=${ATCODER_ACCOUNT_PASSWORD_LIST}
+      - SPOJ_ACCOUNT_USERNAME_LIST=${SPOJ_ACCOUNT_USERNAME_LIST}
+      - SPOJ_ACCOUNT_PASSWORD_LIST=${SPOJ_ACCOUNT_PASSWORD_LIST}
+      - LIBRE_ACCOUNT_USERNAME_LIST=${LIBRE_ACCOUNT_USERNAME_LIST}
+      - LIBRE_ACCOUNT_PASSWORD_LIST=${LIBRE_ACCOUNT_PASSWORD_LIST}
+      - FORCED_UPDATE_REMOTE_JUDGE_ACCOUNT=${FORCED_UPDATE_REMOTE_JUDGE_ACCOUNT:-false}
+    ports:
+      - "127.0.0.1:16689:6688"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:6688/api/get-website-config >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      start_period: 60s
+      retries: 18
+    networks:
+      hoj-network:
+        ipv4_address: ${BACKEND_HOST:-172.21.0.5}
+
+  hoj-frontend:
+    image: hoj-local/frontend:dev
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-working-tree}
+    restart: unless-stopped
+    depends_on:
+      hoj-backend:
+        condition: service_healthy
+    environment:
+      - SERVER_NAME=localhost # 域名(例如baidu.com)或localhost(本地)
+      - BACKEND_SERVER_HOST=${BACKEND_HOST:-172.21.0.5} # backend后端服务地址
+      - BACKEND_SERVER_PORT=${BACKEND_PORT:-6688} # backend后端服务端口号
+      - USE_HTTPS=false # 使用https请设置为true
+    ports:
+      - "127.0.0.1:18081:80"
+    networks:
+      hoj-network:
+        ipv4_address: 172.21.0.6
+
+  hoj-judgeserver:
+    image: hoj-local/judgeserver:dev
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.java
+      target: judgeserver
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-working-tree}
+    restart: unless-stopped
+    depends_on:
+      hoj-mysql:
+        condition: service_healthy
+      hoj-nacos:
+        condition: service_healthy
+    volumes:
+      - hoj-testcases:/judge/test_case
+      - hoj-judge-logs:/judge/log
+      - hoj-judge-run:/judge/run
+      - hoj-judge-spj:/judge/spj
+      - hoj-judge-interactive:/judge/interactive
+      - hoj-judgeserver-logs:/judge/log/judgeserver
+    environment:
+      - TZ=Asia/Shanghai
+      - JAVA_OPTS=-Xms192m -Xmx384m # 修正JVM参数以便适应单机部署
+      - JUDGE_SERVER_IP=${JUDGE_SERVER_IP:-172.21.0.7}
+      - JUDGE_SERVER_PORT=${JUDGE_SERVER_PORT:-8088}
+      - JUDGE_SERVER_NAME=${JUDGE_SERVER_NAME:-judger-alone} # 判题服务的名字
+      - NACOS_URL=${NACOS_HOST:-172.21.0.4}:8848
+      - NACOS_USERNAME=${NACOS_USERNAME:-root}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-hoj123456}
+      - MAX_TASK_NUM=${MAX_TASK_NUM:--1} # -1表示最大可接收判题任务数为cpu核心数+1
+      - REMOTE_JUDGE_OPEN=${REMOTE_JUDGE_OPEN:-true} # 当前判题服务器是否开启远程虚拟判题功能
+      - REMOTE_JUDGE_MAX_TASK_NUM=${REMOTE_JUDGE_MAX_TASK_NUM:--1} # -1表示最大可接收远程判题任务数为cpu核心数*2+1
+      - PARALLEL_TASK=${PARALLEL_TASK:-default} # 默认沙盒并行判题程序数为cpu核心数
+    healthcheck:
+      test: curl -f http://${JUDGE_SERVER_IP:-172.21.0.7}:${JUDGE_SERVER_PORT:-8088}/version || exit 1
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 10
+    privileged: true # 设置容器的权限为root
+    shm_size: 512mb
+    networks:
+      hoj-network:
+        ipv4_address: 172.21.0.7
+
+  hoj-mysql-checker:
+    image: himitzh/hoj_database_checker@sha256:f75ee563eab07454bd5ccae99f8adb0b175ddef3c1d820b0deb29d22052e75fe
+    depends_on:
+      hoj-mysql:
+        condition: service_healthy
+    links:
+      - hoj-mysql:mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-hoj123456}
+    networks:
+      hoj-network:
+        ipv4_address: 172.21.0.8
+
+networks:
+  hoj-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${SUBNET:-172.21.0.0/24}
+
+volumes:
+  hoj-backend-logs:
+  hoj-files:
+  hoj-judge-interactive:
+  hoj-judge-logs:
+  hoj-judge-run:
+  hoj-judge-spj:
+  hoj-judgeserver-logs:
+  hoj-mysql-data:
+  hoj-redis-data:
+  hoj-testcases:

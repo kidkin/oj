@@ -1,5 +1,7 @@
 # Hcode Online Judge（HOJ）
 
+本仓库的本地开发入口：Windows 双击 `Start-Dev.cmd`，Linux 执行 `sh scripts/dev.sh start`。详细步骤、数据位置和版本管理见 [本地开发说明](./DEVELOPMENT.md)。
+
 ![logo](./logo.png)
 
 [![Java](https://img.shields.io/badge/Java-1.8-informational)](http://openjdk.java.net/)

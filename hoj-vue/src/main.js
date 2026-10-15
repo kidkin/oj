@@ -4,7 +4,8 @@ import store from './store'
 import Element from 'element-ui'
 import i18n from '@/i18n'
 
-// import "element-ui/lib/theme-chalk/index.css"
+import 'element-ui/lib/theme-chalk/index.css'
+import 'github-markdown-css/github-markdown.css'
 import 'font-awesome/css/font-awesome.min.css'
 import Message from 'vue-m-message'
 import 'vue-m-message/dist/index.css'
@@ -52,7 +53,7 @@ import mavonEditor from 'mavon-editor'  //引入markdown编辑器
 import 'mavon-editor/dist/css/index.css';
 Vue.use(mavonEditor)
 
-// import 'muse-ui/dist/muse-ui.css';
+import 'muse-ui/dist/muse-ui.css';
 import MuseUI from 'muse-ui'
 Vue.use(MuseUI)
 

@@ -1,0 +1,17 @@
+# Local credentials and generated files
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+target/
+.cache/
+logs/
+*.log
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.vhdx
+*.sql.gz
+backups/

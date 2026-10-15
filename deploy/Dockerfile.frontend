@@ -1,0 +1,13 @@
+ARG NODE_IMAGE=mirror.gcr.io/library/node:16.20.2-bullseye@sha256:cd59a61258b82b86c1ff0ead50c8a689f6c3483c5ed21036e11ee741add419eb
+FROM ${NODE_IMAGE} AS build
+WORKDIR /src
+COPY hoj-vue/package*.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --legacy-peer-deps --no-audit --no-fund
+COPY hoj-vue/ ./
+RUN npm run build
+
+FROM himitzh/hoj_frontend@sha256:d75a69da2e757620e559e08c66fcab6f00c309fd06c1d27158e10e95628e516f
+ARG SOURCE_REVISION=uncommitted
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} hoj.build=source
+RUN rm -rf /usr/share/nginx/html/*
+COPY --from=build /src/dist/ /usr/share/nginx/html/
