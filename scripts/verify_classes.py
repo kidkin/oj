@@ -141,6 +141,13 @@ def main():
                 assert a["id"] not in {row["id"] for row in clients["s1"].call("/api/edu/classes")["records"]}
                 enroll(a["id"], ["s3"], expected=400)
         passed("archival hides classes from students and blocks member changes until restored")
+        enroll(a["id"], ["t2"], "TEACHER")
+        assert clients["t2"].call("/api/edu/classes/%s" % a["id"])["canManage"]
+        clients["t2"].call("/api/edu/classes/%s/members" % a["id"], "POST", {"usernames": [names["s3"]], "role": "STUDENT"})
+        clients["t2"].call("/api/edu/classes/%s/members/%s" % (a["id"], uids["s3"]), "DELETE")
+        root.call("/api/edu/classes/%s/members/%s" % (a["id"], uids["t2"]), "DELETE")
+        clients["t2"].call("/api/edu/classes/%s" % a["id"], expected=403)
+        passed("assigned teachers can manage only their assigned classes until removed")
         root.call("/api/admin/user/edit-user", "PUT", {"uid": uids["t1"], "username": names["t1"], "realname": "", "email": "", "password": "", "type": 1002, "status": 0, "setNewPwd": False, "titleName": "", "titleColor": ""})
         assert clients["t1"].call("/api/edu/me")["isTeacher"]
         passed("legacy user editing preserves the additional teacher role")
