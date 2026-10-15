@@ -37,6 +37,7 @@ try {
         }
     }
     if (-not $dockerExe) { throw 'Install Docker Desktop with the WSL2 Linux engine first.' }
+    Write-Host ('Using Docker: ' + $dockerExe)
     $dockerResources = Split-Path -Parent (Split-Path -Parent $dockerExe)
     $composeExe = Join-Path $dockerResources 'cli-plugins\docker-compose.exe'
     if (-not (Test-Path -LiteralPath $composeExe)) {
@@ -59,9 +60,13 @@ try {
         $probe.StartInfo.RedirectStandardError = $true
         try {
             [void]$probe.Start()
+            $probeHandle = $probe.Handle
             if ($probe.WaitForExit(5000)) {
-                $engineReady = $probe.ExitCode -eq 0 -and $probe.StandardOutput.ReadToEnd().Trim() -eq 'linux'
-            } else { $probe.Kill() }
+                $probeOutput = $probe.StandardOutput.ReadToEnd().Trim()
+                $probeError = $probe.StandardError.ReadToEnd().Trim()
+                $engineReady = $probe.ExitCode -eq 0 -and $probeOutput -eq 'linux'
+                if (-not $engineReady) { Write-Host ('Docker probe exit=' + $probe.ExitCode + ', output=' + $probeOutput + ', error=' + $probeError) }
+            } else { $probe.Kill(); Write-Host 'Docker engine probe timed out.' }
         } finally { $probe.Dispose() }
         if ($engineReady) { break }
         if (-not $desktopStarted) {
@@ -88,10 +93,11 @@ try {
     elseif ($Action -eq 'Status') { Invoke-Compose -ComposeArguments @('ps', '--all') }
     else {
         $gitCommand = Get-Command git.exe -ErrorAction SilentlyContinue
-        if ($gitCommand) {
-            $revision = & $gitCommand.Source -C $repoRoot rev-parse --short=12 HEAD
+        $gitExe = if ($gitCommand) { $gitCommand.Source } else { Join-Path $env:LOCALAPPDATA 'Programs\Git\cmd\git.exe' }
+        if (Test-Path -LiteralPath $gitExe) {
+            $revision = & $gitExe -C $repoRoot rev-parse --short=12 HEAD
             if ($LASTEXITCODE -eq 0) {
-                $dirty = & $gitCommand.Source -C $repoRoot status --porcelain
+                $dirty = & $gitExe -C $repoRoot status --porcelain
                 $env:SOURCE_REVISION = $revision + $(if ($dirty) { '-dirty' } else { '' })
             }
         }

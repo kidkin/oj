@@ -2,9 +2,11 @@
 
 本仓库的源码基线来自 [HimitZH/HOJ](https://github.com/HimitZH/HOJ)，上游提交为 `57d8b5280d96c0aa2d836b6dd1c8d8d1cd216962`。保留上游 MIT 许可证和 Git 历史，`upstream` 指向官方仓库，`origin` 指向自己的仓库。
 
+本机已完成源码编译、启动、登录和 AC/WA 验收，记录见 [基线验证](./BASELINE.md)。
+
 ## 第一次运行
 
-Windows 安装并启动 Docker Desktop，使用 WSL2 的 Linux 容器模式。双击仓库内的 **Start-Dev.cmd**。首次运行需要联网下载构建镜像、npm 和 Maven 依赖，之后会使用缓存。
+Windows 安装并启动 Docker Desktop，使用 WSL2 的 Linux 容器模式；使用 Git for Windows 管理版本。双击仓库内的 **Start-Dev.cmd**。首次运行需要联网下载构建镜像、npm 和 Maven 依赖，之后会使用缓存。网络下载超时时可保留窗口中的日志并再次运行，已下载的依赖会复用。
 
 也可以在 PowerShell 中执行：
 
