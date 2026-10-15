@@ -16,7 +16,7 @@ public class EduCourseService {
     private final EduClassService classes;
     public EduCourseService(JdbcTemplate db, EduClassService classes) { this.db = db; this.classes = classes; }
 
-    static final String PUBLIC_PROBLEM = "p.auth=1 AND (p.is_group=0 OR p.is_group IS NULL) AND p.gid IS NULL";
+    static final String PUBLIC_PROBLEM = EduProgress.PUBLIC_PROBLEM;
     private static final String MEMBERSHIP = "EXISTS (SELECT 1 FROM edu_class_course access_cc JOIN edu_class access_c ON access_c.id=access_cc.class_id " +
             "JOIN edu_class_member access_m ON access_m.class_id=access_c.id WHERE access_cc.course_id=c.id AND access_c.status=0 AND access_m.uid=? AND access_m.status=0)";
     private static final String COLUMNS = "SELECT c.id,c.title,c.description,c.owner_uid AS ownerUid,u.username AS ownerUsername,c.status,c.revision," +
@@ -75,6 +75,7 @@ public class EduCourseService {
         List<Object> values = new ArrayList<>(args); values.add(limit); values.add((page - 1) * limit);
         List<Map<String, Object>> records = db.queryForList(sql + " ORDER BY " + order + " LIMIT ? OFFSET ?", values.toArray());
         decorate(records, access);
+        EduProgress.courses(db, records, access.uid);
         Map<String, Object> result = new LinkedHashMap<>(); result.put("records", records); result.put("total", total); return result;
     }
     private void decorate(List<Map<String, Object>> records, Access access) {

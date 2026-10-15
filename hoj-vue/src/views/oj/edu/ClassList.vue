@@ -6,7 +6,12 @@
         <el-form-item><el-input v-model="query.keyword" maxlength="128" clearable placeholder="搜索班级名称" @clear="search" /></el-form-item>
         <el-form-item><el-button native-type="submit">搜索</el-button></el-form-item>
       </el-form>
-      <el-table v-loading="loading" :data="records" empty-text="暂无可访问的班级" @row-click="open">
+      <p v-if="!access.isTeacher" class="student-hint">这里只显示你已加入的班级。完成情况按本班课程中的公开题目去重统计。</p>
+      <div v-if="!access.isTeacher" class="learning-grid" v-loading="loading">
+        <LearningCard v-for="row in records" :key="row.id" kind="class" :to="'/class/' + row.id" :title="row.name" :description="row.description" :owner="row.ownerUsername" :meta="row.courseCount + ' 门课程 · ' + row.studentCount + ' 位同学'" :completed="row.completedCount" :total="row.problemCount" />
+        <p v-if="!loading && !records.length" class="empty-state">还没有加入班级，请联系教师将你的账号加入班级。</p>
+      </div>
+      <el-table v-else v-loading="loading" :data="records" empty-text="暂无可访问的班级" @row-click="open">
         <el-table-column label="班级名称" min-width="180"><template slot-scope="scope"><router-link :to="'/class/' + scope.row.id">{{ scope.row.name }}</router-link></template></el-table-column>
         <el-table-column prop="ownerUsername" label="创建者" min-width="100" />
         <el-table-column prop="studentCount" label="学生人数" width="100" />
@@ -29,9 +34,10 @@
 import edu from '@/common/edu-api'
 import TeacherAdmin from './TeacherAdmin.vue'
 import eduLayout from '@/common/edu-layout'
+import LearningCard from './LearningCard.vue'
 export default {
   mixins: [eduLayout],
-  components: {TeacherAdmin},
+  components: {TeacherAdmin, LearningCard},
   data: () => ({access: {}, query: {page: 1, limit: 10, keyword: ''}, records: [], total: 0, loading: false, saving: false, createDialog: false, teacherDialog: false, form: {name: '', description: ''}}),
   async mounted () { try { this.access = await edu.me() } catch (_) {} await this.load() },
   methods: {
@@ -50,4 +56,5 @@ export default {
 .classes-page { max-width: 1180px; margin: 24px auto; padding: 0 12px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 h2 { margin: 0; font-size: 22px; }.pagination { margin-top: 20px; text-align: right; }
+.student-hint { margin: 0 0 20px; color: #6b7d8d; line-height: 1.8; }.learning-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 20px; padding: 4px; }.empty-state { grid-column: 1 / -1; text-align: center; padding: 48px 12px; color: #8493a0; }
 </style>

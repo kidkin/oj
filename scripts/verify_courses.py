@@ -7,7 +7,6 @@ from pathlib import Path
 import re
 import secrets
 import sys
-from urllib.parse import quote
 
 import hoj_backup as hb
 import restore_dev
@@ -35,7 +34,7 @@ def main():
     assert root.call("/api/edu/me")["isRoot"]
     prefix = "c" + secrets.token_hex(4)
     names = {key: prefix + "_" + key for key in ("t1", "t2", "s1", "s2", "s3")}
-    password = secrets.token_hex(12)
+    password = secrets.token_hex(8)  # HOJ passwords are limited to 6..20 characters.
     uids, class_ids, course_ids, problem_ids, checks = {}, [], [], [], []
 
     def passed(name):
@@ -186,6 +185,25 @@ def main():
         c = questions(t1, c, [int(old_ac)])
         assert get(root, cid)["completedCount"] == 1
         assert get(s1, cid)["completedCount"] == 0
+        overlap = make_course(t1, "Overlap")
+        overlap = questions(t1, overlap, [int(old_ac), p1])
+        overlap = metadata(t1, overlap)
+        attach(t1, a, [overlap["id"]])
+        root_class = root.call("/api/edu/classes/%s" % a)
+        assert (root_class["courseCount"], root_class["problemCount"], root_class["completedCount"]) == (2, 2, 1)
+        student_classes = s2.call("/api/edu/classes")["records"]
+        assert {row["id"] for row in student_classes} == {a}
+        assert (student_classes[0]["problemCount"], student_classes[0]["completedCount"]) == (2, 0)
+        root_cards = root.call("/api/edu/classes/%s/courses" % a)["records"]
+        assert all(row["completedCount"] == 1 for row in root_cards)
+        student_cards = s2.call("/api/edu/classes/%s/courses" % a)["records"]
+        assert all(row["completedCount"] == 0 for row in student_cards)
+        detach(t1, a, overlap["id"])
+        empty = make_class(t2, "Empty")
+        enroll(empty, "s3")
+        empty_row = next(row for row in s3.call("/api/edu/classes")["records"] if row["id"] == empty)
+        assert (empty_row["courseCount"], empty_row["problemCount"], empty_row["completedCount"]) == (0, 0, 0)
+        passed("student class cards contain only joined classes; card progress is personal, deduplicates overlapping courses and handles empty classes")
         c = questions(t1, c, [p2, p1])
         root.call("/api/admin/problem?pid=%s" % p2, "DELETE")
         problem_ids.remove(p2)

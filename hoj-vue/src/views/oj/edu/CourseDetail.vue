@@ -1,6 +1,6 @@
 <template>
   <div class="course-page" :style="eduPageStyle" v-loading="loading">
-    <router-link to="/course">← 返回课程列表</router-link>
+    <router-link :to="backTarget">{{ isTeacher ? '← 返回课程列表' : '← 返回班级' }}</router-link>
     <el-card v-if="detail" class="course-card">
       <div slot="header" class="page-header"><h2>{{ detail.title }}</h2><div><el-tag :type="detail.status === 1 ? 'success' : 'info'">{{ states[detail.status] }}</el-tag><el-button v-if="detail.canEdit" :disabled="editingProblems" class="edit-button" @click="editMetadata">编辑资料与发布状态</el-button><el-button :disabled="editingProblems || saving" @click="load">刷新课程</el-button></div></div>
       <p class="hint">创建者：{{ detail.ownerUsername || '原账号已删除' }} · 版本 {{ detail.revision }} · 本人已完成 {{ detail.completedCount }}/{{ detail.problemCount }} 题</p>
@@ -35,10 +35,18 @@ import eduLayout from '@/common/edu-layout'
 import CourseProblemPicker from './CourseProblemPicker.vue'
 export default {
   mixins: [eduLayout], components: {CourseProblemPicker},
-  data: () => ({detail: null, loading: false, saving: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
-  computed: {id () { return this.$route.params.courseId }, shownProblems () { return this.editingProblems ? this.draftProblems : this.detail.problems }},
+  data: () => ({detail: null, isTeacher: false, loading: false, saving: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
+  computed: {
+    id () { return this.$route.params.courseId },
+    shownProblems () { return this.editingProblems ? this.draftProblems : (this.detail ? this.detail.problems : []) },
+    backTarget () {
+      if (this.isTeacher) return '/course'
+      const classId = this.$route.query.classId
+      return this.detail && this.detail.sourceClasses.some(row => String(row.id) === classId) ? '/class/' + classId : '/class'
+    }
+  },
   watch: {id () { this.cancelProblems(); this.load() }},
-  mounted () { this.load() },
+  async mounted () { try { this.isTeacher = (await edu.me()).isTeacher } catch (_) {} this.load() },
   methods: {
     async load () { this.loading = true; this.detail = null; this.conflict = false; try { this.detail = await edu.course(this.id) } catch (_) {} finally { this.loading = false } },
     editMetadata () { this.form = {title: this.detail.title, description: this.detail.description, status: this.detail.status, revision: this.detail.revision}; this.metadataDialog = true },

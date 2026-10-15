@@ -32,7 +32,7 @@
               >{{ $t('m.NavBar_Problem') }}</el-menu-item
             >
             <el-menu-item index="/class"><i class="el-icon-school"></i>{{ $t('m.NavBar_Class') }}</el-menu-item>
-            <el-menu-item index="/course"><i class="el-icon-reading"></i>{{ $t('m.NavBar_Course') }}</el-menu-item>
+            <el-menu-item v-if="eduTeacher" index="/course"><i class="el-icon-reading"></i>{{ $t('m.NavBar_Course') }}</el-menu-item>
             <el-menu-item index="/training"
               ><i class="el-icon-s-claim"></i
               >{{ $t('m.NavBar_Training') }}</el-menu-item
@@ -461,7 +461,8 @@
           </mu-list-item>
           <mu-list-item
             button
-            to="/course"
+              v-if="eduTeacher"
+              to="/course"
             @click="opendrawer = !opendrawer"
             active-class="mobile-menu-active"
           >
@@ -647,6 +648,7 @@ import MsgSvg from '@/components/oj/msg/msgSvg';
 import { mapGetters, mapActions } from 'vuex';
 import Avatar from 'vue-avatar';
 import api from '@/common/api';
+import edu from '@/common/edu-api';
 export default {
   components: {
     Login,
@@ -663,6 +665,7 @@ export default {
     };
   },
   mounted() {
+    this.refreshEduAccess();
     this.switchMode();
     this.setHiddenHeaderHeight();
     if (this.isAuthenticated) {
@@ -677,6 +680,7 @@ export default {
   },
   data() {
     return {
+      eduTeacher: false,
       mode:'defalut',
       centerDialogVisible: false,
       mobileNar: false,
@@ -690,6 +694,14 @@ export default {
     };
   },
   methods: {
+    async refreshEduAccess() {
+      const token = this.token;
+      if (!this.isAuthenticated) { this.eduTeacher = false; return; }
+      try {
+        const access = await edu.me();
+        if (token === this.token) this.eduTeacher = access.isTeacher;
+      } catch (_) {}
+    },
     ...mapActions(['changeModalStatus']),
     page_width() {
       let screenWidth = window.innerWidth;
@@ -810,6 +822,7 @@ export default {
       return this.$store.getters.userInfo.avatar;
     },
     activeMenuName() {
+      if (!this.eduTeacher && this.$route.path.split('/')[1] === 'course') return '/class';
       if (this.$route.path.split('/')[1] == 'submission-detail') {
         return '/status';
       } else if (this.$route.path.split('/')[1] == 'discussion-detail') {
@@ -842,6 +855,7 @@ export default {
   },
   watch: {
     isAuthenticated() {
+      this.refreshEduAccess();
       if (this.isAuthenticated) {
         if (this.msgTimer) {
           clearInterval(this.msgTimer);
@@ -855,6 +869,7 @@ export default {
       }
     },
     $route(){
+      this.refreshEduAccess();
       this.switchMode();
     }
   },

@@ -1,7 +1,11 @@
 <template>
   <section>
     <div class="page-header"><h3>班级课程</h3><el-button v-if="canManage" type="primary" :disabled="archived" @click="pickerDialog = true">添加共享课程</el-button></div>
-    <el-table :data="records" v-loading="loading" empty-text="暂无课程">
+    <div v-if="!canManage" class="learning-grid" v-loading="loading">
+      <LearningCard v-for="row in records" :key="row.id" :to="{path:'/course/' + row.id, query:{classId:String(classId)}}" :title="row.title" :description="row.description" :owner="row.ownerUsername" meta="点击进入课程" :completed="row.completedCount" :total="row.problemCount" />
+      <p v-if="!loading && !records.length" class="empty-state">教师还没有为班级添加课程。</p>
+    </div>
+    <el-table v-else :data="records" v-loading="loading" empty-text="暂无课程">
       <el-table-column label="课程" min-width="170"><template slot-scope="scope"><router-link :to="'/course/' + scope.row.id">{{ scope.row.title }}</router-link></template></el-table-column>
       <el-table-column prop="ownerUsername" label="创建者" min-width="100" /><el-table-column prop="problemCount" label="公开题目" width="100" />
       <el-table-column v-if="canManage" label="操作" width="120"><template slot-scope="scope"><el-button type="text" :disabled="saving" @click="detach(scope.row)">移除本班引用</el-button></template></el-table-column>
@@ -21,7 +25,9 @@
 </template>
 <script>
 import edu from '@/common/edu-api'
+import LearningCard from './LearningCard.vue'
 export default {
+  components: {LearningCard},
   props: {classId: {type: [String, Number], required: true}, canManage: Boolean, archived: Boolean},
   data: () => ({records: [], total: 0, query: {page: 1, limit: 10}, loading: false, saving: false, pickerDialog: false, library: [], libraryTotal: 0, libraryQuery: {page: 1, limit: 10, keyword: '', publishedOnly: true}, libraryLoading: false, addedIds: []}),
   watch: {classId () { this.query.page = 1; this.addedIds = []; this.load() }, pickerDialog (value) { if (value) this.loadLibrary() }},
@@ -35,4 +41,4 @@ export default {
   }
 }
 </script>
-<style scoped>.page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }h3 { margin: 0 0 12px; }.pagination { margin-top: 20px; text-align: right; }.hint { color: #606266; line-height: 1.8; }</style>
+<style scoped>.page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }h3 { margin: 0 0 16px; }.pagination { margin-top: 20px; text-align: right; }.hint { color: #606266; line-height: 1.8; }.learning-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 20px; padding: 4px; }.empty-state { grid-column: 1 / -1; padding: 36px 12px; text-align: center; color: #8493a0; }</style>

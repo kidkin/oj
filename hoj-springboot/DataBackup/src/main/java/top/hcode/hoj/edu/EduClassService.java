@@ -60,6 +60,7 @@ public class EduClassService {
         List<Object> paged = new ArrayList<>(params); paged.add(limit); paged.add((page - 1) * limit);
         List<Map<String, Object>> records = db.queryForList(CLASS_COLUMNS + where + "ORDER BY c.id DESC LIMIT ? OFFSET ?", paged.toArray());
         for (Map<String, Object> row : records) row.put("canManage", canManage(uid, ((Number) row.get("id")).longValue()));
+        EduProgress.classes(db, records, uid);
         Map<String, Object> result = new LinkedHashMap<>(); result.put("records", records); result.put("total", total); return result;
     }
 
@@ -85,7 +86,8 @@ public class EduClassService {
         String uid = actor(); Map<String, Object> row = classRow(id, false);
         boolean manage = canManage(uid, id);
         if (!manage && (!member(uid, id) || ((Number) row.get("status")).intValue() != 0)) throw new EduException(403, "无权访问此班级");
-        Map<String, Object> result = db.queryForMap(CLASS_COLUMNS + "WHERE c.id=?", id); result.put("canManage", manage); return result;
+        Map<String, Object> result = db.queryForMap(CLASS_COLUMNS + "WHERE c.id=?", id); result.put("canManage", manage);
+        EduProgress.classes(db, Collections.singletonList(result), uid); return result;
     }
 
     private void validateClass(String name, String description, int status) {

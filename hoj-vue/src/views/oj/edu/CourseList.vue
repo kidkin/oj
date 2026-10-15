@@ -34,7 +34,7 @@ import eduLayout from '@/common/edu-layout'
 export default {
   mixins: [eduLayout],
   data: () => ({access: {}, query: {page: 1, limit: 10, keyword: '', scope: 'library'}, records: [], total: 0, loading: false, saving: false, createDialog: false, form: {title: '', description: ''}, states: ['草稿', '已发布', '已归档']}),
-  async mounted () { try { this.access = await edu.me() } catch (_) {} this.load() },
+  async mounted () { try { this.access = await edu.me(); if (!this.access.isTeacher) { this.$router.replace('/class'); return } } catch (_) { return } this.load() },
   methods: {
     async load () { this.loading = true; try { const data = await edu.courses(this.query); this.records = data.records; this.total = data.total } catch (_) { this.records = [] } finally { this.loading = false } },
     search () { this.query.page = 1; this.load() },
