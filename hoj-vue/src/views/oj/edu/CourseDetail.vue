@@ -69,7 +69,8 @@ export default {
     cancelProblems () { this.editingProblems = false; this.pickerDialog = false; this.draftProblems = []; this.conflict = false },
     pick (row) {
       if (this.draftProblems.length >= 500 || this.draftProblems.some(item => item.pid === row.id)) return
-      const used = new Set(this.draftProblems.map(item => item.displayId)); let displayId = 1; while (used.has(displayId)) displayId++
+      const used = new Set(this.draftProblems.map(item => item.displayId)); let displayId = Math.max(0, ...[...used].filter(Number.isInteger))+1
+      if (displayId > 2147483647) { displayId = 1; while (used.has(displayId)) displayId++ }
       this.draftProblems.push({pid:row.id, problemId:row.problemId, title:row.title, difficulty:row.difficulty, displayId, available:1, completed:false, myStatus:-10})
     },
     validDisplayIds () {
