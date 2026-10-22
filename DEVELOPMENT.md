@@ -8,6 +8,8 @@
 
 最新页面调整在 `feature/course-catalog-icons` 分支，见 [课程总览与图标](./COURSE-CATALOG.md)。学生可浏览课程总览，通过所属班级进入学习；图标支持上传，班内课程使用整条可点击的单列布局。此分支保留 20 题、4 课程、3 班级演示数据。
 
+后续 [显示ID与原团队风格题目表](./DISPLAY-ORDER.md) 在 `feature/teaching-display-order`：班级、课程可填写显示ID排序，课程内题目独立编号排序；原题号、成员、共享关系及提交保留。
+
 ## 第一次运行
 
 Windows 安装并启动 Docker Desktop，使用 WSL2 的 Linux 容器模式；使用 Git for Windows 管理版本。双击仓库内的 **Start-Dev.cmd**。首次运行需要联网下载构建镜像、npm 和 Maven 依赖，之后会使用缓存。网络下载超时时可保留窗口中的日志并再次运行，已下载的依赖会复用。

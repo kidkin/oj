@@ -13,26 +13,20 @@
           <p class="hint icon-hint">支持PNG/JPEG，最大2MB，长宽不超过2048像素。图标保存后同步到课程总览与所有班级。</p>
         </div>
       </div>
-      <p class="hint">创建者：{{ detail.ownerUsername || '原账号已删除' }} · 版本 {{ detail.revision }} · 本人已完成 {{ detail.completedCount }}/{{ detail.problemCount }} 题</p>
+      <p class="hint">课程显示ID：{{ detail.displayId }} · 创建者：{{ detail.ownerUsername || '原账号已删除' }} · 版本 {{ detail.revision }} · 本人已完成 {{ detail.completedCount }}/{{ detail.problemCount }} 题</p>
       <p class="description">{{ detail.description || '暂无课程介绍' }}</p>
       <p v-if="detail.canEdit" class="hint">当前被 {{ detail.referenceCount }} 个班级引用，保存修改后将统一生效。</p>
       <p><el-tag v-for="item in detail.sourceClasses" :key="item.id" size="small" class="class-tag">{{ item.name }}</el-tag></p>
       <el-alert v-if="detail.unavailableCount" title="有题目已不再公开。学生端已隐藏，请在编辑题目中移除不可用项后保存。" type="warning" :closable="false" show-icon />
       <el-alert v-if="conflict" title="课程已被更新。你的本地编辑仍保留，请取消编辑并刷新，再合并修改。" type="warning" :closable="false" show-icon />
       <el-divider />
-      <div class="page-header"><h3>课程题目</h3><div v-if="detail.canEdit"><el-button v-if="!editingProblems" :disabled="uploadingIcon" type="primary" @click="startProblems">编辑题目与顺序</el-button><template v-else><el-button @click="pickerDialog = true">从公开题库选题</el-button><el-button :disabled="saving" @click="cancelProblems">取消编辑</el-button><el-button type="primary" :loading="saving" @click="saveProblems">保存题目并同步</el-button></template></div></div>
-      <p v-if="editingProblems" class="hint">当前选择 {{ draftProblems.length }}/500 题。使用上移、下移调整顺序；移除只解除课程引用，题库原题和提交保留。</p>
-      <el-table :data="shownProblems" empty-text="暂无题目">
-        <el-table-column type="index" label="顺序" width="70" />
-        <el-table-column label="题号" min-width="130"><template slot-scope="scope"><router-link v-if="scope.row.available" :to="{name:'ProblemDetails', params:{problemID:scope.row.problemId}}">{{ scope.row.problemId }}</router-link><span v-else>不可用</span></template></el-table-column>
-        <el-table-column prop="title" label="题目名称" min-width="180" />
-        <el-table-column label="本人完成情况" width="130"><template slot-scope="scope"><el-tag v-if="scope.row.available" :type="scope.row.completed ? 'success' : 'info'">{{ scope.row.completed ? '已完成' : '未完成' }}</el-tag></template></el-table-column>
-        <el-table-column v-if="editingProblems" label="调整" width="200"><template slot-scope="scope"><el-button type="text" :disabled="saving || scope.$index === 0" @click="move(scope.$index, -1)">上移</el-button><el-button type="text" :disabled="saving || scope.$index === draftProblems.length - 1" @click="move(scope.$index, 1)">下移</el-button><el-button type="text" :disabled="saving" @click="draftProblems.splice(scope.$index, 1)">移除</el-button></template></el-table-column>
-      </el-table>
+      <div class="page-header"><h3>课程题目</h3><div v-if="detail.canEdit"><el-button v-if="!editingProblems" :disabled="uploadingIcon" type="primary" @click="startProblems">编辑题目与顺序</el-button><template v-else><el-button :disabled="saving" @click="pickerDialog = true">从公开题库选题</el-button><el-button :disabled="saving" @click="sortDraft">按ID预览排序</el-button><el-button :disabled="saving" @click="cancelProblems">取消编辑</el-button><el-button type="primary" :loading="saving" @click="saveProblems">保存题目并同步</el-button></template></div></div>
+      <p class="hint">{{ editingProblems ? '当前选择 ' + draftProblems.length + '/500 题。填写课程内ID后按数字升序排列，同一课程内不能重复；上移、下移会交换两题的显示ID。' : '按课程内ID从小到大排列，点击题目所在行进入练习。' }}</p>
+      <CourseProblemTable :problems="shownProblems" :editing="editingProblems" :saving="saving" @move="move" @remove="removeProblem" />
     </section>
     <p v-else-if="!loading" class="edu-empty">无法访问该课程，请检查班级归属或课程发布状态。</p>
     <el-dialog title="编辑共享课程" :visible.sync="metadataDialog" width="min(600px, 94vw)" :close-on-click-modal="false">
-      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item><el-form-item label="发布状态"><el-select v-model="form.status"><el-option :value="0" label="草稿" /><el-option :value="1" label="已发布" /><el-option :value="2" label="归档" /></el-select></el-form-item></el-form>
+      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程显示ID（排序）" required><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /><p class="hint">课程总览和各班课程均按此ID从小到大排列；相同ID按创建先后排列。</p></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item><el-form-item label="发布状态"><el-select v-model="form.status"><el-option :value="0" label="草稿" /><el-option :value="1" label="已发布" /><el-option :value="2" label="归档" /></el-select></el-form-item></el-form>
       <p class="hint">有班级引用时，须先解除引用才能取消发布或归档。发布后，教师可从课程库添加到自己的班级。</p>
       <span slot="footer"><el-button :disabled="saving" @click="metadataDialog = false">取消</el-button><el-button type="primary" :loading="saving" :disabled="!form.title" @click="saveMetadata">保存并同步到引用班级</el-button></span>
     </el-dialog>
@@ -43,8 +37,9 @@
 import edu from '@/common/edu-api'
 import eduLayout from '@/common/edu-layout'
 import CourseProblemPicker from './CourseProblemPicker.vue'
+import CourseProblemTable from './CourseProblemTable.vue'
 export default {
-  mixins: [eduLayout], components: {CourseProblemPicker},
+  mixins: [eduLayout], components: {CourseProblemPicker, CourseProblemTable},
   data: () => ({detail: null, loading: false, saving: false, uploadingIcon: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
   computed: {
     id () { return this.$route.params.courseId },
@@ -67,14 +62,30 @@ export default {
     },
     async removeIcon () { this.uploadingIcon = true; try { this.detail = await edu.removeCourseIcon(this.id, this.detail.revision); this.$message.success('已恢复默认图标') } catch (error) { this.markConflict(error) } finally { this.uploadingIcon = false } },
     async load () { this.loading = true; this.detail = null; this.conflict = false; try { this.detail = await edu.course(this.id) } catch (_) {} finally { this.loading = false } },
-    editMetadata () { this.form = {title: this.detail.title, description: this.detail.description, status: this.detail.status, revision: this.detail.revision}; this.metadataDialog = true },
+    editMetadata () { this.form = {title: this.detail.title, description: this.detail.description, status: this.detail.status, revision: this.detail.revision, displayId: this.detail.displayId}; this.metadataDialog = true },
     markConflict (error) { this.conflict = !!(error && error.data && error.data.status === 409) },
-    async saveMetadata () { this.saving = true; try { this.detail = await edu.updateCourse(this.id, this.form); this.metadataDialog = false; this.conflict = false; this.$message.success('课程资料已统一更新') } catch (error) { this.markConflict(error) } finally { this.saving = false } },
+    async saveMetadata () { if (!Number.isInteger(this.form.displayId) || this.form.displayId < 1) { this.$message.error('请填写课程显示ID'); return }; this.saving = true; try { this.detail = await edu.updateCourse(this.id, this.form); this.metadataDialog = false; this.conflict = false; this.$message.success('课程资料已统一更新') } catch (error) { this.markConflict(error) } finally { this.saving = false } },
     startProblems () { this.draftProblems = this.detail.problems.map(row => ({...row})); this.problemsRevision = this.detail.revision; this.editingProblems = true; this.conflict = false },
     cancelProblems () { this.editingProblems = false; this.pickerDialog = false; this.draftProblems = []; this.conflict = false },
-    pick (row) { if (this.draftProblems.length >= 500 || this.draftProblems.some(item => item.pid === row.id)) return; this.draftProblems.push({pid: row.id, problemId: row.problemId, title: row.title, available: 1, completed: false}) },
-    move (index, delta) { const target = index + delta; if (target < 0 || target >= this.draftProblems.length) return; const item = this.draftProblems.splice(index, 1)[0]; this.draftProblems.splice(target, 0, item) },
-    async saveProblems () { this.saving = true; try { this.detail = await edu.saveCourseProblems(this.id, {problemIds: this.draftProblems.map(item => item.pid), revision: this.problemsRevision}); this.cancelProblems(); this.$message.success('题目列表已保存，引用班级统一更新') } catch (error) { this.markConflict(error) } finally { this.saving = false } }
+    pick (row) {
+      if (this.draftProblems.length >= 500 || this.draftProblems.some(item => item.pid === row.id)) return
+      const used = new Set(this.draftProblems.map(item => item.displayId)); let displayId = 1; while (used.has(displayId)) displayId++
+      this.draftProblems.push({pid:row.id, problemId:row.problemId, title:row.title, difficulty:row.difficulty, displayId, available:1, completed:false, myStatus:-10})
+    },
+    validDisplayIds () {
+      const ids = this.draftProblems.map(row => row.displayId)
+      if (ids.some(id => !Number.isInteger(id) || id < 1 || id > 2147483647) || new Set(ids).size !== ids.length) { this.$message.error('课程内ID须为不重复的正整数，最大2147483647'); return false }
+      return true
+    },
+    sortDraft () { if (!this.validDisplayIds()) return false; this.draftProblems = [...this.draftProblems].sort((a,b) => a.displayId-b.displayId); return true },
+    move (row, delta) {
+      if (!this.sortDraft()) return
+      const index = this.draftProblems.findIndex(item => item.pid === row.pid); const target = index+delta
+      if (target < 0 || target >= this.draftProblems.length) return
+      const value = row.displayId; row.displayId = this.draftProblems[target].displayId; this.draftProblems[target].displayId = value; this.sortDraft()
+    },
+    removeProblem (row) { this.draftProblems = this.draftProblems.filter(item => item.pid !== row.pid) },
+    async saveProblems () { if (!this.validDisplayIds()) return; this.saving = true; try { this.detail = await edu.saveCourseProblems(this.id, {problemIds: this.draftProblems.map(item => item.pid), displayIds: this.draftProblems.map(item => item.displayId), revision: this.problemsRevision}); this.cancelProblems(); this.$message.success('题目列表已按ID排序，引用班级统一更新') } catch (error) { this.markConflict(error) } finally { this.saving = false } }
   }
 }
 </script>

@@ -1,10 +1,10 @@
 <template>
   <div>
     <el-form inline @submit.native.prevent="search"><el-form-item><el-input v-model="query.keyword" maxlength="128" placeholder="搜索题号或题目名称" clearable @clear="search" /></el-form-item><el-form-item><el-button native-type="submit">搜索</el-button></el-form-item></el-form>
-    <el-table :data="records" v-loading="loading" empty-text="暂无符合条件的公开题目">
-      <el-table-column prop="problemId" label="题号" min-width="130" /><el-table-column prop="title" label="题目名称" min-width="180" />
-      <el-table-column label="操作" width="110"><template slot-scope="scope"><el-button type="text" :disabled="selectedIds.includes(scope.row.id) || selectedIds.length >= 500" @click="$emit('pick', scope.row)">{{ selectedIds.includes(scope.row.id) ? '已选择' : '加入课程' }}</el-button></template></el-table-column>
-    </el-table>
+    <vxe-table border="inner" stripe auto-resize highlight-hover-row align="center" :data="records" :loading="loading" empty-text="暂无符合条件的公开题目">
+      <vxe-table-column field="problemId" title="原题号" min-width="150" show-overflow /><vxe-table-column field="title" title="题目名称" min-width="200" show-overflow />
+      <vxe-table-column title="操作" width="120"><template v-slot="{row}"><el-button type="text" :disabled="selectedIds.includes(row.id) || selectedIds.length >= 500" @click="$emit('pick', row)">{{ selectedIds.includes(row.id) ? '已选择' : '加入课程' }}</el-button></template></vxe-table-column>
+    </vxe-table>
     <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
   </div>
 </template>

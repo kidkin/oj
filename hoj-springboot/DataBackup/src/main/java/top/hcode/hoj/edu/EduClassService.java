@@ -42,10 +42,10 @@ public class EduClassService {
         return result;
     }
 
-    private static final String CLASS_COLUMNS = "SELECT c.id,c.name,c.description,c.status,c.owner_uid AS ownerUid," +
+    private static final String CLASS_COLUMNS = "SELECT c.id,COALESCE(cd.display_id,c.id) AS displayId,c.name,c.description,c.status,c.owner_uid AS ownerUid," +
             "u.username AS ownerUsername,c.gmt_create AS gmtCreate,c.gmt_modified AS gmtModified," +
             "(SELECT COUNT(*) FROM edu_class_member m JOIN user_info enrolled ON enrolled.uuid=m.uid WHERE m.class_id=c.id AND m.status=0 AND m.role='STUDENT') AS studentCount " +
-            "FROM edu_class c LEFT JOIN user_info u ON u.uuid=c.owner_uid ";
+            "FROM edu_class c LEFT JOIN user_info u ON u.uuid=c.owner_uid LEFT JOIN edu_class_display cd ON cd.class_id=c.id ";
 
     public Map<String, Object> classes(int page, int limit, String keyword) {
         String uid = actor(); page = Math.max(page, 1); limit = Math.max(1, Math.min(limit, 50));
@@ -58,7 +58,7 @@ public class EduClassService {
         }
         long total = count("SELECT COUNT(*) FROM edu_class c " + where, params.toArray());
         List<Object> paged = new ArrayList<>(params); paged.add(limit); paged.add((page - 1) * limit);
-        List<Map<String, Object>> records = db.queryForList(CLASS_COLUMNS + where + "ORDER BY c.id DESC LIMIT ? OFFSET ?", paged.toArray());
+        List<Map<String, Object>> records = db.queryForList(CLASS_COLUMNS + where + "ORDER BY COALESCE(cd.display_id,c.id),c.id LIMIT ? OFFSET ?", paged.toArray());
         for (Map<String, Object> row : records) row.put("canManage", canManage(uid, ((Number) row.get("id")).longValue()));
         EduProgress.classes(db, records, uid);
         Map<String, Object> result = new LinkedHashMap<>(); result.put("records", records); result.put("total", total); return result;
@@ -97,20 +97,30 @@ public class EduClassService {
     }
     @Transactional
     public Map<String, Object> create(String name, String description) {
-        String uid = actor(); requireTeacher(uid); validateClass(name, description, 0);
+        return create(name, description, null);
+    }
+    @Transactional
+    public Map<String, Object> create(String name, String description, Long displayId) {
+        String uid = actor(); requireTeacher(uid); validateClass(name, description, 0); EduDisplayOrder.validate(displayId);
         GeneratedKeyHolder key = new GeneratedKeyHolder();
         db.update(connection -> {
             PreparedStatement statement = connection.prepareStatement("INSERT INTO edu_class(name,description,owner_uid) VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, name.trim()); statement.setString(2, description); statement.setString(3, uid); return statement;
         }, key);
         long id = Objects.requireNonNull(key.getKey()).longValue();
+        db.update("INSERT INTO edu_class_display(class_id,display_id) VALUES (?,?)", id, displayId == null ? id : displayId);
         db.update("INSERT INTO edu_class_member(class_id,uid,role) VALUES (?,?,'TEACHER')", id, uid);
         return detail(id);
     }
     @Transactional
     public void update(long id, String name, String description, int status) {
-        String uid = actor(); classRow(id, true); requireManager(uid, id); validateClass(name, description, status);
+        update(id, name, description, status, null);
+    }
+    @Transactional
+    public void update(long id, String name, String description, int status, Long displayId) {
+        String uid = actor(); classRow(id, true); requireManager(uid, id); validateClass(name, description, status); EduDisplayOrder.validate(displayId);
         db.update("UPDATE edu_class SET name=?,description=?,status=? WHERE id=?", name.trim(), description, status, id);
+        if (displayId != null) db.update("INSERT INTO edu_class_display(class_id,display_id) VALUES (?,?) ON DUPLICATE KEY UPDATE display_id=VALUES(display_id)", id, displayId);
     }
 
     public Map<String, Object> members(long id, int page, int limit) {

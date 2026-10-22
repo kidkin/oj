@@ -3,7 +3,7 @@
     <router-link to="/class">← 返回我的班级</router-link>
     <section v-if="detail" class="class-content">
       <header class="page-header"><h2>{{ detail.name }}</h2><div><el-tag :type="detail.status === 0 ? 'success' : 'info'">{{ detail.status === 0 ? '正常' : '已归档' }}</el-tag><el-button v-if="detail.canManage" class="edit-button" @click="edit">编辑班级</el-button></div></header>
-      <p class="meta">创建者：{{ detail.ownerUsername }} · 学生 {{ detail.studentCount }} 人</p>
+      <p class="meta">班级显示ID：{{ detail.displayId }} · 创建者：{{ detail.ownerUsername }} · 学生 {{ detail.studentCount }} 人</p>
       <p class="description">{{ detail.description || '暂无班级介绍' }}</p>
       <p v-if="!detail.canManage" class="meta">你已加入此班级。</p>
       <el-divider />
@@ -25,6 +25,7 @@
     <el-dialog title="编辑班级" :visible.sync="editDialog" width="min(560px, 94vw)" :close-on-click-modal="false">
       <el-form label-position="top">
         <el-form-item label="班级名称" required><el-input v-model.trim="form.name" maxlength="128" show-word-limit /></el-form-item>
+        <el-form-item label="班级显示ID（排序）" required><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /><p class="meta">按数字从小到大排列。相同显示ID的班级按创建先后排列。</p></el-form-item>
         <el-form-item label="班级介绍"><el-input v-model="form.description" type="textarea" :rows="5" maxlength="10000" show-word-limit /></el-form-item>
         <el-form-item label="状态"><el-select v-model="form.status"><el-option :value="0" label="正常" /><el-option :value="1" label="归档" /></el-select><p class="meta">归档后学生无法进入，管理教师可在此恢复。</p></el-form-item>
       </el-form>
@@ -57,8 +58,8 @@ export default {
       try { this.detail = await edu.detail(this.id); if (this.detail.canManage) await this.loadMembers() } catch (_) {} finally { this.loading = false }
     },
     async loadMembers () { this.membersLoading = true; try { const data = await edu.members(this.id, {page: this.memberPage, limit: 20}); this.members = data.records; this.memberTotal = data.total } catch (_) { this.members = [] } finally { this.membersLoading = false } },
-    edit () { this.form = {name: this.detail.name, description: this.detail.description, status: this.detail.status}; this.editDialog = true },
-    async save () { this.saving = true; try { await edu.update(this.id, this.form); this.editDialog = false; this.$message.success('班级已保存'); await this.load() } catch (_) {} finally { this.saving = false } },
+    edit () { this.form = {name: this.detail.name, description: this.detail.description, status: this.detail.status, displayId: this.detail.displayId}; this.editDialog = true },
+    async save () { if (!Number.isInteger(this.form.displayId) || this.form.displayId < 1) { this.$message.error('请填写班级显示ID'); return }; this.saving = true; try { await edu.update(this.id, this.form); this.editDialog = false; this.$message.success('班级已保存'); await this.load() } catch (_) {} finally { this.saving = false } },
     async addMembers () {
       const usernames = this.memberForm.names.split(/[\r\n,，]+/).map(s => s.trim()).filter(Boolean)
       if (!usernames.length || usernames.length > 100) { this.$message.error('每次填写1至100个已有账号'); return }

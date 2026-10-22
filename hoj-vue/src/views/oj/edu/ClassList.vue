@@ -7,13 +7,14 @@
       </el-form>
       <p v-if="!access.isTeacher" class="student-hint">这里只显示你已加入的班级。完成情况按本班课程中的公开题目去重统计。</p>
       <div class="edu-grid" v-loading="loading">
-        <LearningCard v-for="row in records" :key="row.id" kind="class" :to="'/class/' + row.id" :title="row.name" :description="row.description" :owner="row.ownerUsername" :badge="row.status !== 0 ? '已归档' : (row.canManage ? '管理班级' : '已加入')" :meta="row.courseCount + ' 门课程 · ' + row.studentCount + ' 位同学'" :completed="row.completedCount" :total="row.problemCount" />
+        <LearningCard v-for="row in records" :key="row.id" kind="class" :display-id="row.displayId" :to="'/class/' + row.id" :title="row.name" :description="row.description" :owner="row.ownerUsername" :badge="row.status !== 0 ? '已归档' : (row.canManage ? '管理班级' : '已加入')" :meta="row.courseCount + ' 门课程 · ' + row.studentCount + ' 位同学'" :completed="row.completedCount" :total="row.problemCount" />
         <p v-if="!loading && !records.length" class="empty-state">还没有加入班级，请联系教师将你的账号加入班级。</p>
       </div>
       <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
     <el-dialog title="创建班级" :visible.sync="createDialog" width="min(560px, 94vw)" :close-on-click-modal="false">
       <el-form label-position="top" @submit.native.prevent="create">
         <el-form-item label="班级名称" required><el-input v-model.trim="form.name" maxlength="128" show-word-limit /></el-form-item>
+        <el-form-item label="班级显示ID（排序）"><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" placeholder="留空自动填写" /><p class="student-hint">按数字从小到大排列；留空时使用系统分配的编号。</p></el-form-item>
         <el-form-item label="班级介绍"><el-input v-model="form.description" type="textarea" :rows="5" maxlength="10000" show-word-limit /></el-form-item>
       </el-form>
       <span slot="footer"><el-button @click="createDialog = false">取消</el-button><el-button type="primary" :disabled="!form.name" :loading="saving" @click="create">创建</el-button></span>

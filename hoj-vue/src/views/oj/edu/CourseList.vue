@@ -8,12 +8,12 @@
       <el-form-item><el-button native-type="submit">搜索</el-button></el-form-item>
     </el-form>
     <div class="edu-grid" v-loading="loading">
-      <LearningCard v-for="row in records" :key="row.id" :to="'/course/' + row.id" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :badge="access.isTeacher ? states[row.status] : '仅可浏览'" :meta="row.problemCount + ' 道公开题'" :completed="row.completedCount" :total="row.problemCount" :disabled="!access.isTeacher" :disabled-hint="row.canAccess ? '请从所属班级进入课程' : '加入相关班级后可学习本课程'" />
+      <LearningCard v-for="row in records" :key="row.id" :display-id="row.displayId" :to="'/course/' + row.id" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :badge="access.isTeacher ? states[row.status] : '仅可浏览'" :meta="row.problemCount + ' 道公开题'" :completed="row.completedCount" :total="row.problemCount" :disabled="!access.isTeacher" :disabled-hint="row.canAccess ? '请从所属班级进入课程' : '加入相关班级后可学习本课程'" />
       <p v-if="!loading && !records.length" class="edu-empty">暂无符合条件的课程</p>
     </div>
     <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
     <el-dialog title="创建共享课程" :visible.sync="createDialog" width="min(600px, 94vw)" :close-on-click-modal="false">
-      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item></el-form>
+      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程显示ID（排序）"><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" placeholder="留空自动填写" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item></el-form>
       <p class="edu-intro">先保存为草稿，进入详情上传图标、加入公开题目并发布。</p>
       <span slot="footer"><el-button @click="createDialog = false">取消</el-button><el-button type="primary" :disabled="!form.title" :loading="saving" @click="create">创建草稿</el-button></span>
     </el-dialog>

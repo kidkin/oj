@@ -178,7 +178,8 @@ def main():
     assert {row["id"] for row in mine} == set(state["Classes"].values())
     assert len(outsider.call("/api/edu/classes")["records"]) == 0
     first = student.call("/api/edu/classes/%d/courses" % state["Classes"]["0"])["records"]
-    assert [row["problemCount"] for row in first] == [5,6] and [row["completedCount"] for row in first] == [1,2]
+    by_course = {row["id"]: row for row in first}
+    assert [(by_course[state["Courses"][str(i)]]["problemCount"],by_course[state["Courses"][str(i)]]["completedCount"]) for i in range(2)] == [(5,1),(6,2)]
     class_first = next(row for row in mine if row["id"] == state["Classes"]["0"])
     assert (class_first["problemCount"], class_first["completedCount"]) == (10,2)
     for table,key in (("user_info","uuid"),("problem","id"),("judge","submit_id")):

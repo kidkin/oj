@@ -3,7 +3,7 @@
     <div class="page-header"><h3>班级课程</h3><el-button v-if="canManage" type="primary" :disabled="archived" @click="pickerDialog = true">添加共享课程</el-button></div>
     <div class="course-strips" v-loading="loading">
       <div v-for="row in records" :key="row.id" class="course-strip" :class="{managed:canManage}">
-        <LearningCard layout="row" :to="{path:'/course/' + row.id, query:{classId:String(classId)}}" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" meta="点击整行进入课程" :completed="row.completedCount" :total="row.problemCount" />
+        <LearningCard layout="row" :display-id="row.displayId" :to="{path:'/course/' + row.id, query:{classId:String(classId)}}" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" meta="点击整行进入课程" :completed="row.completedCount" :total="row.problemCount" />
         <el-button v-if="canManage" class="remove-reference" type="text" :disabled="saving" @click="detach(row)">移除本班引用</el-button>
       </div>
       <p v-if="!loading && !records.length" class="empty-state">教师还没有为班级添加课程。</p>
@@ -13,7 +13,7 @@
       <p class="hint">班级引用已发布课程。课程内容由创建者统一维护，移除本班引用不会影响其他班级。</p>
       <el-form inline @submit.native.prevent="search"><el-form-item><el-input v-model="libraryQuery.keyword" maxlength="128" placeholder="搜索课程名称" clearable @clear="search" /></el-form-item><el-form-item><el-button native-type="submit">搜索</el-button></el-form-item></el-form>
       <el-table :data="library" v-loading="libraryLoading" empty-text="暂无已发布课程">
-        <el-table-column prop="title" label="课程名称" min-width="170" /><el-table-column prop="ownerUsername" label="创建者" min-width="100" /><el-table-column prop="problemCount" label="公开题目" width="100" />
+        <el-table-column prop="displayId" label="课程ID" width="100" /><el-table-column prop="title" label="课程名称" min-width="170" /><el-table-column prop="ownerUsername" label="创建者" min-width="100" /><el-table-column prop="problemCount" label="公开题目" width="100" />
         <el-table-column label="操作" width="110"><template slot-scope="scope"><el-button type="text" :disabled="saving || addedIds.includes(scope.row.id)" @click="attach(scope.row)">{{ addedIds.includes(scope.row.id) ? '已引用' : '加入班级' }}</el-button></template></el-table-column>
       </el-table>
       <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="libraryQuery.page" :page-size="libraryQuery.limit" :total="libraryTotal" @current-change="loadLibrary" />

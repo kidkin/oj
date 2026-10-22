@@ -67,4 +67,13 @@ class EduClassServiceTest {
         assertEquals(403, assertThrows(EduException.class, () -> service.grantTeacher("alice")).getStatus());
         verify(db, never()).update(anyString(), any(Object[].class));
     }
+    @Test void invalidClassDisplayNumbersDoNotChangeMetadata() {
+        assertEquals(400,assertThrows(EduException.class,()->service.update(7,"班级","",0,0L)).getStatus());
+        verify(db, never()).update(anyString(), any(Object[].class));
+    }
+    @Test void changingAClassDisplayNumberKeepsItsPersistentId() {
+        service.update(7,"班级","介绍",0,12L);
+        verify(db).update("UPDATE edu_class SET name=?,description=?,status=? WHERE id=?","班级","介绍",0,7L);
+        verify(db).update(startsWith("INSERT INTO edu_class_display"),eq(7L),eq(12L));
+    }
 }

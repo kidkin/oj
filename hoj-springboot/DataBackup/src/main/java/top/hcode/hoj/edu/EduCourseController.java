@@ -14,8 +14,8 @@ import java.util.Map;
 public class EduCourseController {
     private final EduCourseService service;
     public EduCourseController(EduCourseService service) { this.service = service; }
-    @Data public static class CourseInput { private String title; private String description = ""; private int status; private Long revision; }
-    @Data public static class ProblemsInput { private List<Long> problemIds; private Long revision; }
+    @Data public static class CourseInput { private String title; private String description = ""; private int status; private Long revision; private String displayId; }
+    @Data public static class ProblemsInput { private List<Long> problemIds; private Long revision; private List<String> displayIds; }
     @Data public static class ReferencesInput { private List<Long> courseIds; }
     @ExceptionHandler(EduException.class) public CommonResult<Void> error(EduException error) { return CommonResult.errorResponse(error.getMessage(), error.getStatus()); }
 
@@ -23,13 +23,13 @@ public class EduCourseController {
             @RequestParam(defaultValue="") String keyword, @RequestParam(defaultValue="library") String scope, @RequestParam(defaultValue="false") boolean publishedOnly) {
         return CommonResult.successResponse(service.list(page, limit, keyword, scope, publishedOnly));
     }
-    @PostMapping("/courses") public CommonResult<Map<String, Object>> create(@RequestBody CourseInput input) { return CommonResult.successResponse(service.create(input.getTitle(), input.getDescription())); }
+    @PostMapping("/courses") public CommonResult<Map<String, Object>> create(@RequestBody CourseInput input) { return CommonResult.successResponse(service.create(input.getTitle(), input.getDescription(), EduDisplayOrder.parse(input.getDisplayId()))); }
     @GetMapping("/courses/{id}") public CommonResult<Map<String, Object>> detail(@PathVariable long id) { return CommonResult.successResponse(service.detail(id)); }
     @PutMapping("/courses/{id}") public CommonResult<Map<String, Object>> update(@PathVariable long id, @RequestBody CourseInput input) {
-        return CommonResult.successResponse(service.update(id, input.getTitle(), input.getDescription(), input.getStatus(), input.getRevision()));
+        return CommonResult.successResponse(service.update(id, input.getTitle(), input.getDescription(), input.getStatus(), input.getRevision(), EduDisplayOrder.parse(input.getDisplayId())));
     }
     @PutMapping("/courses/{id}/problems") public CommonResult<Map<String, Object>> problems(@PathVariable long id, @RequestBody ProblemsInput input) {
-        return CommonResult.successResponse(service.replaceProblems(id, input.getProblemIds(), input.getRevision()));
+        return CommonResult.successResponse(service.replaceProblems(id, input.getProblemIds(), input.getRevision(), EduDisplayOrder.parseProblems(input.getDisplayIds())));
     }
     @PostMapping("/courses/{id}/icon") public CommonResult<Map<String, Object>> icon(@PathVariable long id,
             @RequestParam("image") MultipartFile image, @RequestParam("revision") Long revision) {

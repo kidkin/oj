@@ -48,7 +48,7 @@ public class EduSchemaMigration implements ApplicationRunner {
             statement.execute("CREATE TABLE IF NOT EXISTS edu_schema_history (version VARCHAR(64) PRIMARY KEY, " +
                     "checksum CHAR(64) NOT NULL, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB");
         }
-        for (String version : new String[]{"V001__class_members", "V002__shared_courses", "V003__course_icons"}) apply(connection, version);
+        for (String version : new String[]{"V001__class_members", "V002__shared_courses", "V003__course_icons", "V004__display_order"}) apply(connection, version);
     }
 
     private void apply(Connection connection, String version) throws Exception {
@@ -97,6 +97,11 @@ public class EduSchemaMigration implements ApplicationRunner {
                 statement.executeQuery("SELECT id,course_id,pid,sort_order FROM edu_course_problem LIMIT 0").close();
             }
             if ("V003__course_icons".equals(version)) statement.executeQuery("SELECT course_id,filename,gmt_modified FROM edu_course_icon LIMIT 0").close();
+            if ("V004__display_order".equals(version)) {
+                statement.executeQuery("SELECT class_id,display_id FROM edu_class_display LIMIT 0").close();
+                statement.executeQuery("SELECT course_id,display_id FROM edu_course_display LIMIT 0").close();
+                statement.executeQuery("SELECT course_id,pid,display_id FROM edu_course_problem_display LIMIT 0").close();
+            }
         }
         try (PreparedStatement statement = connection.prepareStatement("INSERT INTO edu_schema_history(version,checksum) VALUES (?,?)")) {
             statement.setString(1, version); statement.setString(2, digest.toString()); statement.executeUpdate();

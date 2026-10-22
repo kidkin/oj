@@ -3,7 +3,7 @@
     <aside class="card-cover" :class="kind">
       <img v-if="icon && !imageError" :src="icon" alt="" @error="imageError = true">
       <i v-else :class="kind === 'class' ? 'el-icon-school' : 'el-icon-reading'" aria-hidden="true" />
-      <span>{{ kind === 'class' ? '班级' : '课程' }}</span>
+      <span>{{ kind === 'class' ? '班级' : '课程' }}<template v-if="displayId"> · ID {{ displayId }}</template></span>
     </aside>
     <div class="card-content">
       <h3 :title="title">{{ title }}<span v-if="badge" class="card-badge">{{ badge }}</span></h3>
@@ -22,7 +22,7 @@
 <script>
 export default {
   props: {
-    to: {type: [String, Object], default: '/class'}, title: String, description: String, owner: String, meta: String, icon: String, badge: String,
+    to: {type: [String, Object], default: '/class'}, title: String, description: String, owner: String, meta: String, icon: String, badge: String, displayId: Number,
     kind: {type: String, default: 'course'}, layout: {type: String, default: 'card'}, completed: {type: Number, default: 0}, total: {type: Number, default: 0},
     disabled: Boolean, disabledHint: {type: String, default: '请从所属班级进入课程'}, showProgress: {type: Boolean, default: true}
   },

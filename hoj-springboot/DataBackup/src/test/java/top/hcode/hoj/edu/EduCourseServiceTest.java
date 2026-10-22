@@ -101,4 +101,17 @@ class EduCourseServiceTest {
         assertEquals(403, assertThrows(EduException.class, () -> service.updateIcon(7, null, 3L, true)).getStatus());
         noWrites();
     }
+    @Test void customCourseNumbersStillRequireOwnershipAndCurrentRevision() {
+        row.put("ownerUid","someone-else");
+        assertEquals(403,assertThrows(EduException.class,()->service.update(7,"课程","",1,3L,12L)).getStatus());
+        row.put("ownerUid","owner");
+        assertEquals(409,assertThrows(EduException.class,()->service.update(7,"课程","",1,2L,12L)).getStatus());
+        assertEquals(400,assertThrows(EduException.class,()->service.update(7,"课程","",1,3L,0L)).getStatus());
+        noWrites();
+    }
+    @Test void invalidOrDuplicateQuestionDisplayNumbersNeverReplaceTheOldList() {
+        assertEquals(400,assertThrows(EduException.class,()->service.replaceProblems(7,Arrays.asList(10L,11L),3L,Arrays.asList(2L,2L))).getStatus());
+        assertEquals(400,assertThrows(EduException.class,()->service.replaceProblems(7,Arrays.asList(10L,11L),3L,Collections.singletonList(2L))).getStatus());
+        noWrites();
+    }
 }
