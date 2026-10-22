@@ -13,7 +13,7 @@
     </div>
     <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
     <el-dialog title="创建共享课程" :visible.sync="createDialog" width="min(600px, 94vw)" :close-on-click-modal="false">
-      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程显示ID（排序）"><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" placeholder="留空自动填写" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item></el-form>
+      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程显示ID（排序）"><el-input v-model.trim="form.displayId" maxlength="10" placeholder="留空自动填写" aria-label="课程显示ID" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item></el-form>
       <p class="edu-intro">先保存为草稿，进入详情上传图标、加入公开题目并发布。</p>
       <span slot="footer"><el-button @click="createDialog = false">取消</el-button><el-button type="primary" :disabled="!form.title" :loading="saving" @click="create">创建草稿</el-button></span>
     </el-dialog>
@@ -25,12 +25,17 @@ import eduLayout from '@/common/edu-layout'
 import LearningCard from './LearningCard.vue'
 export default {
   mixins: [eduLayout], components: {LearningCard},
-  data: () => ({access: {}, query: {page: 1, limit: 12, keyword: '', scope: 'catalog'}, records: [], total: 0, loading: true, saving: false, createDialog: false, form: {title: '', description: ''}, states: ['草稿', '已发布', '已归档']}),
+  data: () => ({access: {}, query: {page: 1, limit: 12, keyword: '', scope: 'catalog'}, records: [], total: 0, loading: true, saving: false, createDialog: false, form: {title: '', description: '', displayId: ''}, states: ['草稿', '已发布', '已归档']}),
   async mounted () { try { this.access = await edu.me(); this.query.scope = this.access.isTeacher ? 'library' : 'catalog'; await this.load() } catch (_) { this.loading = false } },
   methods: {
     async load () { this.loading = true; try { const data = await edu.courses(this.query); this.records = data.records; this.total = data.total } catch (_) { this.records = []; this.total = 0 } finally { this.loading = false } },
     search () { this.query.page = 1; this.load() },
-    async create () { if (!this.form.title || this.saving) return; this.saving = true; try { const row = await edu.createCourse(this.form); this.createDialog = false; this.$router.push('/course/' + row.id) } catch (_) {} finally { this.saving = false } }
+    async create () {
+      if (!this.form.title || this.saving) return
+      if (this.form.displayId && (!/^[1-9]\d{0,9}$/.test(this.form.displayId) || Number(this.form.displayId) > 2147483647)) { this.$message.error('显示ID须为1至2147483647的整数'); return }
+      this.saving = true
+      try { const body = {...this.form}; if (!body.displayId) delete body.displayId; const row = await edu.createCourse(body); this.createDialog = false; this.$router.push('/course/' + row.id) } catch (_) {} finally { this.saving = false }
+    }
   }
 }
 </script>

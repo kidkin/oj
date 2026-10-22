@@ -14,7 +14,7 @@
     <el-dialog title="创建班级" :visible.sync="createDialog" width="min(560px, 94vw)" :close-on-click-modal="false">
       <el-form label-position="top" @submit.native.prevent="create">
         <el-form-item label="班级名称" required><el-input v-model.trim="form.name" maxlength="128" show-word-limit /></el-form-item>
-        <el-form-item label="班级显示ID（排序）"><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" placeholder="留空自动填写" /><p class="student-hint">按数字从小到大排列；留空时使用系统分配的编号。</p></el-form-item>
+        <el-form-item label="班级显示ID（排序）"><el-input v-model.trim="form.displayId" maxlength="10" placeholder="留空自动填写" aria-label="班级显示ID" /><p class="student-hint">按数字从小到大排列；留空时使用系统分配的编号。</p></el-form-item>
         <el-form-item label="班级介绍"><el-input v-model="form.description" type="textarea" :rows="5" maxlength="10000" show-word-limit /></el-form-item>
       </el-form>
       <span slot="footer"><el-button @click="createDialog = false">取消</el-button><el-button type="primary" :disabled="!form.name" :loading="saving" @click="create">创建</el-button></span>
@@ -30,7 +30,7 @@ import LearningCard from './LearningCard.vue'
 export default {
   mixins: [eduLayout],
   components: {TeacherAdmin, LearningCard},
-  data: () => ({access: {}, query: {page: 1, limit: 10, keyword: ''}, records: [], total: 0, loading: false, saving: false, createDialog: false, teacherDialog: false, form: {name: '', description: ''}}),
+  data: () => ({access: {}, query: {page: 1, limit: 10, keyword: ''}, records: [], total: 0, loading: false, saving: false, createDialog: false, teacherDialog: false, form: {name: '', description: '', displayId: ''}}),
   async mounted () { try { this.access = await edu.me() } catch (_) {} await this.load() },
   methods: {
     async load () { this.loading = true; try { const data = await edu.classes(this.query); this.records = data.records; this.total = data.total } catch (_) { this.records = [] } finally { this.loading = false } },
@@ -38,8 +38,9 @@ export default {
     open (row) { this.$router.push('/class/' + row.id) },
     async create () {
       if (!this.form.name || this.saving) return
+      if (this.form.displayId && (!/^[1-9]\d{0,9}$/.test(this.form.displayId) || Number(this.form.displayId) > 2147483647)) { this.$message.error('显示ID须为1至2147483647的整数'); return }
       this.saving = true
-      try { const data = await edu.create(this.form); this.createDialog = false; this.$message.success('班级已创建'); this.open(data) } catch (_) {} finally { this.saving = false }
+      try { const body = {...this.form}; if (!body.displayId) delete body.displayId; const data = await edu.create(body); this.createDialog = false; this.$message.success('班级已创建'); this.open(data) } catch (_) {} finally { this.saving = false }
     }
   }
 }
