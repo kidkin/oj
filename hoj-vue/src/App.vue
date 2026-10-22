@@ -3,7 +3,7 @@
     <el-backtop :right="10"></el-backtop>
     <div v-if="!isAdminView" class="full-height flex-column">
       <NavBar></NavBar>
-      <div id="oj-content">
+      <div id="oj-content" :class="{'edu-content': isEduView}">
         <transition name="el-zoom-in-bottom">
           <router-view></router-view>
         </transition>
@@ -245,6 +245,7 @@ export default {
     },
   },
   computed: {
+    isEduView() { return /^\/(class|course)(\/|$)/.test(this.$route.path); },
     ...mapState(["websiteConfig"]),
     ...mapGetters(["webLanguage", "token", "isAuthenticated"]),
   },

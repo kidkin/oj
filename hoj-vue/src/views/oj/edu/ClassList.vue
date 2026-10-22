@@ -1,25 +1,16 @@
 <template>
-  <div class="classes-page" :style="eduPageStyle">
-    <el-card>
-      <div slot="header" class="page-header"><h2>我的班级</h2><div><el-button v-if="access.isRoot" @click="teacherDialog = true">教师授权</el-button><el-button v-if="access.isTeacher" type="primary" @click="createDialog = true">创建班级</el-button></div></div>
+  <div class="edu-page" :style="eduPageStyle">
+      <header class="page-header"><h2>{{ access.isRoot ? '班级管理' : '我的班级' }}</h2><div><el-button v-if="access.isRoot" @click="teacherDialog = true">教师授权</el-button><el-button v-if="access.isTeacher" type="primary" @click="createDialog = true">创建班级</el-button></div></header>
       <el-form inline @submit.native.prevent="search">
         <el-form-item><el-input v-model="query.keyword" maxlength="128" clearable placeholder="搜索班级名称" @clear="search" /></el-form-item>
         <el-form-item><el-button native-type="submit">搜索</el-button></el-form-item>
       </el-form>
       <p v-if="!access.isTeacher" class="student-hint">这里只显示你已加入的班级。完成情况按本班课程中的公开题目去重统计。</p>
-      <div v-if="!access.isTeacher" class="learning-grid" v-loading="loading">
-        <LearningCard v-for="row in records" :key="row.id" kind="class" :to="'/class/' + row.id" :title="row.name" :description="row.description" :owner="row.ownerUsername" :meta="row.courseCount + ' 门课程 · ' + row.studentCount + ' 位同学'" :completed="row.completedCount" :total="row.problemCount" />
+      <div class="edu-grid" v-loading="loading">
+        <LearningCard v-for="row in records" :key="row.id" kind="class" :to="'/class/' + row.id" :title="row.name" :description="row.description" :owner="row.ownerUsername" :badge="row.status !== 0 ? '已归档' : (row.canManage ? '管理班级' : '已加入')" :meta="row.courseCount + ' 门课程 · ' + row.studentCount + ' 位同学'" :completed="row.completedCount" :total="row.problemCount" />
         <p v-if="!loading && !records.length" class="empty-state">还没有加入班级，请联系教师将你的账号加入班级。</p>
       </div>
-      <el-table v-else v-loading="loading" :data="records" empty-text="暂无可访问的班级" @row-click="open">
-        <el-table-column label="班级名称" min-width="180"><template slot-scope="scope"><router-link :to="'/class/' + scope.row.id">{{ scope.row.name }}</router-link></template></el-table-column>
-        <el-table-column prop="ownerUsername" label="创建者" min-width="100" />
-        <el-table-column prop="studentCount" label="学生人数" width="100" />
-        <el-table-column label="状态" width="100"><template slot-scope="scope"><el-tag :type="scope.row.status === 0 ? 'success' : 'info'">{{ scope.row.status === 0 ? '正常' : '已归档' }}</el-tag></template></el-table-column>
-        <el-table-column label="操作" width="110"><template slot-scope="scope"><el-button type="text" @click.stop="open(scope.row)">{{ scope.row.canManage ? '管理班级' : '进入班级' }}</el-button></template></el-table-column>
-      </el-table>
       <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
-    </el-card>
     <el-dialog title="创建班级" :visible.sync="createDialog" width="min(560px, 94vw)" :close-on-click-modal="false">
       <el-form label-position="top" @submit.native.prevent="create">
         <el-form-item label="班级名称" required><el-input v-model.trim="form.name" maxlength="128" show-word-limit /></el-form-item>
@@ -53,8 +44,7 @@ export default {
 }
 </script>
 <style scoped>
-.classes-page { max-width: 1180px; margin: 24px auto; padding: 0 12px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 h2 { margin: 0; font-size: 22px; }.pagination { margin-top: 20px; text-align: right; }
-.student-hint { margin: 0 0 20px; color: #6b7d8d; line-height: 1.8; }.learning-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 20px; padding: 4px; }.empty-state { grid-column: 1 / -1; text-align: center; padding: 48px 12px; color: #8493a0; }
+.student-hint { margin: 0 0 20px; color: #6b7d8d; line-height: 1.8; }.empty-state { grid-column: 1 / -1; text-align: center; padding: 48px 12px; color: #8493a0; }
 </style>

@@ -38,6 +38,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     // 前端直接通过/public/img/图片名称即可拿到
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/api/public/course-icon/**")
+                .addResourceLocations("file:" + Constants.File.COURSE_ICON_FOLDER.getPath() + File.separator);
         // /api/public/img/** /api/public/file/**
         registry.addResourceHandler(Constants.File.IMG_API.getPath() + "**", Constants.File.FILE_API.getPath() + "**")
                 .addResourceLocations("file:" + Constants.File.USER_AVATAR_FOLDER.getPath() + File.separator,

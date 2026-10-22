@@ -92,4 +92,13 @@ class EduCourseServiceTest {
         assertEquals(400, assertThrows(EduException.class, () -> service.attach(5L, Collections.singletonList(7L))).getStatus());
         noWrites();
     }
+    @Test void iconChangesRequireLiveOwnershipAndCurrentRevisionBeforeFileAccess() {
+        row.put("ownerUid", "someone-else");
+        assertEquals(403, assertThrows(EduException.class, () -> service.updateIcon(7, null, 3L, false)).getStatus());
+        row.put("ownerUid", "owner");
+        assertEquals(409, assertThrows(EduException.class, () -> service.updateIcon(7, null, 2L, false)).getStatus());
+        when(classes.hasRole("owner", "teacher")).thenReturn(false);
+        assertEquals(403, assertThrows(EduException.class, () -> service.updateIcon(7, null, 3L, true)).getStatus());
+        noWrites();
+    }
 }

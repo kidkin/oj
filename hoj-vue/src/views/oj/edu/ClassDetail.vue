@@ -1,8 +1,8 @@
 <template>
-  <div class="class-page" :style="eduPageStyle" v-loading="loading">
+  <div class="edu-page" :style="eduPageStyle" v-loading="loading">
     <router-link to="/class">← 返回我的班级</router-link>
-    <el-card v-if="detail" class="detail-card">
-      <div slot="header" class="page-header"><h2>{{ detail.name }}</h2><div><el-tag :type="detail.status === 0 ? 'success' : 'info'">{{ detail.status === 0 ? '正常' : '已归档' }}</el-tag><el-button v-if="detail.canManage" class="edit-button" @click="edit">编辑班级</el-button></div></div>
+    <section v-if="detail" class="class-content">
+      <header class="page-header"><h2>{{ detail.name }}</h2><div><el-tag :type="detail.status === 0 ? 'success' : 'info'">{{ detail.status === 0 ? '正常' : '已归档' }}</el-tag><el-button v-if="detail.canManage" class="edit-button" @click="edit">编辑班级</el-button></div></header>
       <p class="meta">创建者：{{ detail.ownerUsername }} · 学生 {{ detail.studentCount }} 人</p>
       <p class="description">{{ detail.description || '暂无班级介绍' }}</p>
       <p v-if="!detail.canManage" class="meta">你已加入此班级。</p>
@@ -20,8 +20,8 @@
         </el-table>
         <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="memberPage" :page-size="20" :total="memberTotal" @current-change="loadMembers" />
       </template>
-    </el-card>
-    <el-card v-else-if="!loading" class="detail-card"><p>无法访问该班级，请检查成员身份或返回班级列表。</p></el-card>
+    </section>
+    <p v-else-if="!loading" class="edu-empty">无法访问该班级，请检查成员身份或返回班级列表。</p>
     <el-dialog title="编辑班级" :visible.sync="editDialog" width="min(560px, 94vw)" :close-on-click-modal="false">
       <el-form label-position="top">
         <el-form-item label="班级名称" required><el-input v-model.trim="form.name" maxlength="128" show-word-limit /></el-form-item>
@@ -70,7 +70,7 @@ export default {
 }
 </script>
 <style scoped>
-.class-page { max-width: 1180px; margin: 24px auto; padding: 0 12px; }.detail-card { margin-top: 16px; }
+.class-content { margin-top: 22px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 h2 { margin: 0; font-size: 22px; }h3 { margin: 0 0 12px; }.edit-button { margin-left: 12px; }
 .meta { color: #606266; line-height: 1.8; }.description { white-space: pre-wrap; line-height: 1.8; overflow-wrap: anywhere; }

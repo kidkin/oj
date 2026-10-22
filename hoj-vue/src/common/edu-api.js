@@ -8,6 +8,8 @@ export default {
   createCourse: data => request('post', '/courses', data),
   course: id => request('get', `/courses/${id}`),
   updateCourse: (id, data) => request('put', `/courses/${id}`, data),
+  uploadCourseIcon: (id, image, revision) => { const form = new FormData(); form.append('image', image); form.append('revision', revision); return request('post', `/courses/${id}/icon`, form) },
+  removeCourseIcon: (id, revision) => request('delete', `/courses/${id}/icon`, undefined, {revision}),
   saveCourseProblems: (id, data) => request('put', `/courses/${id}/problems`, data),
   publicProblems: params => request('get', '/public-problems', undefined, params),
   classCourses: (id, params) => request('get', `/classes/${id}/courses`, undefined, params),

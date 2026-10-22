@@ -1,29 +1,20 @@
 <template>
-  <div class="course-page" :style="eduPageStyle">
-    <el-card>
-      <div slot="header" class="page-header"><h2>{{ access.isTeacher ? '课程库' : '我的课程' }}</h2><el-button v-if="access.isTeacher" type="primary" @click="createDialog = true">创建课程</el-button></div>
-      <p class="hint">{{ access.isTeacher ? '班级引用同一份课程，内容修改后统一更新。' : '这里汇总你所在班级的课程，同一门课程只显示一次。' }}</p>
-      <el-form inline @submit.native.prevent="search">
-        <el-form-item><el-input v-model="query.keyword" maxlength="128" placeholder="搜索课程名称" clearable @clear="search" /></el-form-item>
-        <el-form-item v-if="access.isTeacher"><el-select v-model="query.scope" @change="search"><el-option value="library" label="课程库" /><el-option value="mine" label="我创建的" /></el-select></el-form-item>
-        <el-form-item><el-button native-type="submit">搜索</el-button></el-form-item>
-      </el-form>
-      <el-table :data="records" v-loading="loading" empty-text="暂无可访问的课程">
-        <el-table-column label="课程名称" min-width="180"><template slot-scope="scope"><router-link :to="'/course/' + scope.row.id">{{ scope.row.title }}</router-link></template></el-table-column>
-        <el-table-column prop="ownerUsername" label="创建者" min-width="100" />
-        <el-table-column prop="problemCount" label="公开题目" width="100" />
-        <el-table-column v-if="access.isTeacher" label="状态" width="100"><template slot-scope="scope"><el-tag :type="scope.row.status === 1 ? 'success' : 'info'">{{ states[scope.row.status] }}</el-tag></template></el-table-column>
-        <el-table-column label="所属班级" min-width="160"><template slot-scope="scope"><el-tag v-for="item in scope.row.sourceClasses" :key="item.id" size="small" class="class-tag">{{ item.name }}</el-tag></template></el-table-column>
-        <el-table-column label="操作" width="100"><template slot-scope="scope"><el-button type="text" @click="$router.push('/course/' + scope.row.id)">{{ scope.row.canEdit ? '查看与编辑' : '进入课程' }}</el-button></template></el-table-column>
-      </el-table>
-      <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
-    </el-card>
+  <div class="edu-page" :style="eduPageStyle">
+    <header class="page-header"><h2>课程总览</h2><el-button v-if="access.isTeacher" type="primary" @click="createDialog = true">创建课程</el-button></header>
+    <p class="edu-intro">{{ access.isTeacher ? '在这里维护共享课程。修改会同步到所有引用班级，课程图标可在详情页上传。' : '可以浏览已发布的课程；请从自己加入的班级进入课程学习。' }}</p>
+    <el-form class="edu-toolbar" inline @submit.native.prevent="search">
+      <el-form-item><el-input v-model="query.keyword" maxlength="128" placeholder="搜索课程名称" clearable @clear="search" /></el-form-item>
+      <el-form-item v-if="access.isTeacher"><el-select v-model="query.scope" @change="search"><el-option value="library" label="课程库" /><el-option value="mine" label="我创建的" /></el-select></el-form-item>
+      <el-form-item><el-button native-type="submit">搜索</el-button></el-form-item>
+    </el-form>
+    <div class="edu-grid" v-loading="loading">
+      <LearningCard v-for="row in records" :key="row.id" :to="'/course/' + row.id" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :badge="access.isTeacher ? states[row.status] : '仅可浏览'" :meta="row.problemCount + ' 道公开题'" :completed="row.completedCount" :total="row.problemCount" :disabled="!access.isTeacher" :disabled-hint="row.canAccess ? '请从所属班级进入课程' : '加入相关班级后可学习本课程'" />
+      <p v-if="!loading && !records.length" class="edu-empty">暂无符合条件的课程</p>
+    </div>
+    <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
     <el-dialog title="创建共享课程" :visible.sync="createDialog" width="min(600px, 94vw)" :close-on-click-modal="false">
-      <el-form label-position="top">
-        <el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item>
-        <el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item>
-      </el-form>
-      <p class="hint">先保存为草稿，加入公开题目并发布后，班级即可引用。</p>
+      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item></el-form>
+      <p class="edu-intro">先保存为草稿，进入详情上传图标、加入公开题目并发布。</p>
       <span slot="footer"><el-button @click="createDialog = false">取消</el-button><el-button type="primary" :disabled="!form.title" :loading="saving" @click="create">创建草稿</el-button></span>
     </el-dialog>
   </div>
@@ -31,17 +22,15 @@
 <script>
 import edu from '@/common/edu-api'
 import eduLayout from '@/common/edu-layout'
+import LearningCard from './LearningCard.vue'
 export default {
-  mixins: [eduLayout],
-  data: () => ({access: {}, query: {page: 1, limit: 10, keyword: '', scope: 'library'}, records: [], total: 0, loading: false, saving: false, createDialog: false, form: {title: '', description: ''}, states: ['草稿', '已发布', '已归档']}),
-  async mounted () { try { this.access = await edu.me(); if (!this.access.isTeacher) { this.$router.replace('/class'); return } } catch (_) { return } this.load() },
+  mixins: [eduLayout], components: {LearningCard},
+  data: () => ({access: {}, query: {page: 1, limit: 12, keyword: '', scope: 'catalog'}, records: [], total: 0, loading: true, saving: false, createDialog: false, form: {title: '', description: ''}, states: ['草稿', '已发布', '已归档']}),
+  async mounted () { try { this.access = await edu.me(); this.query.scope = this.access.isTeacher ? 'library' : 'catalog'; await this.load() } catch (_) { this.loading = false } },
   methods: {
-    async load () { this.loading = true; try { const data = await edu.courses(this.query); this.records = data.records; this.total = data.total } catch (_) { this.records = [] } finally { this.loading = false } },
+    async load () { this.loading = true; try { const data = await edu.courses(this.query); this.records = data.records; this.total = data.total } catch (_) { this.records = []; this.total = 0 } finally { this.loading = false } },
     search () { this.query.page = 1; this.load() },
     async create () { if (!this.form.title || this.saving) return; this.saving = true; try { const row = await edu.createCourse(this.form); this.createDialog = false; this.$router.push('/course/' + row.id) } catch (_) {} finally { this.saving = false } }
   }
 }
 </script>
-<style scoped>
-.course-page { max-width: 1180px; margin: 24px auto; padding: 0 12px; }.page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }h2 { margin: 0; font-size: 22px; }.hint { color: #606266; line-height: 1.8; }.pagination { margin-top: 20px; text-align: right; }.class-tag { margin: 2px 4px 2px 0; }
-</style>

@@ -4,6 +4,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -14,14 +17,16 @@ import java.util.stream.Collectors;
 public class EduCourseService {
     private final JdbcTemplate db;
     private final EduClassService classes;
+    private final CourseIconStore icons = new CourseIconStore();
     public EduCourseService(JdbcTemplate db, EduClassService classes) { this.db = db; this.classes = classes; }
 
     static final String PUBLIC_PROBLEM = EduProgress.PUBLIC_PROBLEM;
     private static final String MEMBERSHIP = "EXISTS (SELECT 1 FROM edu_class_course access_cc JOIN edu_class access_c ON access_c.id=access_cc.class_id " +
             "JOIN edu_class_member access_m ON access_m.class_id=access_c.id WHERE access_cc.course_id=c.id AND access_c.status=0 AND access_m.uid=? AND access_m.status=0)";
     private static final String COLUMNS = "SELECT c.id,c.title,c.description,c.owner_uid AS ownerUid,u.username AS ownerUsername,c.status,c.revision," +
+            "CONCAT('/api/public/course-icon/',ci.filename) AS iconUrl,c.gmt_create AS gmtCreate," +
             "c.gmt_modified AS gmtModified,(SELECT COUNT(*) FROM edu_course_problem cp JOIN problem p ON p.id=cp.pid WHERE cp.course_id=c.id AND " + PUBLIC_PROBLEM + ") AS problemCount," +
-            "(SELECT COUNT(*) FROM edu_class_course refs WHERE refs.course_id=c.id) AS referenceCount FROM edu_course c LEFT JOIN user_info u ON u.uuid=c.owner_uid ";
+            "(SELECT COUNT(*) FROM edu_class_course refs WHERE refs.course_id=c.id) AS referenceCount FROM edu_course c LEFT JOIN user_info u ON u.uuid=c.owner_uid LEFT JOIN edu_course_icon ci ON ci.course_id=c.id ";
 
     private long count(String sql, Object... args) { return db.queryForObject(sql, args, Long.class); }
     private static String marks(int n) { return String.join(",", Collections.nCopies(n, "?")); }
@@ -60,12 +65,13 @@ public class EduCourseService {
 
     public Map<String, Object> list(int page, int limit, String keyword, String scope, boolean publishedOnly) {
         Access access = new Access(); page = page(page); limit = limit(limit);
-        if (!Arrays.asList("library", "mine").contains(scope)) throw new EduException(400, "课程列表范围无效");
+        if (!Arrays.asList("library", "mine", "catalog").contains(scope)) throw new EduException(400, "课程列表范围无效");
         String where = " WHERE c.title LIKE ? "; List<Object> args = new ArrayList<>(); args.add(keyword(keyword));
         if (access.teacher) {
             if ("mine".equals(scope)) { where += "AND c.owner_uid=? "; args.add(access.uid); }
             else if (!access.root) { where += "AND (c.owner_uid=? OR c.status=1) "; args.add(access.uid); }
-        } else { where += "AND c.status=1 AND " + MEMBERSHIP; args.add(access.uid); }
+        } else if ("catalog".equals(scope)) { where += "AND c.status=1 "; }
+        else { where += "AND c.status=1 AND " + MEMBERSHIP; args.add(access.uid); }
         if (publishedOnly) where += " AND c.status=1 ";
         return paged(COLUMNS + where, "SELECT COUNT(*) FROM edu_course c " + where, args, page, limit, "c.id DESC", access);
     }
@@ -75,7 +81,7 @@ public class EduCourseService {
         List<Object> values = new ArrayList<>(args); values.add(limit); values.add((page - 1) * limit);
         List<Map<String, Object>> records = db.queryForList(sql + " ORDER BY " + order + " LIMIT ? OFFSET ?", values.toArray());
         decorate(records, access);
-        EduProgress.courses(db, records, access.uid);
+        EduProgress.courses(db, records.stream().filter(row -> Boolean.TRUE.equals(row.get("canAccess"))).collect(Collectors.toList()), access.uid);
         Map<String, Object> result = new LinkedHashMap<>(); result.put("records", records); result.put("total", total); return result;
     }
     private void decorate(List<Map<String, Object>> records, Access access) {
@@ -88,7 +94,9 @@ public class EduCourseService {
         for (Map<String, Object> row : records) {
             row.put("canEdit", access.edit(row));
             if (!access.edit(row)) row.remove("referenceCount");
-            row.put("sourceClasses", sources.getOrDefault(number(row, "id"), Collections.emptyList()));
+            List<Map<String, Object>> sourceClasses = sources.getOrDefault(number(row, "id"), Collections.emptyList());
+            row.put("sourceClasses", sourceClasses);
+            row.put("canAccess", access.edit(row) || (number(row, "status") == 1 && (access.teacher || !sourceClasses.isEmpty())));
         }
     }
 
@@ -159,6 +167,29 @@ public class EduCourseService {
         result.put("records", db.queryForList("SELECT p.id,p.problem_id AS problemId,p.title,p.difficulty FROM problem p WHERE " + PUBLIC_PROBLEM +
                 " AND (p.title LIKE ? OR p.problem_id LIKE ?) ORDER BY p.id DESC LIMIT ? OFFSET ?", search, search, limit, (page - 1) * limit));
         return result;
+    }
+
+    @Transactional
+    public Map<String, Object> updateIcon(long id, MultipartFile image, Long expectedRevision, boolean remove) {
+        Access access = new Access(); Map<String, Object> row = course(id, true);
+        requireEdit(access, row); revision(row, expectedRevision);
+        List<String> old = db.queryForList("SELECT filename FROM edu_course_icon WHERE course_id=?", String.class, id);
+        String previous = old.isEmpty() ? null : old.get(0);
+        String filename = remove ? null : icons.save(image);
+        boolean synchronizedCleanup = TransactionSynchronizationManager.isSynchronizationActive();
+        if (synchronizedCleanup) TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override public void afterCommit() { icons.delete(previous); }
+            @Override public void afterCompletion(int status) { if (status != STATUS_COMMITTED) icons.delete(filename); }
+        });
+        boolean completed = false;
+        try {
+            if (remove) db.update("DELETE FROM edu_course_icon WHERE course_id=?", id);
+            else db.update("INSERT INTO edu_course_icon(course_id,filename) VALUES (?,?) ON DUPLICATE KEY UPDATE filename=VALUES(filename)", id, filename);
+            db.update("UPDATE edu_course SET revision=revision+1 WHERE id=?", id);
+            Map<String, Object> result = detail(id); completed = true;
+            if (!synchronizedCleanup) icons.delete(previous);
+            return result;
+        } finally { if (!completed) icons.delete(filename); }
     }
     public Map<String, Object> classCourses(long id, int page, int limit) {
         classes.detail(id); Access access = new Access(); page = page(page); limit = limit(limit);

@@ -1,0 +1,10 @@
+#oj-content.edu-content { padding: 0 !important; margin-top: 0 !important; }
+.edu-page { width: 100%; max-width: none; margin: 0; padding: 24px; box-sizing: border-box; min-height: 55vh; }
+.edu-page .page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.edu-page h2 { margin: 0; font-size: 24px; line-height: 1.45; }
+.edu-page .edu-toolbar { margin: 18px 0; }
+.edu-page .edu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr)); gap: 20px; }
+.edu-page .edu-empty { grid-column: 1 / -1; text-align: center; padding: 64px 12px; color: #8493a0; }
+.edu-page .edu-intro { color: #64788a; line-height: 1.8; margin: 12px 0 22px; }
+.edu-page .pagination { margin-top: 24px; text-align: right; }
+@media (max-width: 700px) { .edu-page { padding: 16px 12px; }.edu-page .edu-grid { gap: 14px; }.edu-page h2 { font-size: 21px; } }

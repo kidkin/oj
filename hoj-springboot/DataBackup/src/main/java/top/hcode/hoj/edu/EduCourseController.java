@@ -3,6 +3,7 @@ package top.hcode.hoj.edu;
 import lombok.Data;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import top.hcode.hoj.common.result.CommonResult;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,13 @@ public class EduCourseController {
     }
     @PutMapping("/courses/{id}/problems") public CommonResult<Map<String, Object>> problems(@PathVariable long id, @RequestBody ProblemsInput input) {
         return CommonResult.successResponse(service.replaceProblems(id, input.getProblemIds(), input.getRevision()));
+    }
+    @PostMapping("/courses/{id}/icon") public CommonResult<Map<String, Object>> icon(@PathVariable long id,
+            @RequestParam("image") MultipartFile image, @RequestParam("revision") Long revision) {
+        return CommonResult.successResponse(service.updateIcon(id, image, revision, false));
+    }
+    @DeleteMapping("/courses/{id}/icon") public CommonResult<Map<String, Object>> removeIcon(@PathVariable long id, @RequestParam("revision") Long revision) {
+        return CommonResult.successResponse(service.updateIcon(id, null, revision, true));
     }
     @GetMapping("/public-problems") public CommonResult<Map<String, Object>> picker(@RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="10") int limit, @RequestParam(defaultValue="") String keyword) {
         return CommonResult.successResponse(service.publicProblems(page, limit, keyword));

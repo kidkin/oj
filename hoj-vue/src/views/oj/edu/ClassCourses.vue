@@ -1,15 +1,13 @@
 <template>
   <section>
     <div class="page-header"><h3>班级课程</h3><el-button v-if="canManage" type="primary" :disabled="archived" @click="pickerDialog = true">添加共享课程</el-button></div>
-    <div v-if="!canManage" class="learning-grid" v-loading="loading">
-      <LearningCard v-for="row in records" :key="row.id" :to="{path:'/course/' + row.id, query:{classId:String(classId)}}" :title="row.title" :description="row.description" :owner="row.ownerUsername" meta="点击进入课程" :completed="row.completedCount" :total="row.problemCount" />
+    <div class="course-strips" v-loading="loading">
+      <div v-for="row in records" :key="row.id" class="course-strip" :class="{managed:canManage}">
+        <LearningCard layout="row" :to="{path:'/course/' + row.id, query:{classId:String(classId)}}" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" meta="点击整行进入课程" :completed="row.completedCount" :total="row.problemCount" />
+        <el-button v-if="canManage" class="remove-reference" type="text" :disabled="saving" @click="detach(row)">移除本班引用</el-button>
+      </div>
       <p v-if="!loading && !records.length" class="empty-state">教师还没有为班级添加课程。</p>
     </div>
-    <el-table v-else :data="records" v-loading="loading" empty-text="暂无课程">
-      <el-table-column label="课程" min-width="170"><template slot-scope="scope"><router-link :to="'/course/' + scope.row.id">{{ scope.row.title }}</router-link></template></el-table-column>
-      <el-table-column prop="ownerUsername" label="创建者" min-width="100" /><el-table-column prop="problemCount" label="公开题目" width="100" />
-      <el-table-column v-if="canManage" label="操作" width="120"><template slot-scope="scope"><el-button type="text" :disabled="saving" @click="detach(scope.row)">移除本班引用</el-button></template></el-table-column>
-    </el-table>
     <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
     <el-dialog title="从课程库添加引用" :visible.sync="pickerDialog" width="min(920px, 94vw)" :close-on-click-modal="false" append-to-body>
       <p class="hint">班级引用已发布课程。课程内容由创建者统一维护，移除本班引用不会影响其他班级。</p>
@@ -41,4 +39,4 @@ export default {
   }
 }
 </script>
-<style scoped>.page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }h3 { margin: 0 0 16px; }.pagination { margin-top: 20px; text-align: right; }.hint { color: #606266; line-height: 1.8; }.learning-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 20px; padding: 4px; }.empty-state { grid-column: 1 / -1; padding: 36px 12px; text-align: center; color: #8493a0; }</style>
+<style scoped>.page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }h3 { margin: 0; }.hint { color: #606266; line-height: 1.8; }.course-strips { display: flex; flex-direction: column; gap: 16px; }.course-strip { position: relative; width: 100%; }.remove-reference { position: absolute; top: 5px; right: 16px; }.managed /deep/ h3 { padding-right: 140px; }.empty-state { padding: 36px 12px; text-align: center; color: #8493a0; }</style>

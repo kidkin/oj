@@ -216,6 +216,8 @@ public class Constants {
 
         GROUP_AVATAR_FOLDER("/hoj/file/avatar/group"),
 
+        COURSE_ICON_FOLDER("/hoj/file/course-icon"),
+
         HOME_CAROUSEL_FOLDER("/hoj/file/carousel"),
 
         MARKDOWN_FILE_FOLDER("/hoj/file/md"),

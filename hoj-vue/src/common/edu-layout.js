@@ -1,3 +1,5 @@
+import './edu.css'
+
 // These pages sit below HOJ's fixed navigation. Measure its actual height so
 // desktop wrapping and the compact navigation never cover page controls.
 export default {
