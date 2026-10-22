@@ -14,7 +14,9 @@ export default {
     measureEduHeaderAfterRender () {
       this.$nextTick(() => {
         const header = document.querySelector('#header') || document.querySelector('.mobile-nav')
-        this.eduHeaderOffset = (header ? header.offsetHeight : 60) + 4
+        const content = document.querySelector('#oj-content')
+        const contentTop = content ? content.getBoundingClientRect().top + window.scrollY : 0
+        this.eduHeaderOffset = Math.max(0, (header ? header.offsetHeight : 60) + 4 - contentTop)
       })
     }
   }
