@@ -1,5 +1,5 @@
 <template>
-  <component :is="disabled ? 'article' : 'router-link'" class="learning-card" :class="{row: layout === 'row', locked: disabled}" :to="disabled ? undefined : to" :aria-label="title + '，' + (disabled ? disabledHint : progressText)" :aria-disabled="disabled ? 'true' : undefined">
+  <component :is="disabled ? 'article' : 'router-link'" class="learning-card" :class="{'learning-row': layout === 'row', locked: disabled}" :to="disabled ? undefined : to" :aria-label="title + '，' + (disabled ? disabledHint : progressText)" :aria-disabled="disabled ? 'true' : undefined">
     <aside class="card-cover" :class="kind">
       <img v-if="icon && !imageError" :src="icon" alt="" @error="imageError = true">
       <i v-else :class="kind === 'class' ? 'el-icon-school' : 'el-icon-reading'" aria-hidden="true" />
@@ -45,7 +45,7 @@ export default {
 .card-body { display: flex; flex: 1; flex-direction: column; justify-content: space-between; gap: 16px; padding: 14px; }.description { margin: 0; color: #6a7784; font-size: 13px; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .completion-label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; color: #526679; font-size: 13px; }.completion-label strong { color: #3c7fbd; }.locked-hint { margin: 0; color: #8b7c65; font-size: 12px; line-height: 1.7; }
 footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding: 8px 14px; border-top: 1px solid #edf1f5; font-size: 12px; color: #82909c; }.owner { color: #4b8bc7; overflow-wrap: anywhere; }
-.row { width: 100%; min-height: 138px; }.row .card-cover { flex-basis: 110px; }.row .card-cover img { width: 64px; height: 64px; }.row .card-cover > i { font-size: 38px; }.row .card-cover { gap: 8px; }.row .card-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 320px); align-items: center; gap: 20px; padding: 10px 16px; }.row h3 { padding: 8px 16px; }.row footer { padding: 6px 16px; }
-@media (max-width: 700px) { .row .card-body { display: flex; gap: 12px; align-items: stretch; }.row .card-cover { flex-basis: 80px; }.row .card-cover img { width: 56px; height: 56px; } }
+.learning-row { width: 100%; min-height: 138px; }.learning-row .card-cover { flex-basis: 110px; }.learning-row .card-cover img { width: 64px; height: 64px; }.learning-row .card-cover > i { font-size: 38px; }.learning-row .card-cover { gap: 8px; }.learning-row .card-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 320px); align-items: center; gap: 20px; padding: 10px 16px; }.learning-row h3 { padding: 8px 16px; }.learning-row footer { padding: 6px 16px; }
+@media (max-width: 700px) { .learning-row .card-body { display: flex; gap: 12px; align-items: stretch; }.learning-row .card-cover { flex-basis: 80px; }.learning-row .card-cover img { width: 56px; height: 56px; } }
 @media (max-width: 440px) { .card-cover { flex-basis: 76px; }.card-cover > i { font-size: 38px; }.card-cover img { width: 56px; height: 56px; }h3 { font-size: 16px; }.card-body { padding: 12px; } }
 </style>

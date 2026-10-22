@@ -45,7 +45,7 @@ import eduLayout from '@/common/edu-layout'
 import CourseProblemPicker from './CourseProblemPicker.vue'
 export default {
   mixins: [eduLayout], components: {CourseProblemPicker},
-  data: () => ({detail: null, isTeacher: false, loading: false, saving: false, uploadingIcon: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
+  data: () => ({detail: null, loading: false, saving: false, uploadingIcon: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
   computed: {
     id () { return this.$route.params.courseId },
     shownProblems () { return this.editingProblems ? this.draftProblems : (this.detail ? this.detail.problems : []) },
@@ -56,7 +56,7 @@ export default {
     }
   },
   watch: {id () { this.cancelProblems(); this.load() }},
-  async mounted () { try { this.isTeacher = (await edu.me()).isTeacher } catch (_) {} this.load() },
+  mounted () { this.load() },
   methods: {
     async uploadIcon (event) {
       const image = event.target.files[0]; event.target.value = ''
