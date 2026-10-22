@@ -108,14 +108,14 @@ public class EduCourseService {
         boolean edit = access.edit(row);
         String fields = "SELECT cp.pid,cp.sort_order AS sortOrder,COALESCE(pd.display_id,cp.sort_order+1) AS displayId,CASE WHEN " + PUBLIC_PROBLEM + " THEN p.problem_id ELSE NULL END AS problemId," +
                 "CASE WHEN " + PUBLIC_PROBLEM + " THEN p.title ELSE '题目已不可用' END AS title,CASE WHEN " + PUBLIC_PROBLEM + " THEN p.difficulty ELSE NULL END AS difficulty," +
-                "CASE WHEN " + PUBLIC_PROBLEM + " THEN COALESCE(pc.ac,0) ELSE NULL END AS ac,CASE WHEN " + PUBLIC_PROBLEM + " THEN COALESCE(pc.total,0) ELSE NULL END AS total," +
-                "CASE WHEN " + PUBLIC_PROBLEM + " THEN 1 ELSE 0 END AS available FROM edu_course_problem cp LEFT JOIN problem p ON p.id=cp.pid LEFT JOIN problem_count pc ON pc.pid=p.id LEFT JOIN edu_course_problem_display pd ON pd.course_id=cp.course_id AND pd.pid=cp.pid WHERE cp.course_id=? ";
+                "CASE WHEN " + PUBLIC_PROBLEM + " THEN 1 ELSE 0 END AS available FROM edu_course_problem cp LEFT JOIN problem p ON p.id=cp.pid LEFT JOIN edu_course_problem_display pd ON pd.course_id=cp.course_id AND pd.pid=cp.pid WHERE cp.course_id=? ";
         if (!edit) fields += "AND " + PUBLIC_PROBLEM;
         List<Map<String, Object>> problems = db.queryForList(fields + " ORDER BY COALESCE(pd.display_id,cp.sort_order+1),cp.sort_order,cp.id", id);
         List<Object> args = new ArrayList<>(); args.add(access.uid);
         for (Map<String, Object> problem : problems) if (number(problem, "available") == 1) args.add(problem.get("pid"));
         Set<Long> completed = new HashSet<>();
         Map<Long, Object> latest = new HashMap<>();
+        Map<Long, Map<String, Object>> statistics = new HashMap<>();
         Map<Long, List<Map<String, Object>>> tags = new HashMap<>();
         if (args.size() > 1) completed.addAll(db.queryForList("SELECT DISTINCT pid FROM judge WHERE uid=? AND status=0 AND cid=0 AND gid IS NULL AND pid IN (" + marks(args.size() - 1) + ")", Long.class, args.toArray()));
         if (args.size() > 1) {
@@ -123,6 +123,8 @@ public class EduCourseService {
                 latest.put(number(item, "pid"), item.get("status"));
             for (Map<String, Object> tag : db.queryForList("SELECT pt.pid,t.id,t.name,t.color FROM problem_tag pt JOIN tag t ON t.id=pt.tid WHERE pt.pid IN (" + marks(args.size()-1) + ") ORDER BY t.id", args.subList(1,args.size()).toArray()))
                 tags.computeIfAbsent(number(tag,"pid"), ignored -> new ArrayList<>()).add(tag);
+            for (Map<String, Object> item : db.queryForList("SELECT pid,COUNT(*) AS total,SUM(CASE WHEN status=0 THEN 1 ELSE 0 END) AS ac FROM judge WHERE cid=0 AND gid IS NULL AND status IN (-3,-2,-1,0,1,2,3,4,8) AND pid IN (" + marks(args.size()-1) + ") GROUP BY pid", args.subList(1,args.size()).toArray()))
+                statistics.put(number(item,"pid"),item);
         }
         int completedCount = 0;
         for (Map<String, Object> problem : problems) {
@@ -130,6 +132,8 @@ public class EduCourseService {
             problem.put("completed", ac); if (ac) completedCount++;
             problem.put("myStatus", ac ? 0 : latest.getOrDefault(number(problem, "pid"), -10));
             problem.put("tags", tags.getOrDefault(number(problem, "pid"), Collections.emptyList()));
+            Map<String, Object> stats = statistics.get(number(problem,"pid"));
+            problem.put("ac", stats == null ? 0L : stats.get("ac")); problem.put("total", stats == null ? 0L : stats.get("total"));
         }
         result.put("problems", problems); result.put("completedCount", completedCount);
         result.put("unavailableCount", problems.stream().filter(problem -> number(problem, "available") != 1).count());
