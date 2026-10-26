@@ -46,6 +46,7 @@ import GroupRank from '@/views/oj/group/children/GroupRank.vue'
 import NotFound from "@/views/404.vue"
 
 const ojRoutes = [
+  {path: '/class/:classId/progress', name: 'EduClassProgress', component: () => import('@/views/oj/edu/ClassProgress.vue'), meta: {title: '班级学习情况', requireAuth: true}},
   {path: '/course', name: 'EduCourseList', component: () => import('@/views/oj/edu/CourseList.vue'), meta: {title: '课程', requireAuth: true}},
   {path: '/course/:courseId', name: 'EduCourseDetail', component: () => import('@/views/oj/edu/CourseDetail.vue'), meta: {title: '课程详情', requireAuth: true}},
   {

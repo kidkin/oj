@@ -19,6 +19,8 @@ export default {
   classes: params => request('get', '/classes', undefined, params),
   create: data => request('post', '/classes', data),
   detail: id => request('get', `/classes/${id}`),
+  progressProblems: (id, params) => request('get', `/classes/${id}/progress/problems`, undefined, params),
+  classProgress: (id, problemIds) => request('post', `/classes/${id}/progress`, {problemIds}),
   update: (id, data) => request('put', `/classes/${id}`, data),
   members: (id, params) => request('get', `/classes/${id}/members`, undefined, params),
   addMembers: (id, data) => request('post', `/classes/${id}/members`, data),

@@ -2,7 +2,7 @@
   <div class="edu-page" :style="eduPageStyle" v-loading="loading">
     <router-link to="/class">← 返回我的班级</router-link>
     <section v-if="detail" class="class-content">
-      <header class="page-header"><h2>{{ detail.name }}</h2><div><el-tag :type="detail.status === 0 ? 'success' : 'info'">{{ detail.status === 0 ? '正常' : '已归档' }}</el-tag><el-button v-if="detail.canManage" class="edit-button" @click="edit">编辑班级</el-button></div></header>
+      <header class="page-header"><h2>{{ detail.name }}</h2><div><el-tag :type="detail.status === 0 ? 'success' : 'info'">{{ detail.status === 0 ? '正常' : '已归档' }}</el-tag><el-button v-if="detail.canManage" class="edit-button" type="primary" @click="$router.push('/class/' + id + '/progress')">学习情况表</el-button><el-button v-if="detail.canManage" class="edit-button" @click="edit">编辑班级</el-button></div></header>
       <p class="meta">班级显示ID：{{ detail.displayId }} · 创建者：{{ detail.ownerUsername }} · 学生 {{ detail.studentCount }} 人</p>
       <p class="description">{{ detail.description || '暂无班级介绍' }}</p>
       <p v-if="!detail.canManage" class="meta">你已加入此班级。</p>
