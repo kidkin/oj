@@ -10,3 +10,7 @@
 对应源码：`hoj-vue/src/views/oj/rank/ACMRank.vue`、`OIRank.vue`、`Home.vue`；后端 `manager/oj/RankManager.java`、`HomeManager.java` 和 `mapper/xml/UserRecordMapper.xml`。
 
 本次仅精简首页和班级、课程ID的页面展示，没有更改榜单刷新周期、统计规则或数据库数据。班级与课程的排序编号仍可在管理表单中设置，课程内题目编号继续显示。
+
+## 排名“暂无数据”的修复
+
+本地复现时，排名接口返回17名用户及 `demo22_student` 的2道通过记录，但页面图表报 `Component series.bar not exists`。本地打包使用 vue-echarts 核心，缺少图表类型和组件注册；页面又在请求表格数据前调用图表加载方法，导致错误中断数据请求。现已本地注册柱状图、折线图、饼图及所需组件，并将表格查询与图表加载分离。请求失败时显示明确错误，搜索和翻页使用请求版本避免旧结果覆盖新结果。

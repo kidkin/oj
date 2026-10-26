@@ -23,6 +23,7 @@
           ></el-button>
         </el-input>
       </el-card>
+      <el-alert v-if="rankError" title="排名暂时加载失败，请刷新页面重试。" type="error" :closable="false" />
       <vxe-table
         :data="dataRank"
         :loading="loadingTable"
@@ -149,13 +150,15 @@ export default {
       searchUser: null,
       dataRank: [],
       loadingTable: false,
+      rankError: false,
+      rankRequestVersion: 0,
       screenWidth: 768,
       options: {
         tooltip: {
           trigger: 'axis',
         },
         legend: {
-          data: ['Score'],
+          data: [this.$i18n.t('m.Score')],
         },
         grid: {
           x: '3%',
@@ -239,25 +242,19 @@ export default {
     this.getRankData(1);
   },
   methods: {
-    getRankData(page) {
-      let bar = this.$refs.chart;
-      bar.showLoading({ maskColor: 'rgba(250, 250, 250, 0.8)' });
-      this.loadingTable = true;
-      api.getUserRank(page, this.limit, RULE_TYPE.OI, this.searchUser).then(
-        (res) => {
-          if (page === 1) {
-            this.changeCharts(res.data.data.records.slice(0, 10));
-          }
-          this.total = res.data.data.total;
-          this.dataRank = res.data.data.records;
-          this.loadingTable = false;
-          bar.hideLoading();
-        },
-        (err) => {
-          this.loadingTable = false;
-          bar.hideLoading();
-        }
-      );
+    async getRankData(page) {
+      const version=++this.rankRequestVersion;
+      this.page=page; this.loadingTable=true; this.rankError=false;
+      try {
+        const res=await api.getUserRank(page,this.limit,RULE_TYPE.OI,this.searchUser);
+        if(version!==this.rankRequestVersion)return;
+        this.total=res.data.data.total; this.dataRank=res.data.data.records;
+      } catch (_) {
+        if(version===this.rankRequestVersion){this.rankError=true;this.dataRank=[];this.total=0;}
+      } finally { if(version===this.rankRequestVersion)this.loadingTable=false; }
+      if(version===this.rankRequestVersion && !this.rankError && page===1) {
+        try { this.changeCharts(this.dataRank.slice(0,10)); } catch (_) {}
+      }
     },
     seqMethod({ rowIndex }) {
       return this.limit * (this.page - 1) + rowIndex + 1;
