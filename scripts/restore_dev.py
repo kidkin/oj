@@ -70,8 +70,8 @@ def plan_config(source, current, manifest, restored, current_env):
     if set(current["volumes"]) != set(restored["volumes"]):
         raise RuntimeError("Volume lists differ.")
     project = restored["name"]
-    if not project.startswith("hoj-restore-devimport-"):
-        raise RuntimeError("Expected a new development import snapshot.")
+    if not project.startswith(("hoj-restore-devimport-", "hoj-restore-serverimport-")):
+        raise RuntimeError("Expected a new development or server import snapshot.")
     old_names = {value["name"] for value in current["volumes"].values()}
     volumes = {}
     for key, value in restored["volumes"].items():

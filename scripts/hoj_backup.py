@@ -378,6 +378,37 @@ def local_image(docker, record, service):
     return image["Id"]
 
 
+def resolve_release_images(docker, manifest, release):
+    """Relocate development image references to an identical published release.
+
+    Backups made before publishing can contain hoj-local/* digests which do
+    not exist on another computer. Only identical image configurations and
+    filesystem layers may be substituted; this is not an application upgrade.
+    """
+    applications = {"hoj-backend", "hoj-frontend", "hoj-judgeserver"}
+    if set(release.get("Images", {})) != applications:
+        raise RuntimeError("Invalid application release manifest.")
+    result = copy.deepcopy(manifest)
+    for service in sorted(applications):
+        expected = release["Images"][service]
+        reference = expected["Reference"]
+        digest = expected["Digest"]
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+            raise RuntimeError("Invalid published image digest.")
+        pinned = reference.rsplit(":", 1)[0] + "@" + digest
+        if not docker.exists("image", pinned):
+            print("Pulling published backup image for " + service, flush=True)
+            docker.call("pull", "--platform", "linux/amd64", pinned, capture=False)
+        actual = docker.json("image", "inspect", pinned)[0]
+        if (signature(actual) != manifest["Images"][service]["Signature"]
+                or actual["Config"].get("Labels", {}).get("org.opencontainers.image.revision") != expected["SourceRevision"]
+                or actual["RootFS"]["Layers"] != expected["RootFsDiffIds"]
+                or pinned not in actual.get("RepoDigests", [])):
+            raise RuntimeError("Published release differs from the backup application: " + service)
+        result["Images"][service] = {"Reference": pinned, "Id": actual["Id"], "Signature": signature(actual)}
+    return result
+
+
 def rewrite_runtime_addresses(content, addresses):
     pattern = re.compile(r"(?<![\d.])(?:" + "|".join(re.escape(x) for x in addresses) + r")(?![\d.])")
     lines = []
@@ -484,6 +515,14 @@ def restore(docker, args):
     with tempfile.TemporaryDirectory(prefix=".hoj-verify-", dir=str(destination.parent)) as temp:
         work = Path(temp)
         manifest = unpack(archive, work, expected_sha256)
+        version = getattr(args, "release", None)
+        if version:
+            if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}", version):
+                raise RuntimeError("Invalid release version.")
+            release = read_json(Path(__file__).resolve().parents[1] / "releases" / (version + ".json"))
+            if release.get("Version") != version:
+                raise RuntimeError("Release version does not match its manifest.")
+            manifest = resolve_release_images(docker, manifest, release)
         config = isolated_config(read_json(work / "source.compose.json"), manifest, args.project, args.subnet, args.port)
         names = [v["name"] for v in config["volumes"].values()]
         if any(docker.exists("volume", name) for name in names) or any(
@@ -544,6 +583,7 @@ def main():
     recover.add_argument("--subnet", default="172.30.240.0/24")
     recover.add_argument("--port", type=int, default=18082)
     recover.add_argument("--sha256")
+    recover.add_argument("--release", help="Use identical published application images instead of development-only references")
     recover.add_argument("--start", action="store_true")
     start = actions.add_parser("start", help="Rebind stored service addresses and start a completed isolated restore")
     start.add_argument("--directory", required=True)

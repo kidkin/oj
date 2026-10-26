@@ -16,8 +16,9 @@ import restore_dev
 
 
 class Client:
-    def __init__(self):
+    def __init__(self, base_url="http://127.0.0.1:18081"):
         self.token = None
+        self.base_url = base_url.rstrip("/")
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
     def call(self, path, method="GET", data=None, expected=200):
@@ -27,7 +28,7 @@ class Client:
         body = None if data is None else json.dumps(data).encode("utf-8")
         if body:
             headers["Content-Type"] = "application/json"
-        req = urllib.request.Request("http://127.0.0.1:18081" + path, body, headers, method=method)
+        req = urllib.request.Request(self.base_url + path, body, headers, method=method)
         try:
             response = self.opener.open(req, timeout=40)
         except urllib.error.HTTPError as error:
@@ -36,7 +37,8 @@ class Client:
             payload = json.load(response)
             if response.headers.get("Authorization"):
                 self.token = response.headers["Authorization"]
-        if payload.get("status") != expected:
+        allowed = expected if isinstance(expected, (tuple, list, set)) else (expected,)
+        if payload.get("status") not in allowed:
             # Do not include request bodies, tokens or returned user records.
             raise RuntimeError("Unexpected status at %s: %s (wanted %s)" % (path, payload.get("status"), expected))
         return payload.get("data")
