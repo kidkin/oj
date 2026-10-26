@@ -44,29 +44,7 @@
         :loading="loading"
         align="center"
       >
-        <vxe-table-column min-width="64" field="id" title="ID">
-        </vxe-table-column>
-        <vxe-table-column
-          min-width="100"
-          field="problemId"
-          :title="$t('m.Display_ID')"
-        >
-        </vxe-table-column>
-        <vxe-table-column
-          field="title"
-          min-width="150"
-          :title="$t('m.Title')"
-          show-overflow
-        >
-        </vxe-table-column>
 
-        <vxe-table-column
-          field="author"
-          min-width="100"
-          :title="$t('m.Author')"
-          show-overflow
-        >
-        </vxe-table-column>
         <vxe-table-column
           min-width="200"
           title="题目编号"
@@ -83,6 +61,22 @@
             ></el-input-number>
           </template>
         </vxe-table-column>
+        <vxe-table-column
+          field="title"
+          min-width="150"
+          :title="$t('m.Title')"
+          show-overflow
+        >
+        </vxe-table-column>
+
+        <vxe-table-column
+          field="author"
+          min-width="100"
+          :title="$t('m.Author')"
+          show-overflow
+        >
+        </vxe-table-column>
+
         <vxe-table-column min-width="120" :title="$t('m.Auth')">
           <template v-slot="{ row }">
             <el-select

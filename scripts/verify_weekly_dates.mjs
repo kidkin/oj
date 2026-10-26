@@ -4,6 +4,9 @@ const source=fs.readFileSync(new URL('../hoj-vue/src/common/weekly.js',import.me
 const {weeklyTimestamp,weeklyDate,isCurrentWeek,weeklyPercent}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 assert.equal(weeklyTimestamp('2026-10-26 00:00:00'),Date.parse('2026-10-25T16:00:00Z'));
 assert.equal(weeklyDate('2026-10-25T16:00:00Z'),'2026.10.26');
+assert.equal(weeklyDate('2026-10-25T16:00:00.000+0000'),'2026.10.26');
+assert.equal(weeklyDate('2026-10-26T00:00:00.000+0800'),'2026.10.26');
+assert.equal(weeklyTimestamp('2026-10-26T05:21:47.027+0000'),Date.parse('2026-10-26T13:21:47.027+08:00'));
 assert.equal(weeklyDate('bad'),'—');
 const monday=Date.parse('2026-10-25T16:00:00Z');
 assert.equal(isCurrentWeek({publishTime:'2026-10-25 23:59:59'},monday),false);

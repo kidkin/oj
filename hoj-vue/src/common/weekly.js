@@ -2,7 +2,7 @@
 export function weeklyTimestamp (value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0
   if (!value) return 0
-  const text=String(value).replace(' ','T')
+  const text=String(value).replace(' ','T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2')
   const time=Date.parse(/(?:Z|[+-]\d\d:\d\d)$/i.test(text) ? text : text + '+08:00')
   return Number.isFinite(time) ? time : 0
 }

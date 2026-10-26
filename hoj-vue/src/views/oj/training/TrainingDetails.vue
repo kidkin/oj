@@ -299,9 +299,10 @@ export default {
     ]),
   },
   watch: {
-    $route(newVal) {
-      if (String(newVal.params.trainingID) !== String(this.training.id)) {
-        this.$store.commit('clearTraining');
+    $route(newVal,oldVal) {
+      const changed = String(newVal.params.trainingID) !== String(this.training.id);
+      if (changed || (oldVal.name === 'TrainingProblemDetails' && newVal.name !== oldVal.name)) {
+        if (changed) this.$store.commit('clearTraining');
         this.$store.dispatch('getTraining').then(res => this.changeDomTitle({title:res.data.data.title})).catch(() => {});
       }
       this.route_name = newVal.name;
