@@ -1381,6 +1381,9 @@ const adminApi = {
       data: { ids }
     })
   },
+  admin_createUser(data) {
+    return ajax('/api/admin/user/create-user', 'post', { data })
+  },
   admin_importUsers(users) {
     return ajax('/api/admin/user/insert-batch-user', 'post', {
       data: {

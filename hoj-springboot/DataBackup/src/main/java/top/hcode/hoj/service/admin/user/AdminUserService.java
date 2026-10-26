@@ -3,6 +3,7 @@ package top.hcode.hoj.service.admin.user;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import top.hcode.hoj.common.result.CommonResult;
 import top.hcode.hoj.pojo.dto.AdminEditUserDTO;
+import top.hcode.hoj.pojo.dto.AdminCreateUserDTO;
 import top.hcode.hoj.pojo.vo.UserRolesVO;
 
 import java.util.List;
@@ -20,6 +21,8 @@ public interface AdminUserService {
     public CommonResult<Void> editUser(AdminEditUserDTO adminEditUserDto);
 
     public CommonResult<Void> deleteUser(List<String> deleteUserIdList);
+
+    public CommonResult<Void> createUser(AdminCreateUserDTO user);
 
     public CommonResult<Void> insertBatchUser(List<List<String>> users);
 

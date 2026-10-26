@@ -157,7 +157,7 @@ public class PassportManager {
 
         WebConfig webConfig = nacosSwitchConfig.getWebConfig();
         if (!webConfig.getRegister()) { // 需要判断一下网站是否开启注册
-            throw new StatusAccessDeniedException("对不起！本站暂未开启注册功能！");
+            throw new StatusAccessDeniedException("本站账号由管理员创建，请联系管理员获取账号。");
         }
         if (!emailManager.isOk()) {
             throw new StatusAccessDeniedException("对不起！本站邮箱系统未配置，暂不支持注册！");
@@ -204,7 +204,7 @@ public class PassportManager {
     public void register(RegisterDTO registerDto) throws StatusAccessDeniedException, StatusFailException {
         WebConfig webConfig = nacosSwitchConfig.getWebConfig();
         if (!webConfig.getRegister()) { // 需要判断一下网站是否开启注册
-            throw new StatusAccessDeniedException("对不起！本站暂未开启注册功能！");
+            throw new StatusAccessDeniedException("本站账号由管理员创建，请联系管理员获取账号。");
         }
 
         String codeKey = Constants.Email.REGISTER_KEY_PREFIX.getValue() + registerDto.getEmail();

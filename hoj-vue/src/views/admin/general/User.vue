@@ -5,6 +5,11 @@
         <span class="panel-title home-title">{{ $t('m.General_User') }}</span>
         <div class="filter-row">
           <span>
+            <el-button type="primary" icon="el-icon-plus" size="small" @click="openCreateUserDialog">
+              {{ $t('m.Create_Single_Account') }}
+            </el-button>
+          </span>
+          <span>
             <el-button
               type="danger"
               icon="el-icon-delete-solid"
@@ -154,6 +159,38 @@
         </el-pagination>
       </div>
     </el-card>
+
+    <el-dialog
+      :title="$t('m.Create_Single_Account')"
+      :visible.sync="showCreateUserDialog"
+      width="min(480px, 94vw)"
+      :close-on-click-modal="false"
+      @closed="resetCreateUserForm"
+    >
+      <el-form :model="createUserForm" :rules="createUserRules" ref="createUserForm"
+        label-position="top" @submit.native.prevent="createSingleUser" @keyup.enter.native="createSingleUser">
+        <el-form-item :label="$t('m.Username')" prop="username">
+          <el-input v-model="createUserForm.username" maxlength="20" autocomplete="off"
+            :placeholder="$t('m.New_Account_Username_Hint')"></el-input>
+        </el-form-item>
+        <el-form-item :label="$t('m.RealName')" prop="realname">
+          <el-input v-model="createUserForm.realname" maxlength="50"
+            :placeholder="$t('m.New_Account_Realname_Hint')"></el-input>
+        </el-form-item>
+        <el-form-item :label="$t('m.Password')" prop="password">
+          <el-input v-model="createUserForm.password" type="password" show-password
+            maxlength="20" autocomplete="new-password" :placeholder="$t('m.Password_Check_Between')"></el-input>
+        </el-form-item>
+        <el-form-item :label="$t('m.New_Account_Confirm_Password')" prop="confirmPassword">
+          <el-input v-model="createUserForm.confirmPassword" type="password" show-password
+            maxlength="20" autocomplete="new-password"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button :disabled="loadingCreate" @click="showCreateUserDialog = false">{{ $t('m.Cancel') }}</el-button>
+        <el-button type="primary" :loading="loadingCreate" @click="createSingleUser">{{ $t('m.Create_Single_Account') }}</el-button>
+      </span>
+    </el-dialog>
 
     <!-- 导入csv用户数据 -->
     <el-card style="margin-top:20px">
@@ -594,6 +631,27 @@ export default {
       keyword: '',
       // 是否显示用户对话框
       showUserDialog: false,
+      showCreateUserDialog: false,
+      loadingCreate: false,
+      createUserForm: { username: '', realname: '', password: '', confirmPassword: '' },
+      createUserRules: {
+        username: [
+          { required: true, message: this.$t('m.Username_Check_Required'), trigger: 'blur' },
+          { max: 20, message: this.$t('m.Username_Check_Max'), trigger: 'blur' },
+          { pattern: /^[^\s@]+$/, message: this.$t('m.New_Account_Username_Hint'), trigger: 'blur' },
+        ],
+        realname: [{ max: 50, message: this.$t('m.New_Account_Realname_Length'), trigger: 'blur' }],
+        password: [
+          { required: true, message: this.$t('m.Password_Check_Required'), trigger: 'blur' },
+          { min: 6, max: 20, message: this.$t('m.Password_Check_Between'), trigger: 'blur' },
+          { validator: (rule, value, callback) => {
+            callback(value && value !== value.trim() ? new Error(this.$t('m.New_Account_Password_Spaces')) : undefined);
+          }, trigger: 'blur' },
+        ],
+        confirmPassword: [{ validator: (rule, value, callback) => {
+          callback(value && value === this.createUserForm.password ? undefined : new Error(this.$t('m.New_Account_Password_Mismatch')));
+        }, trigger: 'blur' }],
+      },
       onlyAdmin: false,
 
       // 当前用户model
@@ -690,6 +748,34 @@ export default {
     this.getUserList(1);
   },
   methods: {
+    resetCreateUserForm() {
+      this.createUserForm = { username: '', realname: '', password: '', confirmPassword: '' };
+      if (this.$refs.createUserForm) this.$refs.createUserForm.clearValidate();
+    },
+    openCreateUserDialog() {
+      this.resetCreateUserForm();
+      this.showCreateUserDialog = true;
+    },
+    createSingleUser() {
+      if (this.loadingCreate) return;
+      this.loadingCreate = true;
+      this.$refs.createUserForm.validate(valid => {
+        if (!valid) { this.loadingCreate = false; return; }
+        const { username, password, realname } = this.createUserForm;
+        api.admin_createUser({ username, password, realname })
+          .then(() => {
+            this.showCreateUserDialog = false;
+            this.resetCreateUserForm();
+            this.onlyAdmin = false;
+            this.keyword = username;
+            this.currentPage = 1;
+            this.getUserList(1);
+            myMessage.success(this.$t('m.New_Account_Created', { username }));
+          })
+          .catch(() => {})
+          .finally(() => { this.loadingCreate = false; });
+      });
+    },
     // 切换页码回调
     currentChange(page) {
       this.currentPage = page;

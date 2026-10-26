@@ -32,7 +32,13 @@ public class WebConfig {
 
     private String description;
 
-    private Boolean register = true;
+    private Boolean register = false;
+
+    // Accounts are provisioned by administrators. Legacy Nacos settings must
+    // not reopen public registration or registration email delivery.
+    public Boolean getRegister() {
+        return false;
+    }
 
     private String recordName;
 

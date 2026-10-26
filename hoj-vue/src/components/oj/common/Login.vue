@@ -68,12 +68,6 @@
         </el-alert>
       </el-popover>
       <el-link
-        v-if="websiteConfig.register"
-        type="primary"
-        @click="switchMode('Register')"
-        >{{ $t('m.Login_No_Account') }}</el-link
-      >
-      <el-link
         type="primary"
         @click="switchMode('ResetPwd')"
         style="float: right"

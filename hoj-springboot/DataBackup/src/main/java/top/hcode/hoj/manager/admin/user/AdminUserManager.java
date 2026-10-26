@@ -13,6 +13,8 @@ import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import top.hcode.hoj.common.exception.StatusFailException;
 import top.hcode.hoj.dao.user.UserInfoEntityService;
@@ -20,6 +22,7 @@ import top.hcode.hoj.dao.user.UserRecordEntityService;
 import top.hcode.hoj.dao.user.UserRoleEntityService;
 import top.hcode.hoj.manager.msg.AdminNoticeManager;
 import top.hcode.hoj.pojo.dto.AdminEditUserDTO;
+import top.hcode.hoj.pojo.dto.AdminCreateUserDTO;
 import top.hcode.hoj.pojo.entity.user.UserInfo;
 import top.hcode.hoj.pojo.entity.user.UserRecord;
 import top.hcode.hoj.pojo.entity.user.UserRole;
@@ -159,6 +162,37 @@ public class AdminUserManager {
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
         log.info("[{}],[{}],uidList:[{}],operatorUid:[{}],operatorUsername:[{}]",
                 "Admin_User", "Delete", deleteUserIdList, userRolesVo.getUid(), userRolesVo.getUsername());
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void createUser(AdminCreateUserDTO user) throws StatusFailException {
+        // Login trims passwords, so reject whitespace at either end instead of
+        // creating an account whose chosen password can never authenticate.
+        if (!user.getPassword().equals(user.getPassword().trim())) {
+            throw new StatusFailException("密码首尾不能包含空格。");
+        }
+        QueryWrapper<UserInfo> existing = new QueryWrapper<>();
+        existing.eq("username", user.getUsername());
+        if (userInfoEntityService.count(existing) > 0) {
+            throw new StatusFailException("用户名已存在，请更换用户名。");
+        }
+        final String uid = addNewUser(Arrays.asList(user.getUsername(), user.getPassword(), null, user.getRealname()));
+        // Provisioning the account, ordinary-user role and statistics is one
+        // transaction. Deliver existing site notices only after it commits.
+        Runnable notify = () -> {
+            try {
+                adminNoticeManager.syncNoticeToNewRegisterBatchUser(Collections.singletonList(uid));
+            } catch (Exception error) {
+                log.error("Failed to synchronize notices for a newly created account", error);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+                @Override public void afterCommit() { notify.run(); }
+            });
+        } else {
+            notify.run();
+        }
     }
 
     public void insertBatchUser(List<List<String>> users) throws StatusFailException {

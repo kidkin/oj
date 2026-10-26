@@ -122,14 +122,6 @@
                 @click="handleBtnClick('Login')"
                 >{{ $t('m.NavBar_Login') }}
               </el-button>
-              <el-button
-                v-if="websiteConfig.register"
-                size="medium"
-                round
-                @click="handleBtnClick('Register')"
-                style="margin-left: 5px"
-                >{{ $t('m.NavBar_Register') }}
-              </el-button>
             </div>
           </template>
           <template v-else>
@@ -254,13 +246,6 @@
           @click="handleBtnClick('Login')"
           v-show="!isAuthenticated"
           >{{ $t('m.NavBar_Login') }}</mu-button
-        >
-        <mu-button
-          flat
-          slot="right"
-          @click="handleBtnClick('Register')"
-          v-show="!isAuthenticated && websiteConfig.register"
-          >{{ $t('m.NavBar_Register') }}</mu-button
         >
 
         <mu-menu slot="right" v-show="isAuthenticated" :open.sync="openmsgmenu">
@@ -569,7 +554,6 @@
 </template>
 <script>
 import Login from '@/components/oj/common/Login';
-import Register from '@/components/oj/common/Register';
 import ResetPwd from '@/components/oj/common/ResetPassword';
 import MsgSvg from '@/components/oj/msg/msgSvg';
 import { mapGetters, mapActions } from 'vuex';
@@ -578,7 +562,6 @@ import api from '@/common/api';
 export default {
   components: {
     Login,
-    Register,
     ResetPwd,
     Avatar,
     MsgSvg,

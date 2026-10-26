@@ -81,13 +81,8 @@
             </el-form-item>
           </el-col>
           <el-col :md="24" :xs="24">
-            <el-form-item :label="$t('m.Allow_Register')" label-width="120px">
-              <el-switch
-                v-model="websiteConfig.register"
-                active-color="#13ce66"
-                inactive-color="#ff4949"
-              >
-              </el-switch>
+            <el-form-item :label="$t('m.Account_Provisioning')" label-width="120px">
+              <span>{{ $t('m.Admin_Created_Accounts') }}</span>
             </el-form-item>
           </el-col>
         </el-row>

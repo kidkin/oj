@@ -6,8 +6,10 @@ import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 import top.hcode.hoj.common.result.CommonResult;
 import top.hcode.hoj.pojo.dto.AdminEditUserDTO;
+import top.hcode.hoj.pojo.dto.AdminCreateUserDTO;
 import top.hcode.hoj.pojo.vo.UserRolesVO;
 import top.hcode.hoj.service.admin.user.AdminUserService;
 
@@ -50,6 +52,13 @@ public class AdminUserController {
     @RequiresAuthentication
     public CommonResult<Void> deleteUser(@RequestBody Map<String, Object> params) {
         return adminUserService.deleteUser((List<String>) params.get("ids"));
+    }
+
+    @PostMapping("/create-user")
+    @RequiresPermissions("user_admin")
+    @RequiresAuthentication
+    public CommonResult<Void> createUser(@Validated @RequestBody AdminCreateUserDTO user) {
+        return adminUserService.createUser(user);
     }
 
     @PostMapping("/insert-batch-user")

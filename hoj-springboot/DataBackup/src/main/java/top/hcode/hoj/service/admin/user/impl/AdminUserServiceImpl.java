@@ -2,10 +2,12 @@ package top.hcode.hoj.service.admin.user.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
 import top.hcode.hoj.common.exception.StatusFailException;
 import top.hcode.hoj.common.result.CommonResult;
 import top.hcode.hoj.manager.admin.user.AdminUserManager;
 import top.hcode.hoj.pojo.dto.AdminEditUserDTO;
+import top.hcode.hoj.pojo.dto.AdminCreateUserDTO;
 import top.hcode.hoj.pojo.vo.UserRolesVO;
 import top.hcode.hoj.service.admin.user.AdminUserService;
 
@@ -46,6 +48,18 @@ public class AdminUserServiceImpl implements AdminUserService {
             return CommonResult.successResponse();
         } catch (StatusFailException e) {
             return CommonResult.errorResponse(e.getMessage());
+        }
+    }
+
+    @Override
+    public CommonResult<Void> createUser(AdminCreateUserDTO user) {
+        try {
+            adminUserManager.createUser(user);
+            return CommonResult.successResponse();
+        } catch (StatusFailException e) {
+            return CommonResult.errorResponse(e.getMessage());
+        } catch (DuplicateKeyException e) {
+            return CommonResult.errorResponse("用户名已存在，请更换用户名。");
         }
     }
 
