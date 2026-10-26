@@ -7,7 +7,7 @@
       <el-form-item><el-button native-type="submit">搜索</el-button></el-form-item>
     </el-form>
     <div class="edu-grid" v-loading="loading">
-      <LearningCard v-for="row in records" :key="row.id" :display-id="row.displayId" :to="'/course/' + row.id" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :badge="access.isTeacher ? states[row.status] : '仅可浏览'" :meta="row.problemCount + ' 道公开题'" :completed="row.completedCount" :total="row.problemCount" :disabled="!access.isTeacher" :disabled-hint="row.canAccess ? '请从所属班级进入课程' : '加入相关班级后可学习本课程'" />
+      <LearningCard v-for="row in records" :key="row.id" :display-id="row.displayId" :to="courseTarget(row)" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :badge="access.isTeacher && row.status !== 1 ? states[row.status] : ''" :meta="row.problemCount + ' 道公开题'" :completed="row.completedCount" :total="row.problemCount" :restricted="!access.isTeacher && !row.canAccess" :show-progress="!!(access.isTeacher || row.canAccess)" @restricted-click="$message.info('加入相关班级后可学习本课程')" />
       <p v-if="!loading && !records.length" class="edu-empty">暂无符合条件的课程</p>
     </div>
     <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
@@ -27,6 +27,7 @@ export default {
   data: () => ({access: {}, query: {page: 1, limit: 12, keyword: '', scope: 'catalog'}, records: [], total: 0, loading: true, saving: false, createDialog: false, form: {title: '', description: '', displayId: ''}, states: ['草稿', '已发布', '已归档']}),
   async mounted () { try { this.access = await edu.me(); this.query.scope = this.access.isTeacher ? 'library' : 'catalog'; await this.load() } catch (_) { this.loading = false } },
   methods: {
+    courseTarget (row) { const target={path:'/course/' + row.id}; if (!this.access.isTeacher && row.sourceClasses && row.sourceClasses.length) target.query={classId:String(row.sourceClasses[0].id)}; return target },
     async load () { this.loading = true; try { const data = await edu.courses(this.query); this.records = data.records; this.total = data.total } catch (_) { this.records = []; this.total = 0 } finally { this.loading = false } },
     search () { this.query.page = 1; this.load() },
     async create () {

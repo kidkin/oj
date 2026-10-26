@@ -2,7 +2,7 @@
   <div class="edu-page" :style="eduPageStyle" v-loading="loading">
     <router-link :to="backTarget">{{ backTarget.startsWith('/class') ? '← 返回班级' : '← 返回课程总览' }}</router-link>
     <section v-if="detail" class="course-content">
-      <header class="page-header"><h2>{{ detail.title }}</h2><div><el-tag :type="detail.status === 1 ? 'success' : 'info'">{{ states[detail.status] }}</el-tag><el-button v-if="detail.canEdit" :disabled="editingProblems || uploadingIcon" class="edit-button" @click="editMetadata">编辑资料与发布状态</el-button><el-button :disabled="editingProblems || saving || uploadingIcon" @click="load">刷新课程</el-button></div></header>
+      <header class="page-header"><h2>{{ detail.title }}</h2><el-button v-if="detail.canEdit" :disabled="editingProblems || uploadingIcon" @click="editMetadata">编辑资料与发布状态</el-button></header>
       <div class="course-icon-editor">
         <img v-if="detail.iconUrl" :src="detail.iconUrl" alt="课程图标" class="course-icon">
         <i v-else class="el-icon-reading default-icon" aria-hidden="true" />
@@ -90,5 +90,6 @@ export default {
 </script>
 <style scoped>
 .course-content { margin-top: 22px; }h3 { margin: 0; }.hint { color: #606266; line-height: 1.8; }.description { white-space: pre-wrap; line-height: 1.8; overflow-wrap: anywhere; }.edit-button { margin-left: 10px; }.class-tag { margin: 2px 4px 2px 0; }.course-icon-editor { display: flex; gap: 20px; align-items: center; margin: 16px 0; }.course-icon { width: 88px; height: 88px; object-fit: contain; border-radius: 12px; background: #fff; padding: 6px; }.default-icon { font-size: 60px; color: #c58a32; }.icon-input { display: none; }.icon-hint { margin-bottom: 0; font-size: 12px; }
-.course-learning-progress { margin:24px 0; max-width:720px; }.selection-count { margin-bottom:16px; }
+.course-learning-progress { width:92%; margin:28px auto 36px; }.selection-count { margin-bottom:16px; }
+@media(max-width:700px) { .course-learning-progress { width:100%; } }
 </style>

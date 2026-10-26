@@ -71,7 +71,7 @@ export default {
 </script>
 <style scoped>
 .class-content { margin-top: 22px; }
-.class-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }.class-actions { display:flex; gap:12px; }.class-actions .el-button { margin:0; }.class-about { background:#fff; border-left:4px solid #6aa3d4; border-radius:0 10px 10px 0; padding:20px 24px; }.class-about .description { margin:0; }.class-learning-progress { margin:24px 0 34px; max-width:720px; }
+.class-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }.class-actions { display:flex; gap:12px; }.class-actions .el-button { margin:0; }.class-about { background:#fff; border-left:4px solid #6aa3d4; border-radius:0 10px 10px 0; padding:20px 24px; }.class-about .description { margin:0; }.class-learning-progress { width:92%; margin:28px auto 36px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 h2 { margin: 0; font-size: 22px; }h3 { margin: 0 0 12px; }.edit-button { margin-left: 12px; }
 .meta { color: #606266; line-height: 1.8; }.description { white-space: pre-wrap; line-height: 1.8; overflow-wrap: anywhere; }

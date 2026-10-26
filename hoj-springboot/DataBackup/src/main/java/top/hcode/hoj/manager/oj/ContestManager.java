@@ -457,7 +457,7 @@ public class ContestManager {
             }
         }
         // 将数据统一写入到一个Vo返回数据实体类中
-        return new ProblemInfoVO(problem, tags, languagesStr, problemCount, LangNameAndCode);
+        return new ProblemInfoVO(top.hcode.hoj.utils.ProblemSourceVisibility.forViewer(problem), tags, languagesStr, problemCount, LangNameAndCode);
     }
 
 

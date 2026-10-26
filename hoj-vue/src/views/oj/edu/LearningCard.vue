@@ -1,5 +1,5 @@
 <template>
-  <component :is="disabled ? 'article' : 'router-link'" class="learning-card" :class="{'learning-row': layout === 'row', locked: disabled}" :to="disabled ? undefined : to" :aria-label="title + '，' + (disabled ? disabledHint : progressText)" :aria-disabled="disabled ? 'true' : undefined">
+  <component :is="restricted ? 'button' : disabled ? 'article' : 'router-link'" :type="restricted ? 'button' : undefined" class="learning-card" :class="{'learning-row': layout === 'row', locked: disabled, restricted}" :to="disabled || restricted ? undefined : to" :aria-label="title + '，' + (disabled || restricted ? disabledHint : progressText)" :aria-disabled="disabled ? 'true' : undefined" @click="restricted && $emit('restricted-click')">
     <aside class="card-cover" :class="kind">
       <img v-if="icon && !imageError" :src="icon" alt="" @error="imageError = true">
       <i v-else :class="kind === 'class' ? 'el-icon-school' : 'el-icon-reading'" aria-hidden="true" />
@@ -24,7 +24,7 @@ export default {
   props: {
     to: {type: [String, Object], default: '/class'}, title: String, description: String, owner: String, meta: String, icon: String, badge: String, displayId: Number,
     kind: {type: String, default: 'course'}, layout: {type: String, default: 'card'}, completed: {type: Number, default: 0}, total: {type: Number, default: 0},
-    disabled: Boolean, disabledHint: {type: String, default: '请从所属班级进入课程'}, showProgress: {type: Boolean, default: true}
+    disabled: Boolean, restricted: Boolean, disabledHint: {type: String, default: '加入相关班级后可学习本课程'}, showProgress: {type: Boolean, default: true}
   },
   data: () => ({imageError: false}),
   watch: {icon () { this.imageError = false }},
@@ -38,6 +38,7 @@ export default {
 .learning-card { display: flex; min-width: 0; min-height: 214px; color: #303133; background: #fff; border: 1px solid #dbe5ed; border-radius: 12px; overflow: hidden; box-shadow: 0 3px 12px rgba(45, 84, 119, .07); transition: box-shadow .15s, transform .15s; text-decoration: none; }
 .learning-card:not(.locked):hover { color: #303133; transform: translateY(-2px); box-shadow: 0 7px 20px rgba(45, 84, 119, .14); }
 .learning-card:focus-visible { outline: 3px solid #409eff; outline-offset: 3px; }.locked { cursor: not-allowed; }
+.learning-card.restricted { width:100%; padding:0; font:inherit; text-align:left; cursor:pointer; appearance:none; }
 .card-cover { flex: 0 0 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #4b8bc7; background: #f2f8fe; border-right: 1px solid #e4edf5; font-size: 12px; }
 .card-cover > i { font-size: 48px; }.card-cover.course { color: #c58a32; background: #fffaf1; }.card-cover img { width: 76px; height: 76px; object-fit: contain; }
 .card-content { display: flex; flex: 1; flex-direction: column; min-width: 0; }h3 { margin: 0; padding: 11px 14px; color: #a96b17; background: #fff0db; font-size: 17px; line-height: 24px; overflow-wrap: anywhere; }

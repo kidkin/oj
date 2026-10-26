@@ -283,7 +283,7 @@
                     </el-card>
                   </template>
 
-                  <template v-if="problemData.problem.source && !contestID">
+                  <template v-if="isAdminRole && problemData.problem.source && !contestID">
                     <p class="title">{{ $t('m.Source') }}</p>
                     <template v-if="problemData.problem.gid != null">
                       <p
@@ -1762,6 +1762,7 @@ export default {
       "ContestRealTimePermission",
       "contestStatus",
       "isAuthenticated",
+      "isAdminRole",
       "canSubmit",
       "websiteConfig"
     ]),

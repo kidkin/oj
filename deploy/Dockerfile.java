@@ -8,7 +8,7 @@ COPY hoj-springboot/ ./
 RUN --mount=type=cache,target=/root/.m2,sharing=locked mvn -B -ntp -U package
 
 FROM build AS edu-tests
-RUN --mount=type=cache,target=/root/.m2,sharing=locked mvn -B -ntp -U -pl DataBackup -am -DskipTests=false -Dtest=EduClassServiceTest,EduCourseServiceTest,CourseIconStoreTest,EduDisplayOrderTest,EduClassProgressServiceTest,WeeklyReleaseServiceTest -Dsurefire.failIfNoSpecifiedTests=false test
+RUN --mount=type=cache,target=/root/.m2,sharing=locked mvn -B -ntp -U -pl DataBackup -am -DskipTests=false -Dtest=EduClassServiceTest,EduCourseServiceTest,CourseIconStoreTest,EduDisplayOrderTest,EduClassProgressServiceTest,WeeklyReleaseServiceTest,ProblemSourceVisibilityTest -Dsurefire.failIfNoSpecifiedTests=false test
 
 # Keep upstream runtime tools and judge sandbox; replace the application jars.
 FROM ${BACKEND_RUNTIME_IMAGE} AS backend

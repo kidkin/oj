@@ -14,6 +14,8 @@
 
 [周周练与学习页面简化](./WEEKLY-PRACTICE.md) 在 `feature/weekly-practice-ui`：精简班级介绍、增加课程进度条；周练按发布时间倒序，题目按自定数字编号升序。
 
+[学习页面与课程入口调整](./LEARNING-ACCESS-UI.md) 在 `feature/learning-access-ui`：进度条居中加宽，简化导航；已加入班级的学生可从课程总览直接进入，题目来源仅管理员可见。
+
 ## 第一次运行
 
 Windows 安装并启动 Docker Desktop，使用 WSL2 的 Linux 容器模式；使用 Git for Windows 管理版本。双击仓库内的 **Start-Dev.cmd**。首次运行需要联网下载构建镜像、npm 和 Maven 依赖，之后会使用缓存。网络下载超时时可保留窗口中的日志并再次运行，已下载的依赖会复用。
