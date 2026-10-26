@@ -27,6 +27,9 @@ if (-not $CranePath) {
     $CranePath = Join-Path (Split-Path -Parent $repoRoot) 'downloads\crane-v0.22.1\crane.exe'
 }
 if (-not (Test-Path -LiteralPath $CranePath -PathType Leaf)) { throw 'Set -CranePath to your verified crane.exe.' }
+$registryHost = $RegistryNamespace.Split('/')[0]
+$directHosts = $registryHost + ',.aliyuncs.com'
+$env:NO_PROXY = $(if ($env:NO_PROXY) { $env:NO_PROXY + ',' + $directHosts } else { $directHosts })
 
 function Read-Git {
     param([string[]]$Arguments)
