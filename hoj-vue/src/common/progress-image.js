@@ -42,7 +42,8 @@ export async function renderProgressImage (report, page, pageIndex, pageCount) {
   const problems = report.problems.slice(page.colStart, page.colEnd); const students = report.students.slice(page.rowStart, page.rowEnd)
   const width = nameWidth + problems.length * problemWidth
   ctx.font = font(20)
-  const headings = problems.map(p => ({title: lines(ctx, p.title, problemWidth - 20), id: lines(ctx, p.problemId, problemWidth - 20)}))
+  const headings = problems.map(p => { ctx.font=font(20); const title=lines(ctx,p.title,problemWidth-20); ctx.font=font(12); return {title,id:lines(ctx,p.problemId,problemWidth-20)} })
+  ctx.font=font(20)
   const headerHeight = Math.max(92, ...headings.map(p => p.title.length * 25 + p.id.length * 17 + 24))
   const names = students.map(student => lines(ctx, student.name, nameWidth - 24))
   const rowHeights = names.map(name => Math.max(48, name.length * 24 + 14))

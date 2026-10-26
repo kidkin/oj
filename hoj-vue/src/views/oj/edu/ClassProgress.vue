@@ -22,7 +22,7 @@
         <div class="generate-actions"><el-button type="primary" :disabled="!selected.length" :loading="generating" @click="generate">生成全班进度表</el-button><el-button v-if="selected.length" :disabled="generating" @click="selected = []">清空选择</el-button></div>
       </section>
       <section v-if="report" class="report-section">
-        <div class="page-header"><h3>2. 查看并复制图片</h3><div class="image-actions"><el-button :disabled="generating || dirty" @click="generate">刷新结果</el-button><el-button type="primary" :disabled="dirty || !image || rendering || generating" :loading="copying" @click="copyImage">{{ pages.length > 1 ? '复制本页图片' : '复制图片' }}</el-button><el-button :disabled="dirty || !image || rendering || generating" @click="downloadImage">下载PNG</el-button></div></div>
+        <div class="page-header"><h3>2. 查看并复制图片</h3><div class="image-actions"><el-button :disabled="generating || dirty" @click="generate">刷新结果</el-button><el-button type="primary" :disabled="dirty || !image || rendering || generating" :loading="copying" @click="copyImage">{{ pages.length > 1 ? '复制本页图片' : '复制图片' }}</el-button><a class="el-button el-button--default download-image" :class="{'is-disabled':dirty || !imageUrl || rendering || generating}" :href="dirty || rendering || generating ? undefined : imageUrl || undefined" :download="downloadName" :aria-disabled="dirty || !imageUrl || rendering || generating ? 'true' : undefined" @click="checkDownload">下载PNG</a></div></div>
         <el-alert v-if="dirty" title="题目选择已改变，请重新生成表格后再复制图片。" type="warning" :closable="false" show-icon />
         <el-alert v-if="report.pendingCells" title="有提交正在判题：先显示已有的最佳结果，暂无结果的标为“判题中”。请稍后刷新。" type="info" :closable="false" show-icon />
         <p class="hint">共 {{ report.studentCount }} 名学生、{{ report.problemCount }} 道题 · 生成于 {{ formatTime(report.generatedAt) }}<template v-if="pages.length > 1"> · 大表分为 {{ pages.length }} 张图片，每张至多80名学生、12道题，所有学生均已包含。</template></p>
@@ -43,7 +43,7 @@ import eduLayout from '@/common/edu-layout'
 import {PROGRESS_STATES, progressPages, progressTime, renderProgressImage} from '@/common/progress-image'
 export default {
   mixins: [eduLayout],
-  data: () => ({detail:null, loading:false, courses:[], records:[], total:0, pickerLoading:false, query:{page:1,keyword:'',courseId:null}, selected:[], generating:false, report:null, pageIndex:0, image:null, rendering:false, copying:false, states:PROGRESS_STATES, finalStates:['CORRECT','WRONG','NOT_SUBMITTED','PARTIAL'], pickerVersion:0, renderVersion:0, loadVersion:0, reportVersion:0, clipboardSupported:!!(window.isSecureContext && navigator.clipboard && navigator.clipboard.write && window.ClipboardItem)}),
+  data: () => ({detail:null, loading:false, courses:[], records:[], total:0, pickerLoading:false, query:{page:1,keyword:'',courseId:null}, selected:[], generating:false, report:null, pageIndex:0, image:null, imageUrl:'', rendering:false, copying:false, states:PROGRESS_STATES, finalStates:['CORRECT','WRONG','NOT_SUBMITTED','PARTIAL'], pickerVersion:0, renderVersion:0, loadVersion:0, reportVersion:0, clipboardSupported:!!(window.isSecureContext && navigator.clipboard && navigator.clipboard.write && window.ClipboardItem)}),
   computed: {
     id () { return this.$route.params.classId },
     selectedIds () { return this.selected.map(problem => problem.id) },
@@ -51,17 +51,18 @@ export default {
     page () { return this.pages[this.pageIndex] || {rowStart:0,rowEnd:0,colStart:0,colEnd:0} },
     visibleStudents () { return this.report ? this.report.students.slice(this.page.rowStart,this.page.rowEnd) : [] },
     visibleProblems () { return this.report ? this.report.problems.slice(this.page.colStart,this.page.colEnd) : [] },
+    downloadName () { return '班级学习情况-' + (this.report ? this.report.classDisplayId : '') + '-' + (this.pageIndex+1) + '.png' },
     dirty () { return !!this.report && this.selectedIds.join(',') !== this.report.problems.map(problem => problem.id).join(',') }
   },
   watch: {id () { this.load() }, pageIndex () { this.prepareImage() }},
   mounted () { this.load() },
-  beforeDestroy () { this.renderVersion++; this.pickerVersion++; this.loadVersion++; this.reportVersion++ },
+  beforeDestroy () { this.renderVersion++; this.pickerVersion++; this.loadVersion++; this.reportVersion++; this.clearImage() },
   methods: {
     formatTime:progressTime,
     stateLabel (value) { return (this.states[value] || this.states.PENDING).label },
     badgeStyle (value) { const state=this.states[value] || this.states.PENDING; return {backgroundColor:state.background,color:state.color} },
     async load () {
-      const version=++this.loadVersion; this.loading=true; this.detail=null; this.report=null; this.image=null; this.selected=[]; this.courses=[]; this.records=[]; this.total=0; this.pageIndex=0; this.generating=false; this.rendering=false; this.query={page:1,keyword:'',courseId:null}; this.renderVersion++; this.pickerVersion++; this.reportVersion++
+      const version=++this.loadVersion; this.loading=true; this.detail=null; this.report=null; this.clearImage(); this.selected=[]; this.courses=[]; this.records=[]; this.total=0; this.pageIndex=0; this.generating=false; this.rendering=false; this.query={page:1,keyword:'',courseId:null}; this.renderVersion++; this.pickerVersion++; this.reportVersion++
       try {
         const detail=await edu.detail(this.id); if (version!==this.loadVersion) return
         if (!detail.canManage) return; this.detail=detail
@@ -83,12 +84,12 @@ export default {
     move (index,delta) { const next=index+delta; if (next<0 || next>=this.selected.length) return; const value=this.selected.splice(index,1)[0]; this.selected.splice(next,0,value) },
     async generate () {
       if (!this.selected.length || this.generating) return
-      const classId=this.id; const version=++this.reportVersion; this.generating=true; this.image=null; this.renderVersion++
+      const classId=this.id; const version=++this.reportVersion; this.generating=true; this.clearImage(); this.renderVersion++
       try { const report=await edu.classProgress(classId,this.selectedIds); if (version!==this.reportVersion) return; this.report=report; this.pageIndex=0; await this.prepareImage() } catch (_) { if (version===this.reportVersion) this.report=null } finally { if (version===this.reportVersion) this.generating=false }
     },
     async prepareImage () {
-      const version=++this.renderVersion; this.image=null; if (!this.report || !this.pages.length) return; this.rendering=true
-      try { const image=await renderProgressImage(this.report,this.page,this.pageIndex,this.pages.length); if (version===this.renderVersion) this.image=image } catch (error) { if (version===this.renderVersion) this.$message.error(error.message) } finally { if (version===this.renderVersion) this.rendering=false }
+      const version=++this.renderVersion; this.clearImage(); if (!this.report || !this.pages.length) return; this.rendering=true
+      try { const image=await renderProgressImage(this.report,this.page,this.pageIndex,this.pages.length); if (version===this.renderVersion) { this.image=image; this.imageUrl=URL.createObjectURL(image.blob) } } catch (error) { if (version===this.renderVersion) this.$message.error(error.message) } finally { if (version===this.renderVersion) this.rendering=false }
     },
     async copyImage () {
       if (!this.image || this.dirty) return
@@ -96,10 +97,8 @@ export default {
       this.copying=true
       try { await navigator.clipboard.write([new window.ClipboardItem({'image/png':this.image.blob})]); this.$message.success('图片已复制，可以直接粘贴') } catch (_) { this.$message.error('复制失败，请允许浏览器使用剪贴板后重试，或下载PNG') } finally { this.copying=false }
     },
-    downloadImage () {
-      if (!this.image || this.dirty) return
-      const url=URL.createObjectURL(this.image.blob); const link=document.createElement('a'); link.href=url; link.download='班级学习情况-'+this.report.classDisplayId+'-'+(this.pageIndex+1)+'.png'; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000)
-    }
+    clearImage () { if (this.imageUrl) URL.revokeObjectURL(this.imageUrl); this.imageUrl=''; this.image=null },
+    checkDownload (event) { if (!this.imageUrl || this.dirty || this.rendering || this.generating) event.preventDefault() }
   }
 }
 </script>
