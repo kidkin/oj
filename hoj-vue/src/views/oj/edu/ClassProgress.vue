@@ -2,11 +2,11 @@
   <div class="edu-page progress-page" :style="eduPageStyle" v-loading="loading">
     <router-link :to="'/class/' + id">← 返回班级</router-link>
     <template v-if="detail && detail.canManage">
-      <header class="page-header progress-heading"><h2>{{ detail.name }} · 学习情况</h2><el-tag>班级 ID {{ detail.displayId }}</el-tag></header>
+      <header class="page-header progress-heading"><h2>{{ detail.name }} · 学习情况</h2></header>
       <section class="problem-selector">
         <div class="page-header"><h3>1. 选择题目</h3><span class="hint">已选 {{ selected.length }}/50 题，按选择顺序排列</span></div>
         <el-form inline class="progress-filters" @submit.native.prevent="search">
-          <el-form-item><el-select v-model="query.courseId" placeholder="全部公开题库" clearable :disabled="generating" @change="search"><el-option v-for="course in courses" :key="course.id" :label="course.displayId + ' · ' + course.title" :value="course.id" /></el-select></el-form-item>
+          <el-form-item><el-select v-model="query.courseId" placeholder="全部公开题库" clearable :disabled="generating" @change="search"><el-option v-for="course in courses" :key="course.id" :label="course.title" :value="course.id" /></el-select></el-form-item>
           <el-form-item><el-input v-model.trim="query.keyword" maxlength="128" placeholder="搜索原题号或题目名称" clearable :disabled="generating" @clear="search" /></el-form-item>
           <el-form-item><el-button native-type="submit" :disabled="generating">搜索</el-button><el-button :disabled="generating || !records.length || selected.length >= 50" @click="addPage">选择本页</el-button></el-form-item>
         </el-form>

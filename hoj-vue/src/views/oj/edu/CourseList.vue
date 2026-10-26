@@ -7,7 +7,7 @@
       <el-form-item><el-button native-type="submit">搜索</el-button></el-form-item>
     </el-form>
     <div class="edu-grid" v-loading="loading">
-      <LearningCard v-for="row in records" :key="row.id" :display-id="row.displayId" :to="courseTarget(row)" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :badge="access.isTeacher && row.status !== 1 ? states[row.status] : ''" :meta="row.problemCount + ' 道公开题'" :completed="row.completedCount" :total="row.problemCount" :restricted="!access.isTeacher && !row.canAccess" :show-progress="!!(access.isTeacher || row.canAccess)" @restricted-click="$message.info('加入相关班级后可学习本课程')" />
+      <LearningCard v-for="row in records" :key="row.id" :to="courseTarget(row)" :title="row.title" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :badge="access.isTeacher && row.status !== 1 ? states[row.status] : ''" :meta="row.problemCount + ' 道公开题'" :completed="row.completedCount" :total="row.problemCount" :restricted="!access.isTeacher && !row.canAccess" :show-progress="!!(access.isTeacher || row.canAccess)" @restricted-click="$message.info('加入相关班级后可学习本课程')" />
       <p v-if="!loading && !records.length" class="edu-empty">暂无符合条件的课程</p>
     </div>
     <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
