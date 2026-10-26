@@ -12,6 +12,8 @@
 
 [教师自选题目进度表与图片复制](./TEACHER-PROGRESS.md) 在 `feature/teacher-progress-images`：从班级进入，自选公开题目生成全班四状态表，支持复制图片及下载PNG。
 
+[周周练与学习页面简化](./WEEKLY-PRACTICE.md) 在 `feature/weekly-practice-ui`：精简班级介绍、增加课程进度条；周练按发布时间倒序，题目按自定数字编号升序。
+
 ## 第一次运行
 
 Windows 安装并启动 Docker Desktop，使用 WSL2 的 Linux 容器模式；使用 Git for Windows 管理版本。双击仓库内的 **Start-Dev.cmd**。首次运行需要联网下载构建镜像、npm 和 Maven 依赖，之后会使用缓存。网络下载超时时可保留窗口中的日志并再次运行，已下载的依赖会复用。

@@ -1,12 +1,10 @@
 <template>
   <div class="edu-page" :style="eduPageStyle" v-loading="loading">
-    <router-link to="/class">← 返回我的班级</router-link>
+    <div class="class-toolbar"><div class="edu-breadcrumb"><router-link to="/class">我的班级</router-link><template v-if="detail"><span>/</span><strong>{{ detail.name }}</strong></template></div><div v-if="detail && detail.canManage" class="class-actions"><el-button type="primary" @click="$router.push('/class/' + id + '/progress')">学习情况表</el-button><el-button @click="edit">编辑班级</el-button></div></div>
     <section v-if="detail" class="class-content">
-      <header class="page-header"><h2>{{ detail.name }}</h2><div><el-tag :type="detail.status === 0 ? 'success' : 'info'">{{ detail.status === 0 ? '正常' : '已归档' }}</el-tag><el-button v-if="detail.canManage" class="edit-button" type="primary" @click="$router.push('/class/' + id + '/progress')">学习情况表</el-button><el-button v-if="detail.canManage" class="edit-button" @click="edit">编辑班级</el-button></div></header>
-      <p class="meta">班级显示ID：{{ detail.displayId }} · 创建者：{{ detail.ownerUsername }} · 学生 {{ detail.studentCount }} 人</p>
-      <p class="description">{{ detail.description || '暂无班级介绍' }}</p>
-      <p v-if="!detail.canManage" class="meta">你已加入此班级。</p>
-      <el-divider />
+      <div class="class-about"><p class="description">{{ detail.description || '暂无班级介绍' }}</p></div>
+      <el-alert v-if="detail.status !== 0" title="班级已归档" type="info" :closable="false" />
+      <div class="class-learning-progress"><LearningProgress :completed="detail.completedCount" :total="detail.problemCount" /></div>
       <ClassCourses :class-id="id" :can-manage="detail.canManage" :archived="detail.status !== 0" />
       <template v-if="detail.canManage">
         <el-divider />
@@ -25,9 +23,9 @@
     <el-dialog title="编辑班级" :visible.sync="editDialog" width="min(560px, 94vw)" :close-on-click-modal="false">
       <el-form label-position="top">
         <el-form-item label="班级名称" required><el-input v-model.trim="form.name" maxlength="128" show-word-limit /></el-form-item>
-        <el-form-item label="班级显示ID（排序）" required><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /><p class="meta">按数字从小到大排列。相同显示ID的班级按创建先后排列。</p></el-form-item>
+        <el-form-item label="班级显示ID（排序）" required><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /></el-form-item>
         <el-form-item label="班级介绍"><el-input v-model="form.description" type="textarea" :rows="5" maxlength="10000" show-word-limit /></el-form-item>
-        <el-form-item label="状态"><el-select v-model="form.status"><el-option :value="0" label="正常" /><el-option :value="1" label="归档" /></el-select><p class="meta">归档后学生无法进入，管理教师可在此恢复。</p></el-form-item>
+        <el-form-item label="状态"><el-select v-model="form.status"><el-option :value="0" label="正常" /><el-option :value="1" label="归档" /></el-select></el-form-item>
       </el-form>
       <span slot="footer"><el-button @click="editDialog = false">取消</el-button><el-button type="primary" :loading="saving" :disabled="!form.name" @click="save">保存</el-button></span>
     </el-dialog>
@@ -35,7 +33,7 @@
       <el-form label-position="top">
         <el-form-item label="成员身份"><el-select v-model="memberForm.role"><el-option label="学生" value="STUDENT" /><el-option label="教师" value="TEACHER" /></el-select></el-form-item>
         <el-form-item label="已有账号的用户名" required><el-input type="textarea" v-model="memberForm.names" :rows="7" placeholder="每行一个用户名，也可用逗号分隔；每次最多100个" /></el-form-item>
-        <p class="meta">添加教师前，需由超级管理员授予该账号教师身份。重复添加可更新成员身份。</p>
+
       </el-form>
       <span slot="footer"><el-button @click="memberDialog = false">取消</el-button><el-button type="primary" :loading="saving" :disabled="!memberForm.names.trim()" @click="addMembers">添加</el-button></span>
     </el-dialog>
@@ -45,9 +43,10 @@
 import edu from '@/common/edu-api'
 import eduLayout from '@/common/edu-layout'
 import ClassCourses from './ClassCourses.vue'
+import LearningProgress from './LearningProgress.vue'
 export default {
   mixins: [eduLayout],
-  components: {ClassCourses},
+  components: {ClassCourses, LearningProgress},
   data: () => ({detail: null, loading: false, membersLoading: false, saving: false, members: [], memberTotal: 0, memberPage: 1, editDialog: false, memberDialog: false, form: {}, memberForm: {role: 'STUDENT', names: ''}}),
   computed: {id () { return this.$route.params.classId }},
   watch: {id () { this.memberPage = 1; this.load() }},
@@ -72,6 +71,7 @@ export default {
 </script>
 <style scoped>
 .class-content { margin-top: 22px; }
+.class-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }.class-actions { display:flex; gap:12px; }.class-actions .el-button { margin:0; }.class-about { background:#fff; border-left:4px solid #6aa3d4; border-radius:0 10px 10px 0; padding:20px 24px; }.class-about .description { margin:0; }.class-learning-progress { margin:24px 0 34px; max-width:720px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 h2 { margin: 0; font-size: 22px; }h3 { margin: 0 0 12px; }.edit-button { margin-left: 12px; }
 .meta { color: #606266; line-height: 1.8; }.description { white-space: pre-wrap; line-height: 1.8; overflow-wrap: anywhere; }

@@ -25,7 +25,7 @@ export const m = {
   Export_Import_Problem: '导入|导出题目',
   Training_Admin: '训练管理',
   Training_List: '训练列表',
-  Create_Training: '创建训练',
+  Create_Training: '创建周练',
   Admin_Category: '分类管理',
   Contest_Admin: '比赛管理',
   Contest_List: '比赛列表',
@@ -361,7 +361,7 @@ export const m = {
   Public_Training: '公开训练',
   Private_Training: '私有训练',
   Training_Password: '训练密码',
-  Edit_Training: '编辑训练',
+  Edit_Training: '编辑周练',
   Redirect_To_Category: '当前训练的分类列表为空，请先前往创建分类！',
   Redirect: '重定向',
 

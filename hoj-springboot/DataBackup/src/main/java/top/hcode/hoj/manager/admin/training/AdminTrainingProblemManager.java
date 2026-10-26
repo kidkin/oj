@@ -111,7 +111,17 @@ public class AdminTrainingProblemManager {
         return trainingProblem;
     }
 
+    private int nextRank(Long tid) throws StatusFailException {
+        TrainingProblem last = trainingProblemEntityService.getOne(new QueryWrapper<TrainingProblem>()
+                .eq("tid", tid).orderByDesc("`rank`").last("LIMIT 1"), false);
+        int value = last == null || last.getRank() == null ? 0 : last.getRank();
+        if (value == Integer.MAX_VALUE) throw new StatusFailException("题目编号已达到上限，请先调整已有编号");
+        return value + 1;
+    }
+
     public void updateProblem(TrainingProblem trainingProblem) throws StatusFailException {
+        if (trainingProblem.getRank() == null || trainingProblem.getRank() < 0)
+            throw new StatusFailException("题目编号须为非负整数");
         boolean isOk = trainingProblemEntityService.saveOrUpdate(trainingProblem);
 
         if (!isOk) {
@@ -177,7 +187,7 @@ public class AdminTrainingProblemManager {
 
         TrainingProblem newTProblem = new TrainingProblem();
         boolean isOk = trainingProblemEntityService.saveOrUpdate(newTProblem
-                .setTid(tid).setPid(pid).setDisplayId(displayId));
+                .setTid(tid).setPid(pid).setDisplayId(displayId).setRank(nextRank(tid)));
         if (isOk) { // 添加成功
 
             // 更新训练最近更新时间
@@ -234,7 +244,7 @@ public class AdminTrainingProblemManager {
 
         TrainingProblem newTProblem = new TrainingProblem();
         boolean isOk = trainingProblemEntityService.saveOrUpdate(newTProblem
-                .setTid(tid).setPid(problem.getId()).setDisplayId(problem.getProblemId()));
+                .setTid(tid).setPid(problem.getId()).setDisplayId(problem.getProblemId()).setRank(nextRank(tid)));
         if (isOk) { // 添加成功
 
             // 更新训练最近更新时间

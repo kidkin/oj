@@ -65,4 +65,7 @@ public class Training implements Serializable {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Date gmtModified;
 
+    @TableField(exist = false)
+    private Date publishTime;
+
 }

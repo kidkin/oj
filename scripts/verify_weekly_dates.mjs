@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const source=fs.readFileSync(new URL('../hoj-vue/src/common/weekly.js',import.meta.url),'utf8');
+const {weeklyTimestamp,weeklyDate,isCurrentWeek,weeklyPercent}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+assert.equal(weeklyTimestamp('2026-10-26 00:00:00'),Date.parse('2026-10-25T16:00:00Z'));
+assert.equal(weeklyDate('2026-10-25T16:00:00Z'),'2026.10.26');
+assert.equal(weeklyDate('bad'),'—');
+const monday=Date.parse('2026-10-25T16:00:00Z');
+assert.equal(isCurrentWeek({publishTime:'2026-10-25 23:59:59'},monday),false);
+assert.equal(isCurrentWeek({publishTime:'2026-10-26 00:00:00'},monday),true);
+assert.equal(isCurrentWeek({publishTime:'2026-10-26 00:00:01'},monday),false);
+assert.equal(isCurrentWeek({publishTime:'2026-11-01 23:59:59'},Date.parse('2026-11-01T15:59:59Z')),true);
+assert.equal(isCurrentWeek({publishTime:'2026-11-01 23:59:59'},Date.parse('2026-11-01T16:00:00Z')),false);
+assert.equal(weeklyPercent({acCount:2,problemCount:6}),33);
+assert.equal(weeklyPercent({acCount:0,problemCount:0}),0);
+console.log('PASS: Shanghai Monday/Sunday boundaries, legacy date parsing, future date exclusion, completion percentages');

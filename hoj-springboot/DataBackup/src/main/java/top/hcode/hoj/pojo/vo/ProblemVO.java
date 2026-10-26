@@ -23,6 +23,9 @@ public class ProblemVO implements Serializable {
     @ApiModelProperty(value = "题目展示id")
     private String problemId;
 
+    @ApiModelProperty(value = "周周练内的数字题目编号")
+    private Integer trainingRank;
+
     @ApiModelProperty(value = "题目标题")
     private String title;
 

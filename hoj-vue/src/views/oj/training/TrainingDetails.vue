@@ -1,5 +1,7 @@
 <template>
   <div>
+    <WeeklyDetails v-if="!groupID && training.auth === 'Public'" :training="training" />
+    <template v-else>
     <el-card shadow class="training-header">
       <div slot="header">
         <span class="panel-title">{{ training.title }}</span>
@@ -192,6 +194,7 @@
         </el-tab-pane>
       </el-tabs>
     </div>
+    </template>
   </div>
 </template>
 
@@ -201,9 +204,10 @@ import { mapState, mapGetters, mapActions } from 'vuex';
 import myMessage from '@/common/message';
 import api from '@/common/api';
 import Markdown from '@/components/oj/common/Markdown';
+import WeeklyDetails from './WeeklyDetails.vue';
 export default {
   components: { 
-    Markdown
+    Markdown, WeeklyDetails
   },
   data() {
     return {
@@ -237,7 +241,7 @@ export default {
     this.TRAINING_TYPE = Object.assign({}, TRAINING_TYPE);
     this.$store.dispatch('getTraining').then((res) => {
       this.changeDomTitle({ title: res.data.data.title });
-    });
+    }).catch(() => {});
   },
   methods: {
     ...mapActions(['changeDomTitle']),
@@ -296,6 +300,10 @@ export default {
   },
   watch: {
     $route(newVal) {
+      if (String(newVal.params.trainingID) !== String(this.training.id)) {
+        this.$store.commit('clearTraining');
+        this.$store.dispatch('getTraining').then(res => this.changeDomTitle({title:res.data.data.title})).catch(() => {});
+      }
       this.route_name = newVal.name;
       if(this.groupID){
          if (newVal.name == 'GroupTrainingProblemDetails') {

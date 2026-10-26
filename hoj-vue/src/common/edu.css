@@ -7,4 +7,5 @@
 .edu-page .edu-empty { grid-column: 1 / -1; text-align: center; padding: 64px 12px; color: #8493a0; }
 .edu-page .edu-intro { color: #64788a; line-height: 1.8; margin: 12px 0 22px; }
 .edu-page .pagination { margin-top: 24px; text-align: right; }
+.edu-page .edu-breadcrumb { display:flex; align-items:center; flex-wrap:wrap; gap:12px; color:#7c8c99; line-height:1.6; }.edu-page .edu-breadcrumb strong { font-weight:500; color:#3c5369; }.edu-page .edu-breadcrumb a { color:#518ac0; }
 @media (max-width: 700px) { .edu-page { padding: 16px 12px; }.edu-page .edu-grid { gap: 14px; }.edu-page h2 { font-size: 21px; } }

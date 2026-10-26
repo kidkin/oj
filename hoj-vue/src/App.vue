@@ -245,7 +245,7 @@ export default {
     },
   },
   computed: {
-    isEduView() { return /^\/(class|course)(\/|$)/.test(this.$route.path); },
+    isEduView() { return /^\/(class|course|training)(\/|$)/.test(this.$route.path); },
     ...mapState(["websiteConfig"]),
     ...mapGetters(["webLanguage", "token", "isAuthenticated"]),
   },

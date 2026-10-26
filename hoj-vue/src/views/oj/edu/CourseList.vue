@@ -1,7 +1,6 @@
 <template>
   <div class="edu-page" :style="eduPageStyle">
     <header class="page-header"><h2>课程总览</h2><el-button v-if="access.isTeacher" type="primary" @click="createDialog = true">创建课程</el-button></header>
-    <p class="edu-intro">{{ access.isTeacher ? '在这里维护共享课程。修改会同步到所有引用班级，课程图标可在详情页上传。' : '可以浏览已发布的课程；请从自己加入的班级进入课程学习。' }}</p>
     <el-form class="edu-toolbar" inline @submit.native.prevent="search">
       <el-form-item><el-input v-model="query.keyword" maxlength="128" placeholder="搜索课程名称" clearable @clear="search" /></el-form-item>
       <el-form-item v-if="access.isTeacher"><el-select v-model="query.scope" @change="search"><el-option value="library" label="课程库" /><el-option value="mine" label="我创建的" /></el-select></el-form-item>
@@ -14,7 +13,7 @@
     <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
     <el-dialog title="创建共享课程" :visible.sync="createDialog" width="min(600px, 94vw)" :close-on-click-modal="false">
       <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程显示ID（排序）"><el-input v-model.trim="form.displayId" maxlength="10" placeholder="留空自动填写" aria-label="课程显示ID" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item></el-form>
-      <p class="edu-intro">先保存为草稿，进入详情上传图标、加入公开题目并发布。</p>
+
       <span slot="footer"><el-button @click="createDialog = false">取消</el-button><el-button type="primary" :disabled="!form.title" :loading="saving" @click="create">创建草稿</el-button></span>
     </el-dialog>
   </div>

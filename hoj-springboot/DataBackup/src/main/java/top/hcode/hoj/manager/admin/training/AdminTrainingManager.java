@@ -26,6 +26,8 @@ import top.hcode.hoj.validator.TrainingValidator;
 
 import javax.annotation.Resource;
 import java.util.Objects;
+import java.util.Date;
+import top.hcode.hoj.edu.WeeklyReleaseService;
 
 /**
  * @Author: Himit_ZH
@@ -36,6 +38,9 @@ import java.util.Objects;
 @Component
 @Slf4j(topic = "hoj")
 public class AdminTrainingManager {
+
+    @Resource
+    private WeeklyReleaseService weeklyReleaseService;
 
     @Resource
     private TrainingEntityService trainingEntityService;
@@ -94,6 +99,7 @@ public class AdminTrainingManager {
         }
 
         TrainingDTO trainingDto = new TrainingDTO();
+        training.setPublishTime(weeklyReleaseService.resolve(tid, training.getGmtCreate()));
         trainingDto.setTraining(training);
 
         QueryWrapper<MappingTrainingCategory> queryWrapper = new QueryWrapper<>();
@@ -127,7 +133,9 @@ public class AdminTrainingManager {
     public void addTraining(TrainingDTO trainingDto) throws StatusFailException {
         Training training = trainingDto.getTraining();
         trainingValidator.validateTraining(training);
+        Date published = weeklyReleaseService.validate(training.getPublishTime(), null);
         trainingEntityService.save(training);
+        weeklyReleaseService.save(training.getId(), published);
         TrainingCategory trainingCategory = trainingDto.getTrainingCategory();
         if (trainingCategory.getId() == null) {
             try {
@@ -161,7 +169,10 @@ public class AdminTrainingManager {
             throw new StatusForbiddenException("对不起，你无权限操作！");
         }
         Training oldTraining = trainingEntityService.getById(training.getId());
+        if (oldTraining == null) throw new StatusFailException("该周练不存在");
+        Date published = weeklyReleaseService.validate(training.getPublishTime(), weeklyReleaseService.resolve(training.getId(), oldTraining.getGmtCreate()));
         trainingEntityService.updateById(training);
+        weeklyReleaseService.save(training.getId(), published);
 
         // 私有训练 修改密码 需要清空之前注册训练的记录
         if (training.getAuth().equals(Constants.Training.AUTH_PRIVATE.getValue())) {

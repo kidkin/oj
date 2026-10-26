@@ -7,10 +7,7 @@
       <vxe-table-column field="displayId" title="课程内ID" :width="editing ? 190 : 110">
         <template v-slot="{row}"><el-input-number v-if="editing" v-model="row.displayId" :aria-label="row.problemId + ' 的课程内ID'" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" size="small" :disabled="saving" /><span v-else>{{ row.displayId }}</span></template>
       </vxe-table-column>
-      <vxe-table-column field="problemId" title="原题号" width="180" show-overflow>
-        <template v-slot="{row}"><router-link v-if="row.available && !editing" :to="{name:'ProblemDetails', params:{problemID:row.problemId}}" @click.native.stop>{{ row.problemId }}</router-link><span v-else>{{ row.problemId || '不可用' }}</span></template>
-      </vxe-table-column>
-      <vxe-table-column field="title" title="题目名称" min-width="200" show-overflow />
+      <vxe-table-column field="title" title="题目名称" min-width="240" show-overflow><template v-slot="{row}"><router-link v-if="row.available && !editing" :to="{name:'ProblemDetails',params:{problemID:row.problemId}}" @click.native.stop>{{ row.title }}</router-link><span v-else>{{ row.title || '不可用' }}</span></template></vxe-table-column>
       <vxe-table-column field="difficulty" title="难度" min-width="100"><template v-slot="{row}"><span v-if="row.available" class="el-tag el-tag--small" :style="levelColor(row.difficulty)">{{ levelName(row.difficulty) }}</span><span v-else>不可用</span></template></vxe-table-column>
       <vxe-table-column v-if="!editing" key="tags" title="标签" min-width="140"><template v-slot:header><el-link :type="showTags ? 'danger' : 'primary'" :underline="false" @click.stop="showTags = !showTags">{{ showTags ? '隐藏标签' : '显示标签' }}</el-link></template><template v-slot="{row}"><div v-if="showTags"><span v-for="tag in row.tags" :key="tag.id" class="el-tag el-tag--small problem-tag" :style="{backgroundColor:tag.color || '#409eff'}">{{ tag.name }}</span></div></template></vxe-table-column>
       <vxe-table-column v-if="!editing" key="rate" title="通过率" min-width="150"><template v-slot="{row}"><el-tooltip v-if="row.available" :content="'公开普通提交：' + (row.ac || 0) + '/' + (row.total || 0)" placement="top"><el-progress :text-inside="true" :stroke-width="20" :percentage="passingRate(row)" /></el-tooltip></template></vxe-table-column>

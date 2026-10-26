@@ -28,6 +28,7 @@ import top.hcode.hoj.shiro.AccountProfile;
 import top.hcode.hoj.utils.Constants;
 import top.hcode.hoj.validator.GroupValidator;
 import top.hcode.hoj.validator.TrainingValidator;
+import top.hcode.hoj.edu.WeeklyReleaseService;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -40,6 +41,9 @@ import java.util.stream.Collectors;
  */
 @Component
 public class TrainingManager {
+
+    @Resource
+    private WeeklyReleaseService weeklyReleaseService;
 
     @Resource
     private TrainingEntityService trainingEntityService;
@@ -94,6 +98,7 @@ public class TrainingManager {
         // 页数，每页题数若为空，设置默认值
         if (currentPage == null || currentPage < 1) currentPage = 1;
         if (limit == null || limit < 1) limit = 20;
+        limit = Math.min(limit, 50);
 
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
 
@@ -133,9 +138,12 @@ public class TrainingManager {
         }
 
         TrainingVO trainingVo = BeanUtil.copyProperties(training, TrainingVO.class);
+        trainingVo.setPublishTime(weeklyReleaseService.resolve(tid, training.getGmtCreate()));
         TrainingCategory trainingCategory = trainingCategoryEntityService.getTrainingCategoryByTrainingId(training.getId());
-        trainingVo.setCategoryName(trainingCategory.getName());
-        trainingVo.setCategoryColor(trainingCategory.getColor());
+        if (trainingCategory != null) {
+            trainingVo.setCategoryName(trainingCategory.getName());
+            trainingVo.setCategoryColor(trainingCategory.getColor());
+        }
         List<Long> trainingProblemIdList = trainingProblemEntityService.getTrainingProblemIdList(training.getId());
         trainingVo.setProblemCount(trainingProblemIdList.size());
 

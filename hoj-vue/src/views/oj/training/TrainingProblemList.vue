@@ -39,8 +39,8 @@
         </template>
       </vxe-table-column>
       <vxe-table-column
-        field="problemId"
-        :title="$t('m.Problem_ID')"
+        :field="groupID ? 'problemId' : 'trainingRank'"
+        :title="groupID ? $t('m.Problem_ID') : '题目编号'"
         width="150"
         show-overflow
       >

@@ -69,13 +69,16 @@
         </vxe-table-column>
         <vxe-table-column
           min-width="200"
-          :title="$t('m.Training_Problem_Rank')"
+          title="题目编号"
         >
           <template v-slot="{ row }">
             <el-input-number
               v-model="trainingProblemMap[row.id].rank"
               @change="handleChangeRank(trainingProblemMap[row.id])"
               :min="0"
+              :precision="0"
+              step-strictly
+              :aria-label="row.title + ' 的题目编号'"
               :max="2147483647"
             ></el-input-number>
           </template>

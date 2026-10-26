@@ -3,7 +3,6 @@
     <router-link :to="'/class/' + id">← 返回班级</router-link>
     <template v-if="detail && detail.canManage">
       <header class="page-header progress-heading"><h2>{{ detail.name }} · 学习情况</h2><el-tag>班级 ID {{ detail.displayId }}</el-tag></header>
-      <p class="hint">选择题目后，为本班全部学生生成表格。按历史最佳结果统计：正确优先于部分正确，部分正确优先于错误；比赛和原团队提交不计入。</p>
       <section class="problem-selector">
         <div class="page-header"><h3>1. 选择题目</h3><span class="hint">已选 {{ selected.length }}/50 题，按选择顺序排列</span></div>
         <el-form inline class="progress-filters" @submit.native.prevent="search">

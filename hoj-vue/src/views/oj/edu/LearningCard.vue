@@ -8,7 +8,7 @@
     <div class="card-content">
       <h3 :title="title">{{ title }}<span v-if="badge" class="card-badge">{{ badge }}</span></h3>
       <div class="card-body">
-        <p class="description">{{ description || (kind === 'class' ? '进入班级，继续你的学习。' : '按课程编排，逐步完成练习。') }}</p>
+        <p v-if="description" class="description">{{ description }}</p>
         <p v-if="disabled" class="locked-hint"><i class="el-icon-lock" aria-hidden="true" /> {{ disabledHint }}</p>
         <div v-else-if="showProgress" class="completion">
           <div class="completion-label"><span>{{ progressText }}</span><strong v-if="total">{{ percentage }}%</strong></div>
@@ -30,7 +30,7 @@ export default {
   watch: {icon () { this.imageError = false }},
   computed: {
     percentage () { return this.total ? Math.min(100, Math.round(this.completed / this.total * 100)) : 0 },
-    progressText () { return this.total ? '本人已完成 ' + this.completed + ' / ' + this.total + ' 题' : '暂无题目' }
+    progressText () { return this.total ? '已完成 ' + this.completed + ' / ' + this.total + ' 题' : '暂无题目' }
   }
 }
 </script>

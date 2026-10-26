@@ -9,14 +9,8 @@
       <el-form label-position="top">
         <el-row :gutter="20">
           <el-col :span="24">
-            <el-form-item :label="$t('m.Training_rank')" required>
-              <el-input-number
-                v-model="training.rank"
-                @change="handleChange"
-                :min="0"
-                :max="2147483647"
-                :label="$t('m.Training_rank')"
-              ></el-input-number>
+            <el-form-item label="发布时间" required>
+              <el-date-picker v-model="training.publishTime" type="datetime" value-format="timestamp" placeholder="选择发布时间" :picker-options="{disabledDate:date => date.getTime() > Date.now()}" />
             </el-form-item>
           </el-col>
 
@@ -84,6 +78,7 @@
 import api from '@/common/api';
 import { mapGetters } from 'vuex';
 import myMessage from '@/common/message';
+import {weeklyTimestamp} from '@/common/weekly';
 const Editor = () => import('@/components/admin/Editor.vue');
 export default {
   name: 'CreateTraining',
@@ -95,6 +90,7 @@ export default {
       title: 'Create Training',
       training: {
         rank: 1000,
+        publishTime: Date.now(),
         title: '',
         description: '',
         privatePwd: '',
@@ -116,6 +112,7 @@ export default {
         this.title = this.$i18n.t('m.Create_Training');
         this.training = {
           rank: 1000,
+          publishTime: Date.now(),
           title: '',
           description: '',
           privatePwd: '',
@@ -163,12 +160,14 @@ export default {
         .then((res) => {
           let data = res.data.data;
           this.training = data.training || {};
-          this.trainingCategoryId = data.trainingCategory.id || null;
+          this.training.publishTime = weeklyTimestamp(this.training.publishTime || this.training.gmtCreate) || Date.now();
+          this.trainingCategoryId = data.trainingCategory ? data.trainingCategory.id : null;
         })
         .catch(() => {});
     },
 
     saveTraining() {
+      if (!this.training.publishTime || this.training.publishTime > Date.now() + 60000) { myMessage.error('请选择不晚于当前时间的发布时间'); return; }
       if (!this.training.rank && this.training.rank != 0) {
         myMessage.error(
           this.$i18n.t('m.Training_rank') + ' ' + this.$i18n.t('m.is_required')
