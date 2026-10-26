@@ -1,0 +1,69 @@
+{
+    "Version":  "v0.3.1",
+    "ReleasedOn":  "2026-10-26",
+    "Images":  {
+                   "hoj-backend":  {
+                                       "Reference":  "crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj/hoj-backend:v0.3.1",
+                                       "Digest":  "sha256:2f129fb4e572c562a24ad2bd6679723daa80e89de62283a49cedfa32a4bb5041",
+                                       "SourceRevision":  "5975b1bb01aa",
+                                       "RootFsDiffIds":  [
+                                                             "sha256:9c742cd6c7a5752ee36be8ecb14be45c0885e10e6dd34f26a9ae3eb096c5d492",
+                                                             "sha256:03127cdb479b0f1eb8a9b0df8e8d72ead24979728d3c84ff645611b9d8790f94",
+                                                             "sha256:293d5db30c9fcf33b65fa033e427fdd118464f9ea0c2a343a478a6e89c29140e",
+                                                             "sha256:9b55156abf262eac3e6bd3ae60e7277ab4f9c69543650d7ecefc8c26ee889873",
+                                                             "sha256:b626401ef603dd383fc3a43cf474186827db1875591bfc84b178177ca010015b",
+                                                             "sha256:53a0b163e9955ffb80569ef37e13fbf5d1074ddd67bc5ad09d7bd874b800396a",
+                                                             "sha256:6b5aaff4425423d122ebe4f1514a1994ae60954fc8a2299787df0ddb1a12f6b9",
+                                                             "sha256:8055bc787bb19b07bd303ac74026599eb4f790e62e0beb2f3366b940c31c2894",
+                                                             "sha256:80a1fcc8ded802c07ff537242ec8d1794de67296588333123d8251a83ebb8791",
+                                                             "sha256:61868ce9077035b7b1c5aa09f30f92a5c60dbfcaee5584390ca35f318bd24299",
+                                                             "sha256:36787cf3d08781f9aafcea33ebab47b1fda7ce9f6b11cfa6b4df0d489a096925",
+                                                             "sha256:703de3f8edc2abecc36d5a052dfb68d017ce5e2a073d5f4d8b1fc6a215deb887"
+                                                         ]
+                                   },
+                   "hoj-frontend":  {
+                                        "Reference":  "crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj/hoj-frontend:v0.3.1",
+                                        "Digest":  "sha256:414f4230370ca9b37743eb42a3fc56b27447da9d5531d8b7e9cafdaf18ab68d2",
+                                        "SourceRevision":  "5975b1bb01aa",
+                                        "RootFsDiffIds":  [
+                                                              "sha256:f1b5933fe4b5f49bbe8258745cf396afe07e625bdab3168e364daf7c956b6b81",
+                                                              "sha256:a61993362bafa7ae596d94fd1506a693d10b1b85dda516952b77cb55b69d2861",
+                                                              "sha256:bf381a67095604adef183f8bae81953bcd3e0b121bdd97715b16606e8f4b4a84",
+                                                              "sha256:a521e1bbddf56ff1b5eb050faae85b4e1277c8f2defcc9083979772ff5ec555b",
+                                                              "sha256:7bad9af915ca97c1a384730264b21a2fc5b900fb09593984dc5f19eef72b1f6a",
+                                                              "sha256:64dc4378d3dd9ef7c1abecde107f1daa8fc4f56f377f4e5942505e04b2e7f8dd",
+                                                              "sha256:4a417fd2c470b7af446702e4d0f3ee497dfbf0c1e14e49be2ecdb88ec09bc07d",
+                                                              "sha256:2f46bb9bd469f3ee4ae28038e14bd711ef5971a33dc6a5c94f3b701a2b6ebb9b",
+                                                              "sha256:99e4d859cfdd091fbbe1a35cfc0d69bdb188cced62ea0fa1ce9adfaca5cae430",
+                                                              "sha256:7b32082cf9a67cb03f4fd5e53e73e8cdc17296a6760c8ce351b4507b54dfb821",
+                                                              "sha256:a5b166ce6f4072bea0f264fa1696074c42209e8f74cd1927fdfc26fee5d5add0",
+                                                              "sha256:c9ec4babbf93dd163adc02819815407bc5517156506c406f4502e34946cca47a"
+                                                          ]
+                                    },
+                   "hoj-judgeserver":  {
+                                           "Reference":  "crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj/hoj-judgeserver:v0.3.1",
+                                           "Digest":  "sha256:8235bd3a6905f3a4fa875bd0d970e5e3c1e773e65c0d8e457e3512d8dad048ab",
+                                           "SourceRevision":  "5975b1bb01aa",
+                                           "RootFsDiffIds":  [
+                                                                 "sha256:548a79621a426b4eb077c926eabac5a8620c454fb230640253e1b44dc7dd7562",
+                                                                 "sha256:6fb9927e4c86a7ba65bff7164e97ec5c8b57e4933943b2b7b386e764b4fdbb06",
+                                                                 "sha256:5eb2a67f8ff88c6e42f01378cf9928d862a2999db905aa534ed2d376f384e598",
+                                                                 "sha256:04487ae34688fe640af156226ba49a4b1206a927105a6f5b2963ad01353ad5b4",
+                                                                 "sha256:3f4f909a1ae0065d5dd8d09036db2deb85fb42e550b056001ba2b96547a5bc60",
+                                                                 "sha256:4603e5b83b8ede1be4060889344ec826bca2234760f82a30fb3523220f2fe9f6",
+                                                                 "sha256:2bd373286b812e76296bdaaca6c424e622eb7c97bc9ec7530e7d38a805c1548c",
+                                                                 "sha256:9f02b5c825b37a1d8ffa9e74784f21b71a10894912dd3cf09fef94d303c77a2d",
+                                                                 "sha256:897b454c854af40ed07f0aed93bdc4655a98fd479725a52615e39dcf7d9c8a81",
+                                                                 "sha256:3b0fc6608c5b2e46b703a9724b0ac0f1ff7712bf3bcfad9e5ad6a1352d3cdd28",
+                                                                 "sha256:90f33d424d60cad60df8c853d1ad54dbe2d9bfa07bceadea2c0441ce27d81007"
+                                                             ]
+                                       }
+               },
+    "Migrations":  {
+                       "V001__class_members":  "5054222d7b2e75df3f8d7e216fa171f40e480e958054758d791f5d3ee6c63044",
+                       "V002__shared_courses":  "9adf9bb33ad8f89ff0368c8f94094d6e28e77a3a665eaa4ee8adf24bf932cd61",
+                       "V003__course_icons":  "6c1d0fe4422a96d95cf9c51971aa0c38787184722fbfed89630a2c1ad401648c",
+                       "V004__display_order":  "79ce9ad7bdff2c2474a1ed65f9a04f584a21a67e4df9ec935cb81b44416e652a",
+                       "V005__weekly_release":  "8e30dd06c02497e49dca60df322ab63bcc54a5eb9007287cbb2598d9f2b21c54"
+                   }
+}
