@@ -1,0 +1,11 @@
+# Assemble cloud-built applications using the same pinned, previously deployed runtimes.
+ARG BACKEND_RUNTIME_IMAGE=crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj/hoj-backend@sha256:2f129fb4e572c562a24ad2bd6679723daa80e89de62283a49cedfa32a4bb5041
+ARG JUDGESERVER_RUNTIME_IMAGE=crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj/hoj-judgeserver@sha256:8235bd3a6905f3a4fa875bd0d970e5e3c1e773e65c0d8e457e3512d8dad048ab
+FROM ${BACKEND_RUNTIME_IMAGE} AS backend
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} hoj.build=source
+COPY backend.jar /app.jar
+FROM ${JUDGESERVER_RUNTIME_IMAGE} AS judgeserver
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} hoj.build=source
+COPY judgeserver.jar /judge/server/app.jar

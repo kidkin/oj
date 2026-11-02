@@ -1,0 +1,53 @@
+name: HOJ cloud build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'hoj-springboot/**'
+      - 'hoj-vue/**'
+      - 'scripts/package_cloud_build.py'
+      - '.github/workflows/cloud-build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hoj-cloud-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  applications:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Compile Java applications and run education tests
+        run: >-
+          docker run --rm
+          -v "$GITHUB_WORKSPACE/hoj-springboot:/src" -w /src
+          maven:3.9.9-eclipse-temurin-8@sha256:e20e4fc05fb5480c884a1f750c362ed0e91aca15cec5736e12796713710ec9b3
+          mvn -B -ntp package -DskipTests=false
+          -Dtest=EduClassServiceTest,EduCourseServiceTest,CourseIconStoreTest,EduDisplayOrderTest,EduClassProgressServiceTest,WeeklyReleaseServiceTest,ProblemSourceVisibilityTest,AccountProvisioningTest
+          -Dsurefire.failIfNoSpecifiedTests=false
+      - name: Compile frontend
+        run: >-
+          docker run --rm
+          -v "$GITHUB_WORKSPACE/hoj-vue:/src" -w /src
+          node:16.20.2-bullseye@sha256:cd59a61258b82b86c1ff0ead50c8a689f6c3483c5ed21036e11ee741add419eb
+          sh -c 'npm ci --legacy-peer-deps --no-audit --no-fund && npm run build'
+      - name: Package verified applications
+        run: python3 scripts/package_cloud_build.py --output cloud-dist
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hoj-applications-${{ github.sha }}
+          path: |
+            cloud-dist/hoj-applications.tar.gz
+            cloud-dist/build.json
+            cloud-dist/hoj-applications.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

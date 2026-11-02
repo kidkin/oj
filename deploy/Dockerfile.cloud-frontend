@@ -1,0 +1,6 @@
+ARG FRONTEND_RUNTIME_IMAGE=crpi-06ni3fl9fozs6y04.cn-shanghai.personal.cr.aliyuncs.com/kidkin-oj/hoj-frontend@sha256:414f4230370ca9b37743eb42a3fc56b27447da9d5531d8b7e9cafdaf18ab68d2
+FROM ${FRONTEND_RUNTIME_IMAGE}
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} hoj.build=source
+RUN rm -rf /usr/share/nginx/html/*
+COPY frontend/ /usr/share/nginx/html/

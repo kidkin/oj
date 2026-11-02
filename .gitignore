@@ -17,3 +17,4 @@ Thumbs.db
 backups/
 deploy/compose.dev-data.json
 __pycache__/
+cloud-dist/

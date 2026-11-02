@@ -77,7 +77,11 @@ def main():
         actual = docker.json("image", "inspect", item["Image"])[0]
         verify_image(name, item, actual, release["Images"][name])
         print("PASS IMAGE: %s %s" % (name, release["Images"][name]["SourceRevision"]))
-    query = "SELECT version,checksum FROM hoj.edu_schema_history ORDER BY version;"
+    backend_env = dict(value.split("=", 1) for value in containers["hoj-backend"]["Config"]["Env"] if "=" in value)
+    database = backend_env.get("MYSQL_DATABASE_NAME", "hoj")
+    if not re.fullmatch(r"[A-Za-z0-9_]+", database):
+        raise RuntimeError("Unexpected application database name")
+    query = "SELECT version,checksum FROM `" + database + "`.edu_schema_history ORDER BY version;"
     result = hb.run([docker.exe, "exec", "-i", containers["hoj-mysql"]["Id"], "sh", "-c",
                      'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot --batch --skip-column-names'], stdin=query)
     migrations = dict(line.split("\t") for line in result.stdout.strip().splitlines())
