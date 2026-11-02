@@ -23,6 +23,8 @@ public interface UserRecordEntityService extends IService<UserRecord> {
 
     List<ACMRankVO> getRecent7ACRank();
 
+    List<ACMRankVO> getCurrentWeekACRank(java.util.Date weekStart, java.util.Date weekEnd);
+
     UserHomeVO getUserHomeInfo(String uid, String username);
 
     List<Judge> getLastYearUserJudgeList(String uid, String username);

@@ -27,6 +27,20 @@
         ORDER BY ac DESC,u.gmt_create DESC LIMIT 10
     </select>
 
+    <select id="getCurrentWeekACRank" resultType="top.hcode.hoj.pojo.vo.ACMRankVO" useCache="false">
+        SELECT u.uuid AS uid,u.nickname,u.username,u.avatar,u.title_name,u.title_color,r.ac
+        FROM user_info u
+        JOIN (
+            SELECT uid,COUNT(DISTINCT pid) AS ac
+            FROM user_acproblem
+            WHERE gmt_create &gt;= #{weekStart} AND gmt_create &lt; #{weekEnd}
+            GROUP BY uid
+        ) r ON r.uid=u.uuid
+        WHERE u.status=0
+        ORDER BY r.ac DESC,u.uuid ASC
+        LIMIT 10
+    </select>
+
     <select id="getOIRankList" resultType="top.hcode.hoj.pojo.vo.OIRankVO" useCache="true">
         SELECT ui.uuid AS uid, ui.nickname, ui.username, left(ui.signature,100) as signature, ui.avatar,
             ui.title_name,ui.title_color

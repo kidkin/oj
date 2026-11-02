@@ -69,6 +69,11 @@ public class HomeController {
         return homeService.getRecentSevenACRank();
     }
 
+    @GetMapping("/get-current-week-ac-rank")
+    public CommonResult<List<ACMRankVO>> getCurrentWeekACRank() {
+        return homeService.getCurrentWeekACRank();
+    }
+
 
     /**
      * @MethodName getRecentOtherContest

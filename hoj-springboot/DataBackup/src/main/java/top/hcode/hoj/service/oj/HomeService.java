@@ -21,6 +21,8 @@ public interface HomeService {
 
     public CommonResult<List<ACMRankVO>> getRecentSevenACRank();
 
+    CommonResult<List<ACMRankVO>> getCurrentWeekACRank();
+
     @Deprecated
     public CommonResult<List<HashMap<String, Object>>> getRecentOtherContest();
 

@@ -5,7 +5,7 @@ WORKDIR /src
 COPY hoj-vue/package*.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --legacy-peer-deps --no-audit --no-fund
 COPY hoj-vue/ ./
-RUN npm run build
+RUN --mount=type=cache,target=/root/.cache/hoj-toolbox npm run build
 
 FROM ${FRONTEND_RUNTIME_IMAGE}
 ARG SOURCE_REVISION=uncommitted

@@ -56,6 +56,12 @@
                 $t('m.NavBar_OI_Rank')
               }}</el-menu-item>
             </el-submenu>
+            <el-submenu index="toolbox" popper-class="toolbox-menu">
+              <template slot="title"><i class="el-icon-s-tools"></i>工具箱</template>
+              <li v-for="tool in toolboxLinks" :key="tool.id" role="none" class="toolbox-item" :class="{'toolbox-download':tool.download}">
+                <a :href="tool.url" :target="tool.download ? null : '_blank'" rel="noopener noreferrer" :download="tool.download" role="menuitem"><i :class="tool.download ? 'el-icon-download' : 'el-icon-link'"></i>{{ tool.label }}</a>
+              </li>
+            </el-submenu>
             <el-menu-item index="/discussion"
               v-if="websiteConfig.openPublicDiscussion"
               ><i class="el-icon-s-comment"></i
@@ -521,6 +527,14 @@
             </mu-list-item>
           </mu-list-item>
 
+          <mu-list-item button :ripple="false" nested :open="openSideMenu === 'toolbox'" @toggle-nested="openSideMenu = arguments[0] ? 'toolbox' : ''">
+            <mu-list-item-action><mu-icon value=":el-icon-s-tools" size="24"></mu-icon></mu-list-item-action>
+            <mu-list-item-title>工具箱</mu-list-item-title>
+            <mu-list-item-action><mu-icon class="toggle-icon" size="24" value=":el-icon-arrow-down"></mu-icon></mu-list-item-action>
+            <div slot="nested" class="mobile-toolbox">
+              <a v-for="tool in toolboxLinks" :key="tool.id" :href="tool.url" :target="tool.download ? null : '_blank'" rel="noopener noreferrer" :download="tool.download" @click="opendrawer = false"><i :class="tool.download ? 'el-icon-download' : 'el-icon-link'"></i>{{ tool.label }}</a>
+            </div>
+          </mu-list-item>
           <mu-list-item
             v-if="websiteConfig.openPublicDiscussion"
             button
@@ -561,6 +575,7 @@ import { mapGetters, mapActions } from 'vuex';
 import Avatar from 'vue-avatar';
 import api from '@/common/api';
 import edu from '@/common/edu-api';
+import { toolboxLinks } from '@/common/toolbox';
 export default {
   components: {
     Login,
@@ -592,6 +607,7 @@ export default {
   data() {
     return {
       educationTeacher: false,
+      toolboxLinks,
       mode:'defalut',
       centerDialogVisible: false,
       mobileNar: false,
@@ -919,4 +935,13 @@ export default {
   width: 24px !important;
   text-align: center !important;
 }
+</style>
+<style>
+.toolbox-menu .toolbox-item { list-style:none; }
+.toolbox-menu .toolbox-item a { display:flex; align-items:center; gap:9px; color:#52677d; padding:0 19px; line-height:42px; font-size:14px; text-decoration:none; }
+.toolbox-menu .toolbox-item a:hover,.toolbox-menu .toolbox-item a:focus-visible { color:#258dec; background:#f0f7ff; }
+.toolbox-menu .toolbox-download { border-top:1px solid #edf1f7; margin-top:4px; padding-top:4px; }
+.toolbox-menu .toolbox-download a { color:#248bd9; }
+.mobile-toolbox a { display:flex; align-items:center; gap:9px; padding:13px 20px 13px 55px; color:#52677d; font-size:12px; line-height:20px; }
+.mobile-toolbox a:hover { color:#258dec; background:#f0f7ff; }
 </style>

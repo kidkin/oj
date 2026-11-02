@@ -29,6 +29,11 @@ import top.hcode.hoj.utils.RedisUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 
 /**
  * @Author: Himit_ZH
@@ -67,6 +72,17 @@ public class HomeManager {
     private NacosSwitchConfig nacosSwitchConfig;
 
     private final static String SUBMISSION_STATISTICS_KEY = "home_submission_statistics";
+
+    private static final ZoneId RANK_ZONE = ZoneId.of("Asia/Shanghai");
+    private Clock weeklyRankClock = Clock.system(RANK_ZONE);
+
+    public List<ACMRankVO> getCurrentWeekACRank() {
+        LocalDate monday = LocalDate.now(weeklyRankClock.withZone(RANK_ZONE))
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        return userRecordEntityService.getCurrentWeekACRank(
+                Date.from(monday.atStartOfDay(RANK_ZONE).toInstant()),
+                Date.from(monday.plusWeeks(1).atStartOfDay(RANK_ZONE).toInstant()));
+    }
 
     /**
      * @MethodName getRecentContest

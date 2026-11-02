@@ -39,6 +39,11 @@ public class HomeServiceImpl implements HomeService {
     }
 
     @Override
+    public CommonResult<List<ACMRankVO>> getCurrentWeekACRank() {
+        return CommonResult.successResponse(homeManager.getCurrentWeekACRank());
+    }
+
+    @Override
     public CommonResult<List<HashMap<String, Object>>> getRecentOtherContest() {
         return CommonResult.successResponse(homeManager.getRecentOtherContest());
     }

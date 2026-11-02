@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "node scripts/prepare-toolbox.js",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build"
   },

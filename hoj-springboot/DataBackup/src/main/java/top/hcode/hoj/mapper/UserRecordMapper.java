@@ -28,6 +28,9 @@ public interface UserRecordMapper extends BaseMapper<UserRecord> {
 
     List<ACMRankVO> getRecent7ACRank();
 
+    List<ACMRankVO> getCurrentWeekACRank(@Param("weekStart") java.util.Date weekStart,
+                                      @Param("weekEnd") java.util.Date weekEnd);
+
     IPage<OIRankVO> getOIRankList(Page<OIRankVO> page, @Param("uidList") List<String> uidList);
 
     UserHomeVO getUserHomeInfo(@Param("uid") String uid, @Param("username") String username);

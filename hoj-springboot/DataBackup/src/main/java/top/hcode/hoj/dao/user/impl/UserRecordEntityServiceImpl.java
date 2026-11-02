@@ -47,6 +47,11 @@ public class UserRecordEntityServiceImpl extends ServiceImpl<UserRecordMapper, U
     }
 
     @Override
+    public List<ACMRankVO> getCurrentWeekACRank(java.util.Date weekStart, java.util.Date weekEnd) {
+        return userRecordMapper.getCurrentWeekACRank(weekStart, weekEnd);
+    }
+
+    @Override
     public UserHomeVO getUserHomeInfo(String uid, String username) {
         return userRecordMapper.getUserHomeInfo(uid, username);
     }
