@@ -143,22 +143,23 @@ def main(request):
         if state.get('Release'):return state['Release']
         package=folder/'applications.tar.gz'
         if digest(package)!=state.get('VerifiedFiles',{}).get(package.name):raise RuntimeError('Application package has not been verified.')
-        apps=folder/'applications';unpack(package,apps,{'backend.jar','judgeserver.jar','frontend.tar.gz','build.json'})
+        apps=folder/'applications'
+        if not apps.exists():unpack(package,apps,{'backend.jar','judgeserver.jar','frontend.tar.gz','build.json'})
         build=json.loads((apps/'build.json').read_text());source=build['SourceCommit']
         if build['Tests']['tests']<59 or any(build['Tests'][key] for key in ('failures','errors','skipped')):raise RuntimeError('Cloud tests have not passed.')
         for path,tree in build['ApplicationTrees'].items():
             if path not in ('hoj-vue','hoj-springboot') or run(['git','-C',REPO,'rev-parse','HEAD:'+path]).decode().strip()!=tree:raise RuntimeError('Application source tree mismatch.')
         for name,spec in build['Files'].items():
             if name not in ('backend.jar','judgeserver.jar','frontend.tar.gz') or digest(apps/name)!=spec['Sha256']:raise RuntimeError('Compiled application checksum mismatch.')
-        unpack(apps/'frontend.tar.gz',apps/'frontend')
+        if not (apps/'frontend').exists():unpack(apps/'frontend.tar.gz',apps/'frontend')
         records={}
         for service in ('hoj-backend','hoj-judgeserver','hoj-frontend'):
             ref=REGISTRY+'/'+service+':'+version;short=service[4:]
-            args=['docker','build','--pull=false','--network','none','--build-arg','SOURCE_REVISION='+source,'-t',ref]
+            args=['docker','build','--pull=false','--provenance=false','--network','none','--build-arg','SOURCE_REVISION='+source,'-t',ref]
             if short=='frontend':args+=['-f',REPO/'deploy/Dockerfile.cloud-frontend','--build-arg','FRONTEND_RUNTIME_IMAGE='+state['PreviousReferences'][service]]
             else:args+=['-f',REPO/'deploy/Dockerfile.cloud-java','--target',short,'--build-arg',short.upper()+'_RUNTIME_IMAGE='+state['PreviousReferences'][service]]
             run(args+[apps],timeout=600,log=folder/(service+'-build.private.log'))
-            run(['docker','push',ref],timeout=600,log=folder/(service+'-push.private.log'))
+            run(['docker','push','--platform','linux/amd64',ref],timeout=600,log=folder/(service+'-push.private.log'))
             image=json.loads(run(['docker','image','inspect',ref]))[0]
             if image['Config']['Labels'].get('org.opencontainers.image.revision')!=source:raise RuntimeError('Published image source differs from cloud build.')
             ds=[r for r in image.get('RepoDigests',[]) if r.startswith(REGISTRY+'/'+service+'@sha256:')]
@@ -168,6 +169,12 @@ def main(request):
         save(folder/'release.json',release);state['Release']=release;state['Status']='images-published';save(statefile,state);return release
     if action=='backup':
         if state.get('Backup'):return {'backup':state['Backup'],'already_completed':True}
+        if not state.get('Release'):raise RuntimeError('Publish and verify the new application images before backup.')
+        for service,record in state['Release']['Images'].items():
+            reference=record['Reference'].rsplit(':',1)[0]+'@'+record['Digest']
+            run(['docker','pull','--platform','linux/amd64',reference],log=folder/'registry-verify.private.log')
+            image=json.loads(run(['docker','image','inspect',reference]))[0]
+            if image['Config']['Labels'].get('org.opencontainers.image.revision')!=record['SourceRevision'] or image['RootFS']['Layers']!=record['RootFsDiffIds']:raise RuntimeError('Registry image differs from the verified source build: '+service)
         out=folder/'backups';out.mkdir(mode=0o700)
         run(['python3',REPO/'scripts/hoj_backup.py','backup','--repo',REPO,'--output',out],timeout=1500,log=folder/'backup.private.log')
         archives=list(out.glob('*.tar'))
