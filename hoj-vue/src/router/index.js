@@ -8,6 +8,7 @@ import store from '@/store'
 import NProgress from 'nprogress' // nprogress插件
 import 'nprogress/nprogress.css' // nprogress样式
 import i18n from '@/i18n'
+import edu from '@/common/edu-api'
 
 // 配置NProgress进度条选项  —— 动画效果
 NProgress.configure({ ease: 'ease', speed: 1000,showSpinner: false })
@@ -37,13 +38,20 @@ const router = new VueRouter({
 
 
 // 路由判断登录 根据路由配置文件的参数(全局身份验证token)
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   NProgress.start()
   if (to.matched.some(record => record.meta.requireAuth)) { // 判断该路由是否需要登录权限
     const token = localStorage.getItem('token') || ''
     const isSuperAdmin = store.getters.isSuperAdmin
     const isAmdin = store.getters.isAdminRole
     if (token) { // 判断当前的token是否存在 ； 登录存入的token
+
+      if (to.path === '/class' || to.path.startsWith('/class/')) {
+        try {
+          const access = await edu.me()
+          if (!access.isTeacher) return next({path: '/course', replace: true})
+        } catch (_) { return next({path: '/course', replace: true}) }
+      }
 
       if(to.matched.some(record => record.meta.requireSuperAdmin)){ // 判断是否需要超级管理权限
 

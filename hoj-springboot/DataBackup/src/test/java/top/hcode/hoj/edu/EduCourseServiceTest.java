@@ -30,6 +30,25 @@ class EduCourseServiceTest {
         verify(db, never()).update(anyString(), any(Object[].class));
         verify(db, never()).batchUpdate(anyString(), anyList());
     }
+    @Test void studentsOnlySeeEnrolledCoursesForEveryListScope() {
+        when(classes.hasRole("owner", "teacher")).thenReturn(false);
+        when(db.queryForObject(anyString(), any(Object[].class), eq(Long.class))).thenReturn(0L);
+        for (String scope : Arrays.asList("catalog", "library", "mine")) {
+            service.list(1, 12, "", scope, false);
+        }
+        verify(db, times(3)).queryForList(contains("AND c.status=1 AND EXISTS"), eq("%%"), eq("owner"), eq(12), eq(0));
+        noWrites();
+    }
+    @Test void learningTotalsCountDistinctCourseProblemsAndDaysForCurrentStudent() {
+        when(db.queryForObject(anyString(), any(Object[].class), eq(Long.class))).thenReturn(4L, 90L);
+        Map<String, Object> activity = new HashMap<>(); activity.put("completedCount", 12L); activity.put("learningDays", 3L);
+        when(db.queryForMap(contains("COUNT(DISTINCT DATE(j.submit_time))"), eq("owner"), eq("owner"))).thenReturn(activity);
+        Map<String, Object> summary = service.learningSummary();
+        assertEquals(4L, summary.get("courseCount")); assertEquals(90L, summary.get("problemCount"));
+        assertEquals(12L, summary.get("completedCount")); assertEquals(3L, summary.get("learningDays"));
+        verify(db).queryForObject(contains("SELECT DISTINCT p.id"), any(Object[].class), eq(Long.class));
+        noWrites();
+    }
     @Test void studentsCannotCreateCoursesOrBrowseProblemPicker() {
         when(classes.hasRole("owner", "teacher")).thenReturn(false);
         assertEquals(403, assertThrows(EduException.class, () -> service.create("课程", "")).getStatus());

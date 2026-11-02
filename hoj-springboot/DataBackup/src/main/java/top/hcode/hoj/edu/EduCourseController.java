@@ -24,6 +24,7 @@ public class EduCourseController {
         return CommonResult.successResponse(service.list(page, limit, keyword, scope, publishedOnly));
     }
     @PostMapping("/courses") public CommonResult<Map<String, Object>> create(@RequestBody CourseInput input) { return CommonResult.successResponse(service.create(input.getTitle(), input.getDescription(), EduDisplayOrder.parse(input.getDisplayId()))); }
+    @GetMapping("/learning-summary") public CommonResult<Map<String, Object>> learningSummary() { return CommonResult.successResponse(service.learningSummary()); }
     @GetMapping("/courses/{id}") public CommonResult<Map<String, Object>> detail(@PathVariable long id) { return CommonResult.successResponse(service.detail(id)); }
     @PutMapping("/courses/{id}") public CommonResult<Map<String, Object>> update(@PathVariable long id, @RequestBody CourseInput input) {
         return CommonResult.successResponse(service.update(id, input.getTitle(), input.getDescription(), input.getStatus(), input.getRevision(), EduDisplayOrder.parse(input.getDisplayId())));

@@ -48,7 +48,7 @@ public class EduClassService {
             "FROM edu_class c LEFT JOIN user_info u ON u.uuid=c.owner_uid LEFT JOIN edu_class_display cd ON cd.class_id=c.id ";
 
     public Map<String, Object> classes(int page, int limit, String keyword) {
-        String uid = actor(); page = Math.max(page, 1); limit = Math.max(1, Math.min(limit, 50));
+        String uid = actor(); requireTeacher(uid); page = Math.max(page, 1); limit = Math.max(1, Math.min(limit, 50));
         keyword = keyword == null ? "" : keyword.trim();
         if (keyword.length() > 128 || page > 100000) throw new EduException(400, "查询参数过长");
         String where = " WHERE c.name LIKE ? "; List<Object> params = new ArrayList<>(); params.add("%" + keyword + "%");
@@ -83,7 +83,7 @@ public class EduClassService {
     }
 
     public Map<String, Object> detail(long id) {
-        String uid = actor(); Map<String, Object> row = classRow(id, false);
+        String uid = actor(); requireTeacher(uid); Map<String, Object> row = classRow(id, false);
         boolean manage = canManage(uid, id);
         if (!manage && (!member(uid, id) || ((Number) row.get("status")).intValue() != 0)) throw new EduException(403, "无权访问此班级");
         Map<String, Object> result = db.queryForMap(CLASS_COLUMNS + "WHERE c.id=?", id); result.put("canManage", manage);

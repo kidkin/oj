@@ -31,7 +31,7 @@
               ><i class="el-icon-s-grid"></i
               >{{ $t('m.NavBar_Problem') }}</el-menu-item
             >
-            <el-menu-item index="/class"><i class="el-icon-school"></i>{{ $t('m.NavBar_Class') }}</el-menu-item>
+            <el-menu-item v-if="educationTeacher" index="/class"><i class="el-icon-school"></i>{{ $t('m.NavBar_Class') }}</el-menu-item>
             <el-menu-item index="/course"><i class="el-icon-reading"></i>{{ $t('m.NavBar_Course') }}</el-menu-item>
             <el-menu-item index="/training"
               ><i class="el-icon-s-claim"></i
@@ -419,6 +419,7 @@
           </mu-list-item>
 
           <mu-list-item
+            v-if="educationTeacher"
             button
             to="/class"
             @click="opendrawer = !opendrawer"
@@ -559,6 +560,7 @@ import MsgSvg from '@/components/oj/msg/msgSvg';
 import { mapGetters, mapActions } from 'vuex';
 import Avatar from 'vue-avatar';
 import api from '@/common/api';
+import edu from '@/common/edu-api';
 export default {
   components: {
     Login,
@@ -574,6 +576,7 @@ export default {
     };
   },
   mounted() {
+    this.refreshEducationAccess();
     this.switchMode();
     this.setHiddenHeaderHeight();
     if (this.isAuthenticated) {
@@ -588,6 +591,7 @@ export default {
   },
   data() {
     return {
+      educationTeacher: false,
       mode:'defalut',
       centerDialogVisible: false,
       mobileNar: false,
@@ -601,6 +605,12 @@ export default {
     };
   },
   methods: {
+    async refreshEducationAccess() {
+      this.educationTeacher = false;
+      const token = this.token;
+      if (!this.isAuthenticated) return;
+      try { const access = await edu.me(); if (this.token === token) this.educationTeacher = !!access.isTeacher; } catch (_) {}
+    },
     ...mapActions(['changeModalStatus']),
     page_width() {
       let screenWidth = window.innerWidth;
@@ -752,6 +762,7 @@ export default {
     },
   },
   watch: {
+    token() { this.refreshEducationAccess(); },
     isAuthenticated() {
       if (this.isAuthenticated) {
         if (this.msgTimer) {
@@ -767,6 +778,7 @@ export default {
     },
     $route(){
       this.switchMode();
+      this.refreshEducationAccess();
     }
   },
 };

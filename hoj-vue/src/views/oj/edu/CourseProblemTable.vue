@@ -23,7 +23,7 @@ import Pagination from '@/components/oj/common/Pagination'
 export default {
   components: {Pagination},
   props: {problems: {type:Array, default:() => []}, editing:Boolean, saving:Boolean},
-  data: () => ({showTags:false, page:1, pageSize:10}),
+  data: () => ({showTags:false, page:1, pageSize:50}),
   computed: {visibleProblems () { return this.editing ? this.problems : this.problems.slice((this.page-1)*this.pageSize, this.page*this.pageSize) }},
   watch: {problems () { this.page = 1 }, editing () { this.page = 1 }},
   methods: {

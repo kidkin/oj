@@ -1,6 +1,6 @@
 <template>
   <div class="edu-page" :style="eduPageStyle" v-loading="loading">
-    <router-link :to="backTarget">{{ backTarget.startsWith('/class') ? '← 返回班级' : '← 返回课程总览' }}</router-link>
+    <router-link :to="backTarget">{{ backTarget.startsWith('/class') ? '← 返回班级' : (access.isTeacher ? '← 返回课程总览' : '← 返回我的课程') }}</router-link>
     <section v-if="detail" class="course-content">
       <header class="page-header"><h2>{{ detail.title }}</h2><el-button v-if="detail.canEdit" :disabled="editingProblems || uploadingIcon" @click="editMetadata">编辑资料与发布状态</el-button></header>
       <div class="course-icon-editor">
@@ -38,18 +38,18 @@ import CourseProblemTable from './CourseProblemTable.vue'
 import LearningProgress from './LearningProgress.vue'
 export default {
   mixins: [eduLayout], components: {CourseProblemPicker, CourseProblemTable, LearningProgress},
-  data: () => ({detail: null, loading: false, saving: false, uploadingIcon: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
+  data: () => ({access: {}, detail: null, loading: false, saving: false, uploadingIcon: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
   computed: {
     id () { return this.$route.params.courseId },
     shownProblems () { return this.editingProblems ? this.draftProblems : (this.detail ? this.detail.problems : []) },
     backTarget () {
       const classId = this.$route.query.classId
-      if (this.detail && this.detail.sourceClasses.some(row => String(row.id) === classId)) return '/class/' + classId
+      if (this.access.isTeacher && this.detail && this.detail.sourceClasses.some(row => String(row.id) === classId)) return '/class/' + classId
       return '/course'
     }
   },
   watch: {id () { this.cancelProblems(); this.load() }},
-  mounted () { this.load() },
+  async mounted () { try { this.access = await edu.me(); await this.load() } catch (_) { this.loading = false } },
   methods: {
     async uploadIcon (event) {
       const image = event.target.files[0]; event.target.value = ''

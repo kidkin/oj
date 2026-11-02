@@ -31,6 +31,12 @@ class EduClassServiceTest {
         EduException error = assertThrows(EduException.class, () -> service.create("班级", ""));
         assertEquals(403, error.getStatus()); verify(db, never()).update(anyString(), any(Object[].class));
     }
+    @Test void studentCannotBrowseClassesEvenByDirectUrl() {
+        doReturn(false).when(service).hasRole("teacher", "teacher");
+        assertEquals(403, assertThrows(EduException.class, () -> service.classes(1, 10, "")).getStatus());
+        assertEquals(403, assertThrows(EduException.class, () -> service.detail(7)).getStatus());
+        verify(db, never()).queryForList(anyString(), any(Object[].class));
+    }
     @Test void unrelatedTeacherCannotChangeMembers() {
         doReturn(false).when(service).canManage("teacher", 7L);
         assertEquals(403, assertThrows(EduException.class, () -> service.addMembers(7, Collections.singletonList("alice"), "STUDENT")).getStatus());

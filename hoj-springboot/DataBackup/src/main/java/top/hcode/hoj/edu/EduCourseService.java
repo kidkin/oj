@@ -71,10 +71,26 @@ public class EduCourseService {
         if (access.teacher) {
             if ("mine".equals(scope)) { where += "AND c.owner_uid=? "; args.add(access.uid); }
             else if (!access.root) { where += "AND (c.owner_uid=? OR c.status=1) "; args.add(access.uid); }
-        } else if ("catalog".equals(scope)) { where += "AND c.status=1 "; }
-        else { where += "AND c.status=1 AND " + MEMBERSHIP; args.add(access.uid); }
+        } else { where += "AND c.status=1 AND " + MEMBERSHIP; args.add(access.uid); }
         if (publishedOnly) where += " AND c.status=1 ";
         return paged(COLUMNS + where, "SELECT COUNT(*) FROM edu_course c " + where, args, page, limit, DISPLAY_ORDER, access);
+    }
+
+    /** Personal totals across enrolled courses; shared problems are counted once. */
+    public Map<String, Object> learningSummary() {
+        Access access = new Access();
+        String enrolled = "SELECT c.id FROM edu_course c WHERE c.status=1 AND " + MEMBERSHIP;
+        String problems = "SELECT DISTINCT p.id FROM edu_course_problem cp JOIN problem p ON p.id=cp.pid WHERE " +
+                PUBLIC_PROBLEM + " AND cp.course_id IN (" + enrolled + ")";
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("courseCount", count("SELECT COUNT(*) FROM (" + enrolled + ") enrolled", access.uid));
+        result.put("problemCount", count("SELECT COUNT(*) FROM (" + problems + ") enrolled", access.uid));
+        Map<String, Object> activity = db.queryForMap("SELECT COUNT(DISTINCT CASE WHEN j.status=0 THEN j.pid END) AS completedCount," +
+                "COUNT(DISTINCT DATE(j.submit_time)) AS learningDays FROM judge j WHERE j.uid=? AND j.cid=0 AND j.gid IS NULL " +
+                "AND j.status IN (-3,-2,-1,0,1,2,3,4,8) AND j.pid IN (" + problems + ")", access.uid, access.uid);
+        result.put("completedCount", activity.get("completedCount"));
+        result.put("learningDays", activity.get("learningDays"));
+        return result;
     }
 
     private Map<String, Object> paged(String sql, String counter, List<Object> args, int page, int limit, String order, Access access) {
