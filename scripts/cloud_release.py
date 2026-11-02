@@ -194,10 +194,18 @@ def main(request):
         if state.get('Status')=='published':return {'state':'published','already_completed':True}
         if digest(REPO/'deploy/.env')!=state['EnvironmentHash'] or digest(REPO/'deploy/compose.dev-data.json')!=state['OverrideHash']:raise RuntimeError('Deployment configuration changed after preparation.')
         if json.loads((REPO/'releases'/(version+'.json')).read_text())!=state['Release']:raise RuntimeError('Tracked Git release manifest differs from published images.')
+        ignored=request.get('historical_pending_ids',[])
+        if ignored:
+            if not isinstance(ignored,list) or len(ignored)>1000 or any(type(value) is not int or value<=0 for value in ignored):raise RuntimeError('Invalid historical pending record list.')
+            marks=','.join(map(str,sorted(set(ignored))))
+            verified=int(sql('SELECT COUNT(*) FROM judge WHERE submit_id IN ('+marks+") AND status IN (5,6,7) AND submit_time<DATE_SUB(NOW(),INTERVAL 1 DAY);"))
+            if verified!=len(set(ignored)):raise RuntimeError('Only inspected, day-old historical pending markers may be excluded from queue draining.')
+            state['PreservedHistoricalPendingIds']=sorted(set(ignored));save(statefile,state)
+        pending='SELECT COUNT(*) FROM judge WHERE status IN (5,6,7)'+(' AND submit_id NOT IN ('+','.join(map(str,ignored))+')' if ignored else '')+';'
         try:
             compose('stop','--timeout','25','hoj-frontend',log=folder/'switch.private.log')
             for _ in range(30):
-                if int(sql('SELECT COUNT(*) FROM judge WHERE status IN (5,6,7);'))==0:break
+                if int(sql(pending))==0:break
                 time.sleep(2)
             else:raise RuntimeError('Existing judging jobs have not finished.')
             compose('stop','--timeout','30','hoj-backend','hoj-judgeserver',log=folder/'switch.private.log')
