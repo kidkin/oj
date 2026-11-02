@@ -114,6 +114,10 @@ def main(request):
         state={'Version':version,'Status':'initialized','PreviousHead':run(['git','-C',REPO,'rev-parse','HEAD']).decode().strip(),'PreviousReferences':{key:services()[key]['Config']['Image'] for key in APPLICATIONS},'EnvironmentHash':digest(REPO/'deploy/.env'),'OverrideHash':digest(REPO/'deploy/compose.dev-data.json')}
         save(statefile,state);return {'state':'initialized','directory':str(folder)}
     if not state:raise RuntimeError('Initialize the existing deployment first.')
+    if action=='upload-status':
+        name=request['name']
+        if name not in ('source.bundle','release.bundle','applications.tar.gz'):raise RuntimeError('Invalid upload filename.')
+        return {'bytes':(folder/name).stat().st_size if (folder/name).exists() else 0,'sha256':state.get('VerifiedFiles',{}).get(name)}
     if action=='append':
         name=request['name'];offset=request['offset']
         if name not in ('source.bundle','release.bundle','applications.tar.gz') or not isinstance(offset,int) or offset<0:raise RuntimeError('Invalid upload request.')
