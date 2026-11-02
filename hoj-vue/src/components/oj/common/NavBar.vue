@@ -935,6 +935,10 @@ export default {
   width: 24px !important;
   text-align: center !important;
 }
+@media (min-width:992px) and (max-width:1400px) {
+  #header .el-menu-item { padding-left:12px; padding-right:12px; }
+  #header /deep/ .el-submenu__title { padding-left:12px; padding-right:12px; }
+}
 </style>
 <style>
 .toolbox-menu .toolbox-item { list-style:none; }
