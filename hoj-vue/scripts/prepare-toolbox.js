@@ -10,7 +10,8 @@ const { pipeline } = require('stream')
 const { promisify } = require('util')
 const copy = promisify(pipeline)
 const asset = require('./toolbox-asset.json')
-const cache = path.join(os.homedir(), '.cache/hoj-toolbox', asset.sha256 + '.exe')
+// npm may run package scripts as the checkout owner rather than container root.
+const cache = path.join(os.tmpdir(), 'hoj-toolbox', asset.sha256 + '.exe')
 const output = path.resolve(__dirname, '../public/downloads/Dev-Cpp.exe')
 
 async function valid (file) {
