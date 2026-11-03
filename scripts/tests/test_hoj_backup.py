@@ -148,6 +148,53 @@ class ArchiveTests(unittest.TestCase):
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_start_rebinds_worker_rows_in_the_backed_up_business_database(self):
+        for database in ("hoj", "hoj_bank_20261103"):
+            with self.subTest(database=database), tempfile.TemporaryDirectory() as temp:
+                folder = Path(temp)
+                source = configuration()
+                if database != "hoj":
+                    for service in ("hoj-backend", "hoj-judgeserver"):
+                        source["services"][service]["environment"]["MYSQL_DATABASE_NAME"] = database
+                config = backup.isolated_config(source, metadata(), "hoj-restore-check", "172.30.240.0/24", 18082)
+                backup.write_json(folder / "source.compose.json", source)
+                backup.write_json(folder / "compose.restore.json", config)
+                statements = []
+
+                class RestoredDocker:
+                    exe = "docker"
+                    def compose(self, files, *args, **kwargs):
+                        return "mysql-id" if args[0] == "ps" else ""
+                    def json(self, *args):
+                        return [{"Config": {"Labels": {"com.docker.compose.project": "hoj-restore-check"}},
+                                 "Mounts": [{"Type": "volume", "Name": "hoj-restore-check_hoj-mysql-data"}]}]
+
+                def query_result(argv, **kwargs):
+                    statements.append(kwargs["stdin"])
+                    return types.SimpleNamespace(returncode=0, stdout="")
+
+                with patch.object(backup, "run", side_effect=query_result), contextlib.redirect_stdout(io.StringIO()):
+                    backup.start_restored(RestoredDocker(), folder)
+                self.assertIn("UPDATE `%s`.judge_server" % database, statements[-1])
+                self.assertNotIn("UPDATE hoj.judge_server", statements[-1])
+                self.assertEqual(backup.read_json(folder / "runtime-rebind.json")["Database"], database)
+
+    def test_invalid_or_inconsistent_database_refused_before_starting_services(self):
+        for backend_database, judge_database in (("bad`;DROP DATABASE hoj;--", "hoj"),
+                                                  ("hoj_bank_20261103", "hoj")):
+            with self.subTest(database=backend_database), tempfile.TemporaryDirectory() as temp:
+                folder = Path(temp)
+                source = configuration()
+                source["services"]["hoj-backend"]["environment"]["MYSQL_DATABASE_NAME"] = backend_database
+                source["services"]["hoj-judgeserver"]["environment"]["MYSQL_DATABASE_NAME"] = judge_database
+                config = backup.isolated_config(source, metadata(), "hoj-restore-check", "172.30.240.0/24", 18082)
+                backup.write_json(folder / "source.compose.json", source)
+                backup.write_json(folder / "compose.restore.json", config)
+                docker = types.SimpleNamespace(compose=unittest.mock.Mock())
+                with self.assertRaises(RuntimeError):
+                    backup.start_restored(docker, folder)
+                docker.compose.assert_not_called()
+
     def test_failed_volume_archive_still_restarts_original_services(self):
         config = configuration()
         ids = sorted(backup.REQUIRED)

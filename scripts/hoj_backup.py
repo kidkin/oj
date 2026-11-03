@@ -421,11 +421,23 @@ def rewrite_runtime_addresses(content, addresses):
     return "".join(lines)
 
 
+def restored_business_database(config):
+    services = config["services"]
+    database = services["hoj-backend"].get("environment", {}).get("MYSQL_DATABASE_NAME", "hoj")
+    worker_database = services["hoj-judgeserver"].get("environment", {}).get("MYSQL_DATABASE_NAME", database)
+    if not isinstance(database, str) or not re.fullmatch(r"[A-Za-z0-9_]+", database):
+        raise RuntimeError("Invalid restored business database name.")
+    if worker_database != database:
+        raise RuntimeError("Restored backend and judge database names differ.")
+    return database
+
+
 def start_restored(docker, destination):
     destination = Path(destination).resolve()
     compose_file = destination / "compose.restore.json"
     config = read_json(compose_file)
     source = read_json(destination / "source.compose.json")
+    database = restored_business_database(config)
     project = config["name"]
     if not re.fullmatch(r"hoj-restore-[a-z0-9][a-z0-9-]{0,40}", project):
         raise RuntimeError("Only isolated hoj-restore-* projects can be started by this tool.")
@@ -487,11 +499,11 @@ def start_restored(docker, destination):
     # Rewrite their addresses so the restarted worker replaces its own old row.
     for old, new in addresses.items():
         old_hex, new_hex = old.encode().hex(), new.encode().hex()
-        updates.append("UPDATE hoj.judge_server SET ip=CONVERT(0x%s USING utf8mb4),"
+        updates.append("UPDATE `%s`.judge_server SET ip=CONVERT(0x%s USING utf8mb4),"
                        "url=REPLACE(url,CONVERT(0x%s USING utf8mb4),CONVERT(0x%s USING utf8mb4)) "
-                       "WHERE ip=CONVERT(0x%s USING utf8mb4);" % (new_hex, old_hex, new_hex, old_hex))
+                       "WHERE ip=CONVERT(0x%s USING utf8mb4);" % (database, new_hex, old_hex, new_hex, old_hex))
     query("START TRANSACTION;\n" + "\n".join(updates) + "\nCOMMIT;\n")
-    write_json(destination / "runtime-rebind.json", {"Project": project, "NacosRowsChanged": changed,
+    write_json(destination / "runtime-rebind.json", {"Project": project, "Database": database, "NacosRowsChanged": changed,
                                                      "AddressMap": addresses})
     print("Rebound isolated Nacos configuration rows: %d" % changed, flush=True)
     docker.compose([compose_file], "up", "--detach", "--no-build", "--pull", "never", "--wait",
