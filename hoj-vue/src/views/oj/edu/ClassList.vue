@@ -6,7 +6,7 @@
         <el-form-item><el-button native-type="submit">搜索</el-button></el-form-item>
       </el-form>
       <div class="edu-grid" v-loading="loading">
-        <LearningCard v-for="row in records" :key="row.id" kind="class" :to="'/class/' + row.id" :title="row.name" :description="row.description" :owner="row.ownerUsername" :badge="row.status !== 0 ? '已归档' : (row.canManage ? '管理班级' : '已加入')" :meta="row.courseCount + ' 门课程 · ' + row.studentCount + ' 位同学'" :completed="row.completedCount" :total="row.problemCount" />
+        <LearningCard v-for="row in records" :key="row.id" kind="class" :to="'/class/' + row.id" :title="row.name" :description="row.description" :owner="row.ownerUsername" :owner-uid="row.ownerUid" :badge="row.status !== 0 ? '已归档' : (row.canManage ? '管理班级' : '已加入')" :meta="row.courseCount + ' 门课程 · ' + row.studentCount + ' 位同学'" :completed="row.completedCount" :total="row.problemCount" />
         <p v-if="!loading && !records.length" class="empty-state">暂无符合条件的班级，可创建班级或联系管理员分配管理权限。</p>
       </div>
       <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />

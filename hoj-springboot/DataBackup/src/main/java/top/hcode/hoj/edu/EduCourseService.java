@@ -24,10 +24,10 @@ public class EduCourseService {
     private static final String MEMBERSHIP = "EXISTS (SELECT 1 FROM edu_class_course access_cc JOIN edu_class access_c ON access_c.id=access_cc.class_id " +
             "JOIN edu_class_member access_m ON access_m.class_id=access_c.id WHERE access_cc.course_id=c.id AND access_c.status=0 AND access_m.uid=? AND access_m.status=0)";
     private static final String DISPLAY_ORDER = "COALESCE(cd.display_id,c.id),c.id";
-    private static final String COLUMNS = "SELECT c.id,COALESCE(cd.display_id,c.id) AS displayId,c.title,c.description,c.owner_uid AS ownerUid,u.username AS ownerUsername,c.status,c.revision," +
+    private static final String COLUMNS = "SELECT c.id,COALESCE(cd.display_id,c.id) AS displayId,COALESCE(ch.chapter_number,cd.display_id,c.id) AS chapterNumber,c.title,c.description,c.owner_uid AS ownerUid,u.username AS ownerUsername,c.status,c.revision," +
             "CONCAT('/api/public/course-icon/',ci.filename) AS iconUrl,c.gmt_create AS gmtCreate," +
             "c.gmt_modified AS gmtModified,(SELECT COUNT(*) FROM edu_course_problem cp JOIN problem p ON p.id=cp.pid WHERE cp.course_id=c.id AND " + PUBLIC_PROBLEM + ") AS problemCount," +
-            "(SELECT COUNT(*) FROM edu_class_course refs WHERE refs.course_id=c.id) AS referenceCount FROM edu_course c LEFT JOIN user_info u ON u.uuid=c.owner_uid LEFT JOIN edu_course_icon ci ON ci.course_id=c.id LEFT JOIN edu_course_display cd ON cd.course_id=c.id ";
+            "(SELECT COUNT(*) FROM edu_class_course refs WHERE refs.course_id=c.id) AS referenceCount FROM edu_course c LEFT JOIN user_info u ON u.uuid=c.owner_uid LEFT JOIN edu_course_icon ci ON ci.course_id=c.id LEFT JOIN edu_course_display cd ON cd.course_id=c.id LEFT JOIN edu_course_chapter ch ON ch.course_id=c.id ";
 
     private long count(String sql, Object... args) { return db.queryForObject(sql, args, Long.class); }
     private static String marks(int n) { return String.join(",", Collections.nCopies(n, "?")); }
@@ -162,7 +162,12 @@ public class EduCourseService {
     }
     @Transactional
     public Map<String, Object> create(String title, String description, Long displayId) {
+        return create(title, description, displayId, null);
+    }
+    @Transactional
+    public Map<String, Object> create(String title, String description, Long displayId, Long chapterNumber) {
         Access access = new Access(); access.requireTeacher(); validate(title, description, 0); EduDisplayOrder.validate(displayId);
+        EduDisplayOrder.validate(chapterNumber);
         GeneratedKeyHolder key = new GeneratedKeyHolder();
         db.update(connection -> {
             PreparedStatement statement = connection.prepareStatement("INSERT INTO edu_course(title,description,owner_uid) VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS);
@@ -170,6 +175,7 @@ public class EduCourseService {
         }, key);
         long id = Objects.requireNonNull(key.getKey()).longValue();
         db.update("INSERT INTO edu_course_display(course_id,display_id) VALUES (?,?)", id, displayId == null ? id : displayId);
+        db.update("INSERT INTO edu_course_chapter(course_id,chapter_number) VALUES (?,?)", id, chapterNumber == null ? (displayId == null ? id : displayId) : chapterNumber);
         return detail(id);
     }
     @Transactional
@@ -178,13 +184,19 @@ public class EduCourseService {
     }
     @Transactional
     public Map<String, Object> update(long id, String title, String description, int status, Long expectedRevision, Long displayId) {
+        return update(id, title, description, status, expectedRevision, displayId, null);
+    }
+    @Transactional
+    public Map<String, Object> update(long id, String title, String description, int status, Long expectedRevision, Long displayId, Long chapterNumber) {
         Access access = new Access(); Map<String, Object> row = course(id, true); requireEdit(access, row); revision(row, expectedRevision); validate(title, description, status); EduDisplayOrder.validate(displayId);
+        EduDisplayOrder.validate(chapterNumber);
         // A locking read sees references committed while this transaction was
         // waiting for the course lock; a snapshot COUNT could miss an attach.
         if (status != 1 && !db.queryForList("SELECT id FROM edu_class_course WHERE course_id=? FOR UPDATE", Long.class, id).isEmpty())
             throw new EduException(400, "课程仍被班级引用，请先解除全部引用再取消发布或归档");
         db.update("UPDATE edu_course SET title=?,description=?,status=?,revision=revision+1 WHERE id=?", title.trim(), description, status, id);
         if (displayId != null) db.update("INSERT INTO edu_course_display(course_id,display_id) VALUES (?,?) ON DUPLICATE KEY UPDATE display_id=VALUES(display_id)", id, displayId);
+        if (chapterNumber != null) db.update("INSERT INTO edu_course_chapter(course_id,chapter_number) VALUES (?,?) ON DUPLICATE KEY UPDATE chapter_number=VALUES(chapter_number)", id, chapterNumber);
         return detail(id);
     }
     @Transactional

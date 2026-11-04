@@ -297,7 +297,7 @@
                   size="medium"
                   @close="removeStarUser(username)"
                   style="margin-right: 7px;margin-top:4px"
-                >{{ username }}</el-tag>
+                ><span v-user-level="{username}">{{ username }}</span></el-tag>
                 <el-input
                   v-if="inputVisible"
                   size="medium"

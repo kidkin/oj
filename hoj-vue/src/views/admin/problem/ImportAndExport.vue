@@ -44,8 +44,7 @@
           min-width="150"
           field="author"
           :title="$t('m.Author')"
-        >
-        </vxe-table-column>
+        ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.author}">{{ row.author }}</span></template></vxe-table-column>
 
         <vxe-table-column field="gmtCreate" :title="$t('m.Created_Time')">
           <template v-slot="{ row }">

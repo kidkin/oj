@@ -15,9 +15,9 @@
                 ></avatar>
               </el-col>
               <el-col :span="16">
-                <span class="panel-title admin-info-name">{{
+                <span class="panel-title admin-info-name"><span v-user-level="{uid: userInfo.uid, username: userInfo.username}">{{
                   userInfo.username
-                }}</span>
+                }}</span></span>
                 <p>
                   <el-tag effect="dark" size="small" type="warning">
                     {{

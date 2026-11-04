@@ -50,7 +50,7 @@
                 class="user-name"
                 @click="getInfoByUsername(item.senderId, item.senderUsername)"
                 :title="item.senderUsername"
-                >{{ item.senderUsername }}</span
+                ><span v-user-level="{uid: item.senderId, username: item.senderUsername}">{{ item.senderUsername }}</span></span
               >
               <span class="msg-action">
                 {{ $t('m.Action_' + item.action) }}

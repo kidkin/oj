@@ -188,7 +188,7 @@
                     type="primary"
                     :underline="false"
                     @click="toUserHome(group.owner)"
-                    ><i class="el-icon-user-solid"></i> {{ group.owner }}
+                    ><i class="el-icon-user-solid"></i> <span v-user-level="{uid:group.uid, username:group.owner}">{{ group.owner }}</span>
                   </el-link>
                 </span>
               </div>

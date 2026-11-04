@@ -10,8 +10,8 @@
         <el-divider />
         <div class="page-header"><h3>班级成员</h3><el-button type="primary" :disabled="detail.status !== 0" @click="memberDialog = true">添加成员</el-button></div>
         <el-table :data="members" empty-text="暂无成员" v-loading="membersLoading">
-          <el-table-column prop="username" label="用户名" min-width="110" />
-          <el-table-column prop="realname" label="姓名" min-width="100" />
+          <el-table-column prop="username" label="用户名" min-width="110"><template slot-scope="scope"><span v-user-level="{uid: scope.row.uid, username: scope.row.username}">{{ scope.row.username }}</span></template></el-table-column>
+          <el-table-column prop="realname" label="姓名" min-width="100"><template slot-scope="scope"><span v-user-level="{uid: scope.row.uid, username: scope.row.username}">{{ scope.row.realname }}</span></template></el-table-column>
           <el-table-column prop="number" label="学号" min-width="100" />
           <el-table-column label="身份" width="100"><template slot-scope="scope">{{ scope.row.role === 'TEACHER' ? '教师' : '学生' }}</template></el-table-column>
           <el-table-column label="操作" width="110"><template slot-scope="scope"><el-button type="text" :disabled="saving || detail.status !== 0 || scope.row.uid === detail.ownerUid" @click="remove(scope.row)">移出班级</el-button></template></el-table-column>

@@ -175,8 +175,7 @@
           min-width="130"
           align="center"
           show-overflow
-        >
-        </vxe-table-column>
+        ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.author}">{{ row.author }}</span></template></vxe-table-column>
         <vxe-table-column
           field="gmtModified"
           :title="$t('m.Recent_Update')"

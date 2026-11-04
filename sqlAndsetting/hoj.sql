@@ -420,7 +420,7 @@ CREATE TABLE `judge` (
   `submit_time` datetime NOT NULL COMMENT '提交的时间',
   `status` int(11) DEFAULT NULL COMMENT '结果码具体参考文档',
   `share` tinyint(1) DEFAULT '0' COMMENT '0为仅自己可见，1为全部人可见。',
-  `error_message` mediumtext COMMENT '错误提醒（编译错误，或者vj提醒）',
+  `error_message` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '错误提醒（编译错误，或者vj提醒）',
   `time` int(11) DEFAULT NULL COMMENT '运行时间(ms)',
   `memory` int(11) DEFAULT NULL COMMENT '运行内存（kb）',
   `score` int(11) DEFAULT NULL COMMENT 'IO判题则不为空',

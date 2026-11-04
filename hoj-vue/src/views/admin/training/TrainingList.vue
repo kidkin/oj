@@ -64,7 +64,7 @@
           <template v-slot="{ row }">
             <p>Created Time: {{ row.gmtCreate | localtime }}</p>
             <p>Update Time: {{ row.gmtModified | localtime }}</p>
-            <p>Creator: {{ row.author }}</p>
+            <p>Creator: <span v-user-level="{uid: row.uid, username: row.author}">{{ row.author }}</span></p>
           </template>
         </vxe-table-column>
         <vxe-table-column min-width="150" :title="$t('m.Option')">

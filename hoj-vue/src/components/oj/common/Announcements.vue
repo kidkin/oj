@@ -48,7 +48,7 @@
                 </span>
                 <span class="creator">
                   <i class="el-icon-user"></i>
-                  {{ announcement.username }}
+                  <span v-user-level="{uid: announcement.uid, username: announcement.username}">{{ announcement.username }}</span>
                 </span>
               </div>
             </div>

@@ -92,7 +92,7 @@
             ><a
               @click="getUserTotalSubmit(row.username)"
               style="color:rgb(87, 163, 243);"
-              >{{ row.username }}</a
+              ><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></a
             >
           </span>
         </template>
@@ -101,7 +101,7 @@
         field="realname"
         :title="$t('m.RealName')"
         min-width="150"
-      ></vxe-table-column>
+      ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.realname }}</span></template></vxe-table-column>
       <vxe-table-column field="checked" :title="$t('m.Status')" min-width="150">
         <template v-slot="{ row }">
           <el-tag effect="dark" color="#19be6b" v-if="row.checked">{{

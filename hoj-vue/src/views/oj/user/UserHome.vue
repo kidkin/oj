@@ -27,7 +27,7 @@
         <p>
           <span class="emphasis"
             ><i class="fa fa-user-circle-o" aria-hidden="true"></i>
-            {{ profile.username }}</span
+            <span v-user-level="{uid: profile.uid, username: profile.username}">{{ profile.username }}</span></span
           >
           <span class="gender-male male" v-if="profile.gender == 'male'">
             <i class="fa fa-mars"></i>
@@ -39,6 +39,7 @@
             <i class="fa fa-venus"></i>
           </span>
         </p>
+        <PracticeLevelInfo :uid="profile.uid" :username="profile.username" />
         <p v-if="profile.titleName">
           <span>
             <el-tag effect="dark" size="small" :color="profile.titleColor">
@@ -53,7 +54,7 @@
               size="small"
               :type="nicknameColor(profile.nickname)"
             >
-              {{ profile.nickname }}
+              <span v-user-level="{uid: profile.uid, username: profile.username}">{{ profile.nickname }}</span>
             </el-tag>
           </span>
         </p>

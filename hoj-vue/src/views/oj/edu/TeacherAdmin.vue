@@ -6,8 +6,8 @@
       <el-form-item><el-button native-type="submit" type="primary" :loading="saving" :disabled="!username">授予教师身份</el-button></el-form-item>
     </el-form>
     <el-table :data="teachers" empty-text="暂无已授权教师">
-      <el-table-column prop="username" label="用户名" />
-      <el-table-column prop="nickname" label="昵称" />
+      <el-table-column prop="username" label="用户名"><template slot-scope="scope"><span v-user-level="{uid: scope.row.uid, username: scope.row.username}">{{ scope.row.username }}</span></template></el-table-column>
+      <el-table-column prop="nickname" label="昵称"><template slot-scope="scope"><span v-user-level="{uid: scope.row.uid, username: scope.row.username}">{{ scope.row.nickname }}</span></template></el-table-column>
       <el-table-column label="账号状态"><template slot-scope="scope">{{ scope.row.accountStatus === 0 ? '正常' : '已停用' }}</template></el-table-column>
       <el-table-column label="操作" width="150"><template slot-scope="scope"><el-button type="text" :disabled="saving" @click="revoke(scope.row)">撤销教师身份</el-button></template></el-table-column>
     </el-table>

@@ -128,7 +128,7 @@
                         ><el-link
                           type="info"
                           @click="goUserHome(training.author)"
-                          >{{ training.author }}</el-link
+                          ><span v-user-level="{username:training.author}">{{ training.author }}</span></el-link
                         ></span
                       >
                     </span>

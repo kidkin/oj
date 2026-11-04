@@ -138,7 +138,7 @@
               trigger="hover"
             >
               <span class="el-dropdown-link">
-                {{ userInfo.username }}<i class="el-icon-caret-bottom"></i>
+                <span v-user-level="{uid: userInfo.uid, username: userInfo.username}">{{ userInfo.username }}</span><i class="el-icon-caret-bottom"></i>
               </span>
 
               <el-dropdown-menu slot="dropdown">

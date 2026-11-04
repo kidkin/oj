@@ -71,8 +71,7 @@
         min-width="130"
         :title="$t('m.Author')"
         show-overflow
-      >
-      </vxe-table-column>
+      ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.author}">{{ row.author }}</span></template></vxe-table-column>
       <vxe-table-column
         min-width="130"
         :title="$t('m.Created_Time')"

@@ -58,7 +58,7 @@
           show-overflow
         >
           <template v-slot="{ row }">
-            <span>{{ row.username }}</span>
+            <span><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></span>
             <span style="margin-left:2px">
               <el-tag
                 effect="dark"
@@ -76,7 +76,7 @@
           :title="$t('m.RealName')"
           min-width="140"
           show-overflow
-        ></vxe-table-column>
+        ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.realname }}</span></template></vxe-table-column>
         <vxe-table-column
           field="email"
           :title="$t('m.Email')"

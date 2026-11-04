@@ -18,7 +18,7 @@
             type="primary"
             @click="goUserHome(row.username)"
             style="font-size: 13px;"
-            >{{ row.username }}</el-link
+            ><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></el-link
           >
         </template>
       </vxe-table-column>

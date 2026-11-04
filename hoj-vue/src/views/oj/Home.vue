@@ -26,7 +26,7 @@
                 </span>
                 <span v-else class="rank-number">{{ String(index+1).padStart(2,'0') }}</span>
                 <Avatar :username="row.username" :inline="true" :size="index < 3 ? 31 : 26" color="#fff" :src="row.avatar" />
-                <span class="rank-name" :title="row.username">{{ row.username }}</span>
+                <span class="rank-name" :title="row.username"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></span>
                 <span class="rank-score">{{ row.ac }}<small>题</small></span>
               </router-link>
             </li>

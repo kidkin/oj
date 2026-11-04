@@ -55,8 +55,7 @@
             field="username"
             show-overflow
             :title="$t('m.Author')"
-          >
-          </vxe-table-column>
+          ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></template></vxe-table-column>
           <vxe-table-column
             min-width="100"
             field="status"

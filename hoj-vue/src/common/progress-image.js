@@ -67,7 +67,7 @@ export async function renderProgressImage (report, page, pageIndex, pageCount) {
   })
   let y = top+headerHeight
   students.forEach((student,index) => {
-    const rowHeight = rowHeights[index]; ctx.font = font(20); ctx.fillStyle = '#202020'; centered(ctx,names[index],nameWidth/2,y+rowHeight/2,24)
+    const rowHeight = rowHeights[index]; ctx.font = font(20); ctx.fillStyle = student.nameColor || '#202020'; centered(ctx,names[index],nameWidth/2,y+rowHeight/2,24)
     for (let col=page.colStart; col<page.colEnd; col++) {
       const state = PROGRESS_STATES[student.results[col]] || PROGRESS_STATES.PENDING
       const x = nameWidth+(col-page.colStart+0.5)*problemWidth; const badgeWidth = ctx.measureText(state.label).width+24; const badgeHeight = 34

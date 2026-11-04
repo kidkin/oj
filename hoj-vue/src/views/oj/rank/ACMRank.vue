@@ -53,7 +53,7 @@
             <a
               @click="getInfoByUsername(row.uid, row.username)"
               style="color:#2d8cf0;"
-              >{{ row.username }}</a
+              ><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></a
             >
             <span style="margin-left:2px" v-if="row.titleName">
               <el-tag effect="dark" size="small" :color="row.titleColor">
@@ -74,7 +74,7 @@
               v-if="row.nickname"
               :type="nicknameColor(row.nickname)"
             >
-              {{ row.nickname }}
+              <span v-user-level="{uid: row.uid, username: row.username}">{{ row.nickname }}</span>
             </el-tag>
           </template>
         </vxe-table-column>
@@ -126,6 +126,7 @@
 
 <script>
 import api from '@/common/api';
+import {practiceLevel} from '@/common/practice-user';
 import utils from '@/common/utils';
 import { RULE_TYPE } from '@/common/constants';
 import { mapGetters } from 'vuex';
@@ -181,15 +182,16 @@ export default {
               showMinLabel: true,
               showMaxLabel: true,
               align: 'center',
+              rich: {},
               formatter: (value, index) => {
                 if (this.screenWidth < 768) {
                   if (this.isAuthenticated && this.userInfo.username == value) {
-                    return utils.breakLongWords(value, 14);
+                    return '{u' + index + '|' + utils.breakLongWords(String(value).replace(/[{}|]/g, ' '), 14) + '}';
                   } else {
                     return '';
                   }
                 } else {
-                  return utils.breakLongWords(value, 14);
+                  return '{u' + index + '|' + utils.breakLongWords(String(value).replace(/[{}|]/g, ' '), 14) + '}';
                 }
               },
             },
@@ -296,7 +298,14 @@ export default {
       return typeArr[index];
     },
   },
+  watch: {
+    chartLevels (levels) {
+      const rich = {}; levels.forEach((level,index) => { rich['u'+index] = {color:level ? level.color : '#777777',fontWeight:600} });
+      this.options.xAxis[0].axisLabel.rich = rich;
+    }
+  },
   computed: {
+    chartLevels () { return this.dataRank.slice(0,10).map(row => practiceLevel(row)) },
     ...mapGetters(['isAuthenticated', 'userInfo']),
   },
 };

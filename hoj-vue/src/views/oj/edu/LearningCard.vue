@@ -15,14 +15,14 @@
           <el-progress :percentage="percentage" :show-text="false" :stroke-width="7" :color="percentage === 100 ? '#31ad76' : '#528fd2'" />
         </div>
       </div>
-      <footer><span class="owner"><i class="el-icon-user-solid" aria-hidden="true" /> {{ owner || '原账号已删除' }}</span><span>{{ meta }}</span></footer>
+      <footer><span class="owner"><i class="el-icon-user-solid" aria-hidden="true" /> <span v-if="owner" v-user-level="{uid:ownerUid, username:owner}">{{ owner }}</span><span v-else>原账号已删除</span></span><span>{{ meta }}</span></footer>
     </div>
   </component>
 </template>
 <script>
 export default {
   props: {
-    to: {type: [String, Object], default: '/class'}, title: String, description: String, owner: String, meta: String, icon: String, badge: String,
+    to: {type: [String, Object], default: '/class'}, title: String, description: String, owner: String, ownerUid: [String, Number], meta: String, icon: String, badge: String,
     kind: {type: String, default: 'course'}, layout: {type: String, default: 'card'}, completed: {type: Number, default: 0}, total: {type: Number, default: 0},
     disabled: Boolean, restricted: Boolean, disabledHint: {type: String, default: '加入相关班级后可学习本课程'}, showProgress: {type: Boolean, default: true}
   },

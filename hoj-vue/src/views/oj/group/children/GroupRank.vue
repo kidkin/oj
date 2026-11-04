@@ -57,7 +57,7 @@
             <a
               @click="getInfoByUsername(row.uid, row.username)"
               style="color:#2d8cf0;"
-              >{{ row.username }}</a
+              ><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></a
             >
             <span style="margin-left:2px" v-if="row.titleName">
               <el-tag effect="dark" size="small" :color="row.titleColor">
@@ -78,7 +78,7 @@
               v-if="row.nickname"
               :type="nicknameColor(row.nickname)"
             >
-              {{ row.nickname }}
+              <span v-user-level="{uid: row.uid, username: row.username}">{{ row.nickname }}</span>
             </el-tag>
           </template>
         </vxe-table-column>

@@ -1,0 +1,10 @@
+.practice-user {
+  color: var(--practice-user-color, #777777) !important;
+  font-weight: 650 !important;
+}
+.practice-user--grandmaster, .practice-user--legend { font-weight: 750 !important; }
+.practice-user--legend { display: inline-block; }
+.practice-user--legend::first-letter { color: #171717; }
+.el-dropdown-link .practice-user, .mu-appbar .practice-user {
+  padding: 2px 6px; border-radius: 4px; background: #fff;
+}

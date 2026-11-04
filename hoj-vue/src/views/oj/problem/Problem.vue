@@ -201,7 +201,7 @@
                           type="info"
                           class="author-name"
                           @click="goUserHome(problemData.problem.author)"
-                        >{{ problemData.problem.author }}</el-link></span><br />
+                        ><span v-user-level="{username:problemData.problem.author}">{{ problemData.problem.author }}</span></el-link></span><br />
                     </template>
                   </div>
                 </div>

@@ -10,6 +10,12 @@ import 'font-awesome/css/font-awesome.min.css'
 import Message from 'vue-m-message'
 import 'vue-m-message/dist/index.css'
 import axios from 'axios'
+import PracticeUser from '@/common/practice-user'
+import PracticeLevelInfo from '@/components/oj/common/PracticeLevelInfo.vue'
+import {courseTitle} from '@/common/course-chapter'
+Vue.use(PracticeUser)
+Vue.component('PracticeLevelInfo', PracticeLevelInfo)
+Vue.filter('courseTitle', courseTitle)
 
 import Md_Katex from '@iktakahiro/markdown-it-katex'
 

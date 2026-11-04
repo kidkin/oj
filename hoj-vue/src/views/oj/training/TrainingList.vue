@@ -160,9 +160,9 @@
           show-overflow
         >
           <template v-slot="{ row }"
-            ><el-link type="info" @click="goUserHome(row.author)">{{
+            ><el-link type="info" @click="goUserHome(row.author)"><span v-user-level="{uid: row.uid, username: row.author}">{{
               row.author
-            }}</el-link>
+            }}</span></el-link>
           </template>
         </vxe-table-column>
         <vxe-table-column

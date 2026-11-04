@@ -79,7 +79,7 @@
             <p>Start Time: {{ row.startTime | localtime }}</p>
             <p>End Time: {{ row.endTime | localtime }}</p>
             <p>Created Time: {{ row.gmtCreate | localtime }}</p>
-            <p>Creator: {{ row.author }}</p>
+            <p>Creator: <span v-user-level="{uid: row.uid, username: row.author}">{{ row.author }}</span></p>
           </template>
         </vxe-table-column>
         <vxe-table-column min-width="150" :title="$t('m.Option')">

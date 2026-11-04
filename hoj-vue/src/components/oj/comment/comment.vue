@@ -198,7 +198,7 @@
                 class="user-info"
                 @click="getInfoByUsername(item.fromUid, item.fromName)"
                 :title="item.fromName"
-                >{{ item.fromName }}</span
+                ><span v-user-level="{uid: item.fromUid, username: item.fromName}">{{ item.fromName }}</span></span
               >
               <span v-if="item.fromTitleName" style="margin-right: 4px;">
                 <el-tag effect="dark" size="small" :color="item.fromTitleColor">
@@ -281,9 +281,9 @@
                     color="#FFF"
                     :src="reply.fromAvatar"
                   ></avatar>
-                  <span style="vertical-align: middle;">{{
+                  <span style="vertical-align: middle;"><span v-user-level="{uid: reply.fromUid, username: reply.fromName}">{{
                     reply.fromName
-                  }}</span>
+                  }}</span></span>
                 </span>
                 <span
                   v-if="reply.fromTitleName"
@@ -315,7 +315,7 @@
                   class="to-name"
                   :title="reply.toName"
                   @click="getInfoByUsername(reply.toUid, reply.toName)"
-                  >@{{ reply.toName }}</span
+                  >@<span v-user-level="{uid: reply.toUid, username: reply.toName}">{{ reply.toName }}</span></span
                 >
               </div>
               <div style="padding: 8px 0;margin-left: 34px;">

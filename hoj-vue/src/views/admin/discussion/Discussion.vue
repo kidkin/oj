@@ -51,7 +51,7 @@
           :title="$t('m.Author')"
           min-width="150"
           show-overflow
-        ></vxe-table-column>
+        ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.author}">{{ row.author }}</span></template></vxe-table-column>
         <vxe-table-column
           field="likeNum"
           :title="$t('m.Likes')"

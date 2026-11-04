@@ -40,7 +40,7 @@
             ><a
               @click="getUserTotalSubmit(row.username)"
               style="color:rgb(87, 163, 243);"
-              >{{ row.username }}</a
+              ><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></a
             >
           </span>
         </template>
@@ -49,7 +49,7 @@
         field="realname"
         :title="$t('m.RealName')"
         min-width="150"
-      ></vxe-table-column>
+      ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.realname }}</span></template></vxe-table-column>
       <vxe-table-column
         field="gmtCreate"
         min-width="150"

@@ -36,7 +36,7 @@
             <span class="span-row">{{ $t('m.Length') }}:
               {{ submissionLengthFormat(submission.length) }}</span>
             <span class="span-row">{{ $t('m.Language') }}: {{ submission.language }}</span>
-            <span class="span-row">{{ $t('m.Author') }}: {{ submission.username }}</span>
+            <span class="span-row">{{ $t('m.Author') }}: <span v-user-level="{uid: submission.uid, username: submission.username}">{{ submission.username }}</span></span>
           </div>
         </template>
       </el-alert>

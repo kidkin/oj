@@ -141,8 +141,8 @@
               style="vertical-align: middle;"
             >
               <span
-                >{{ userInfo.username
-                }}<i class="el-icon-caret-bottom el-icon--right"></i
+                ><span v-user-level="{uid: userInfo.uid, username: userInfo.username}">{{ userInfo.username
+                }}</span><i class="el-icon-caret-bottom el-icon--right"></i
               ></span>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="logout">{{
@@ -176,7 +176,7 @@
           :open.sync="openusermenu"
         >
           <mu-button flat>
-            {{ userInfo.username }}<i class="el-icon-caret-bottom"></i>
+            <span v-user-level="{uid: userInfo.uid, username: userInfo.username}">{{ userInfo.username }}</span><i class="el-icon-caret-bottom"></i>
           </mu-button>
           <mu-list slot="content" @change="handleCommand">
             <mu-list-item button value="logout">

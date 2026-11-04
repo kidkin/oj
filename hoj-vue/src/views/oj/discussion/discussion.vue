@@ -28,7 +28,7 @@
                 class="user-avatar"
                 :src="discussion.avatar"
               ></avatar>
-              <span class="user-name">{{ discussion.author }}</span>
+              <span class="user-name"><span v-user-level="{uid: discussion.uid, username: discussion.author}">{{ discussion.author }}</span></span>
             </a>
             <span v-if="discussion.titleName">
               <el-tag effect="dark" size="small" :color="discussion.titleColor">

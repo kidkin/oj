@@ -6,7 +6,7 @@
       <section class="problem-selector">
         <div class="page-header"><h3>1. 选择题目</h3><span class="hint">已选 {{ selected.length }}/50 题，按选择顺序排列</span></div>
         <el-form inline class="progress-filters" @submit.native.prevent="search">
-          <el-form-item><el-select v-model="query.courseId" placeholder="全部公开题库" clearable :disabled="generating" @change="search"><el-option v-for="course in courses" :key="course.id" :label="course.title" :value="course.id" /></el-select></el-form-item>
+          <el-form-item><el-select v-model="query.courseId" placeholder="全部公开题库" clearable :disabled="generating" @change="search"><el-option v-for="course in courses" :key="course.id" :label="course | courseTitle" :value="course.id" /></el-select></el-form-item>
           <el-form-item><el-input v-model.trim="query.keyword" maxlength="128" placeholder="搜索原题号或题目名称" clearable :disabled="generating" @clear="search" /></el-form-item>
           <el-form-item><el-button native-type="submit" :disabled="generating">搜索</el-button><el-button :disabled="generating || !records.length || selected.length >= 50" @click="addPage">选择本页</el-button></el-form-item>
         </el-form>
@@ -28,7 +28,7 @@
         <div class="status-legend"><span v-for="key in finalStates" :key="key" :style="badgeStyle(key)">{{ states[key].label }}</span></div>
         <div v-if="pages.length > 1" class="image-pages"><el-button :disabled="pageIndex === 0" @click="pageIndex--">上一张</el-button><span>第 {{ pageIndex+1 }}/{{ pages.length }} 张 · 学生 {{ page.rowStart + (page.rowEnd > page.rowStart ? 1 : 0) }}—{{ page.rowEnd }} · 题目 {{ page.colStart+1 }}—{{ page.colEnd }}</span><el-button :disabled="pageIndex === pages.length-1" @click="pageIndex++">下一张</el-button></div>
         <div class="report-preview" v-loading="rendering">
-          <table class="progress-table"><caption>{{ report.className }} · 学习情况</caption><thead><tr><th class="student-name">姓名/题目</th><th v-for="problem in visibleProblems" :key="problem.id"><span>{{ problem.title }}</span><small>{{ problem.problemId }}</small></th></tr></thead><tbody><tr v-for="student in visibleStudents" :key="student.uid"><th class="student-name" :title="student.username">{{ student.name }}</th><td v-for="(problem,index) in visibleProblems" :key="problem.id"><span class="result-badge" :style="badgeStyle(student.results[page.colStart+index])">{{ stateLabel(student.results[page.colStart+index]) }}</span></td></tr><tr v-if="!visibleStudents.length"><td :colspan="visibleProblems.length+1">本班暂无有效学生</td></tr></tbody></table>
+          <table class="progress-table"><caption>{{ report.className }} · 学习情况</caption><thead><tr><th class="student-name">姓名/题目</th><th v-for="problem in visibleProblems" :key="problem.id"><span>{{ problem.title }}</span><small>{{ problem.problemId }}</small></th></tr></thead><tbody><tr v-for="student in visibleStudents" :key="student.uid"><th class="student-name" :title="student.username"><span v-user-level="{uid: student.uid, username: student.username}">{{ student.name }}</span></th><td v-for="(problem,index) in visibleProblems" :key="problem.id"><span class="result-badge" :style="badgeStyle(student.results[page.colStart+index])">{{ stateLabel(student.results[page.colStart+index]) }}</span></td></tr><tr v-if="!visibleStudents.length"><td :colspan="visibleProblems.length+1">本班暂无有效学生</td></tr></tbody></table>
         </div>
         <p v-if="!clipboardSupported" class="hint">当前浏览器或访问地址不支持复制图片，可先下载PNG；复制图片需使用本机地址或支持剪贴板的HTTPS页面。</p>
       </section>
@@ -38,6 +38,7 @@
 </template>
 <script>
 import edu from '@/common/edu-api'
+import {loadPracticeLevels} from '@/common/practice-user'
 import eduLayout from '@/common/edu-layout'
 import {PROGRESS_STATES, progressPages, progressTime, renderProgressImage} from '@/common/progress-image'
 export default {
@@ -84,7 +85,7 @@ export default {
     async generate () {
       if (!this.selected.length || this.generating) return
       const classId=this.id; const version=++this.reportVersion; this.generating=true; this.clearImage(); this.renderVersion++
-      try { const report=await edu.classProgress(classId,this.selectedIds); if (version!==this.reportVersion) return; this.report=report; this.pageIndex=0; await this.prepareImage() } catch (_) { if (version===this.reportVersion) this.report=null } finally { if (version===this.reportVersion) this.generating=false }
+      try { const report=await edu.classProgress(classId,this.selectedIds); if (version!==this.reportVersion) return; try { const levels=await loadPracticeLevels(report.students); report.students.forEach((student,index) => { student.nameColor=levels[index] ? levels[index].color : '#777777' }) } catch (_) {} if (version!==this.reportVersion) return; this.report=report; this.pageIndex=0; await this.prepareImage() } catch (_) { if (version===this.reportVersion) this.report=null } finally { if (version===this.reportVersion) this.generating=false }
     },
     async prepareImage () {
       const version=++this.renderVersion; this.clearImage(); if (!this.report || !this.pages.length) return; this.rendering=true

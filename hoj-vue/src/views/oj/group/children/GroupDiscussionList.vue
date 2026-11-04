@@ -109,7 +109,7 @@
                   class="user-avatar"
                   :src="discussion.avatar"
                 ></avatar>
-                <span class="pl">{{ discussion.author }}</span></a
+                <span class="pl"><span v-user-level="{uid: discussion.uid, username: discussion.author}">{{ discussion.author }}</span></span></a
               >
               <span
                 class="role-root role"

@@ -394,7 +394,7 @@
               <a
                 @click="goUserHome(row.username, row.uid)"
                 style="color: rgb(87, 163, 243)"
-              >{{ row.username }}</a>
+              ><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></a>
             </template>
           </vxe-table-column>
           <vxe-table-column

@@ -198,7 +198,7 @@
                       class="contest-rank-flag"
                       v-if="row.gender == 'female'"
                     >Girl</span>
-                    {{ row.rankShowName }}</span>
+                    <span v-user-level="{uid: row.uid, username: row.username}">{{ row.rankShowName }}</span></span>
                   <span
                     class="contest-school"
                     v-if="row.school"
@@ -270,7 +270,7 @@
                       class="contest-rank-flag"
                       v-if="row.gender == 'female'"
                     >Girl</span>
-                    {{ row.rankShowName }}</span>
+                    <span v-user-level="{uid: row.uid, username: row.username}">{{ row.rankShowName }}</span></span>
                   <span
                     class="contest-school"
                     v-if="row.school"
@@ -290,8 +290,7 @@
           :title="$t('m.RealName')"
           v-if="isContestAdmin"
           show-overflow
-        >
-        </vxe-table-column>
+        ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.realname }}</span></template></vxe-table-column>
         <vxe-table-column
           field="totalScore"
           :title="$t('m.Total_Score')"

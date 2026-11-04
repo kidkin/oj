@@ -30,6 +30,19 @@ class EduCourseServiceTest {
         verify(db, never()).update(anyString(), any(Object[].class));
         verify(db, never()).batchUpdate(anyString(), anyList());
     }
+    @Test void chapterNumbersCanChangeWithoutChangingTheCourseOrderingId() {
+        EduCourseService editable = spy(service);
+        doReturn(Collections.emptyMap()).when(editable).detail(7L);
+        editable.update(7L, "课程", "介绍", 1, 3L, null, 2L);
+        verify(db).update(startsWith("INSERT INTO edu_course_chapter"), eq(7L), eq(2L));
+        verify(db, never()).update(startsWith("INSERT INTO edu_course_display"), any(Object[].class));
+    }
+    @Test void invalidChapterNumbersCannotChangeCourseMetadata() {
+        for (Long chapter : Arrays.asList(0L, -1L, 2147483648L)) {
+            assertThrows(EduException.class, () -> service.update(7L, "课程", "", 1, 3L, null, chapter));
+        }
+        noWrites();
+    }
     @Test void studentsOnlySeeEnrolledCoursesForEveryListScope() {
         when(classes.hasRole("owner", "teacher")).thenReturn(false);
         when(db.queryForObject(anyString(), any(Object[].class), eq(Long.class))).thenReturn(0L);
