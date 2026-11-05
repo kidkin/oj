@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import top.hcode.hoj.common.result.CommonResult;
+import top.hcode.hoj.edu.PracticeLevelService;
 import top.hcode.hoj.pojo.entity.group.Group;
 import top.hcode.hoj.service.file.ImageService;
 
@@ -28,11 +29,17 @@ public class ImageController {
     @Autowired
     private ImageService imageService;
 
+    @Autowired
+    private PracticeLevelService practiceLevels;
+
 
     @RequestMapping(value = "/upload-avatar", method = RequestMethod.POST)
     @RequiresAuthentication
     @ResponseBody
     public CommonResult<Map<Object, Object>> uploadAvatar(@RequestParam("image") MultipartFile image) {
+        if (!practiceLevels.canEditCurrentProfile()) {
+            return CommonResult.errorResponse(PracticeLevelService.PROFILE_LOCKED, 403);
+        }
         return imageService.uploadAvatar(image);
     }
 

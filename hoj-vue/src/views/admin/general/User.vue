@@ -101,6 +101,13 @@
             {{ getRole(row.roles) | parseRole }}
           </template>
         </vxe-table-column>
+        <vxe-table-column title="成长账号" min-width="110">
+          <template v-slot="{ row }">
+            <el-tag :type="row.accountType === 'formal' ? 'success' : 'info'" size="small">
+              {{ row.accountType === 'formal' ? '正式账号' : '试用账号' }}
+            </el-tag>
+          </template>
+        </vxe-table-column>
         <vxe-table-column
           field="status"
           :title="$t('m.Status')"
@@ -172,6 +179,13 @@
         <el-form-item :label="$t('m.Username')" prop="username">
           <el-input v-model="createUserForm.username" maxlength="20" autocomplete="off"
             :placeholder="$t('m.New_Account_Username_Hint')"></el-input>
+        </el-form-item>
+        <el-form-item label="成长账号">
+          <el-select v-model="createUserForm.accountMode">
+            <el-option label="跟随班级" value="auto" />
+            <el-option label="试用账号" value="trial" />
+            <el-option label="正式账号" value="formal" />
+          </el-select>
         </el-form-item>
         <el-form-item :label="$t('m.RealName')" prop="realname">
           <el-input v-model="createUserForm.realname" maxlength="50"
@@ -438,6 +452,13 @@
             </el-form-item>
           </el-col>
           <el-col :span="24">
+            <el-form-item label="成长账号">
+              <el-select v-model="selectUser.accountMode">
+                <el-option label="跟随班级" value="auto" />
+                <el-option label="试用账号" value="trial" />
+                <el-option label="正式账号" value="formal" />
+              </el-select>
+            </el-form-item>
             <el-form-item :label="$t('m.RealName')" prop="realname">
               <el-input v-model="selectUser.realname" size="small"></el-input>
             </el-form-item>
@@ -633,7 +654,7 @@ export default {
       showUserDialog: false,
       showCreateUserDialog: false,
       loadingCreate: false,
-      createUserForm: { username: '', realname: '', password: '', confirmPassword: '' },
+      createUserForm: { username: '', realname: '', password: '', confirmPassword: '', accountMode: 'auto' },
       createUserRules: {
         username: [
           { required: true, message: this.$t('m.Username_Check_Required'), trigger: 'blur' },
@@ -659,6 +680,7 @@ export default {
         uid: '',
         username: '',
         realname: '',
+        accountMode: 'auto',
         email: '',
         password: '',
         type: 1002,
@@ -749,7 +771,7 @@ export default {
   },
   methods: {
     resetCreateUserForm() {
-      this.createUserForm = { username: '', realname: '', password: '', confirmPassword: '' };
+      this.createUserForm = { username: '', realname: '', password: '', confirmPassword: '', accountMode: 'auto' };
       if (this.$refs.createUserForm) this.$refs.createUserForm.clearValidate();
     },
     openCreateUserDialog() {
@@ -761,8 +783,8 @@ export default {
       this.loadingCreate = true;
       this.$refs.createUserForm.validate(valid => {
         if (!valid) { this.loadingCreate = false; return; }
-        const { username, password, realname } = this.createUserForm;
-        api.admin_createUser({ username, password, realname })
+        const { username, password, realname, accountMode } = this.createUserForm;
+        api.admin_createUser({ username, password, realname, accountMode })
           .then(() => {
             this.showCreateUserDialog = false;
             this.resetCreateUserForm();
@@ -818,6 +840,7 @@ export default {
       this.selectUser.uid = row.uid;
       this.selectUser.username = row.username;
       this.selectUser.realname = row.realname;
+      this.selectUser.accountMode = row.accountMode || 'auto';
       this.selectUser.email = row.email;
       this.selectUser.setNewPwd = false;
       this.selectUser.password = '';

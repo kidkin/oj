@@ -20,6 +20,8 @@ public class AdminEditUserDTO {
 
     private String realname;
 
+    private String accountMode;
+
     private String email;
 
     private String password;

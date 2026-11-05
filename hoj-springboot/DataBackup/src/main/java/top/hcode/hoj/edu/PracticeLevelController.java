@@ -1,6 +1,7 @@
 package top.hcode.hoj.edu;
 
 import lombok.Data;
+import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.springframework.web.bind.annotation.*;
 import top.hcode.hoj.common.result.CommonResult;
 import java.util.*;
@@ -16,6 +17,12 @@ public class PracticeLevelController {
         if (input == null) throw new EduException(400, "请提供需要查询的用户");
         return CommonResult.successResponse(service.users(input.getUids(), input.getUsernames()));
     }
+    @GetMapping("/profile-settings-access")
+    @RequiresAuthentication
+    public CommonResult<Map<String, Object>> profileSettingsAccess() {
+        return CommonResult.successResponse(service.currentProfileAccess());
+    }
+
     @GetMapping("/practice-level-rules")
     public CommonResult<List<Map<String, Object>>> rules() { return CommonResult.successResponse(service.rules()); }
     @ExceptionHandler(EduException.class)

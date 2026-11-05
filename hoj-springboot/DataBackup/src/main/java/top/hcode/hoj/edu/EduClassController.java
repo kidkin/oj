@@ -15,7 +15,7 @@ public class EduClassController {
     private final EduClassService service;
     public EduClassController(EduClassService service) { this.service = service; }
 
-    @Data public static class ClassInput { private String name; private String description = ""; private int status; private String displayId; }
+    @Data public static class ClassInput { private String name; private String description = ""; private int status; private String displayId; private Boolean growthClass; }
     @Data public static class MembersInput { private List<String> usernames; private String role = "STUDENT"; }
     @Data public static class TeacherInput { private String username; }
 
@@ -31,7 +31,7 @@ public class EduClassController {
     }
     @GetMapping("/classes/{id}") public CommonResult<Map<String, Object>> detail(@PathVariable long id) { return CommonResult.successResponse(service.detail(id)); }
     @PutMapping("/classes/{id}") public CommonResult<Void> update(@PathVariable long id, @RequestBody ClassInput input) {
-        service.update(id, input.getName(), input.getDescription(), input.getStatus(), EduDisplayOrder.parse(input.getDisplayId())); return CommonResult.successResponse();
+        service.update(id, input.getName(), input.getDescription(), input.getStatus(), EduDisplayOrder.parse(input.getDisplayId()), input.getGrowthClass()); return CommonResult.successResponse();
     }
     @GetMapping("/classes/{id}/members") public CommonResult<Map<String, Object>> members(@PathVariable long id,
             @RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="20") int limit) {

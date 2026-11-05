@@ -253,6 +253,9 @@ const ojApi = {
   },
 
   // 账户的相关操作
+  getProfileSettingsAccess() {
+    return ajax('/api/profile-settings-access', 'get')
+  },
   getUserAuthInfo() {
     return ajax('/api/get-user-auth-info', 'get')
   },

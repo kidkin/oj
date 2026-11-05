@@ -87,6 +87,9 @@ public class EduClassService {
         boolean manage = canManage(uid, id);
         if (!manage && (!member(uid, id) || ((Number) row.get("status")).intValue() != 0)) throw new EduException(403, "无权访问此班级");
         Map<String, Object> result = db.queryForMap(CLASS_COLUMNS + "WHERE c.id=?", id); result.put("canManage", manage);
+        if (root(uid)) {
+            result.put("growthClass", count("SELECT COUNT(*) FROM edu_growth_class WHERE class_id=?", id) > 0);
+        }
         EduProgress.classes(db, Collections.singletonList(result), uid); return result;
     }
 
@@ -118,7 +121,18 @@ public class EduClassService {
     }
     @Transactional
     public void update(long id, String name, String description, int status, Long displayId) {
+        update(id, name, description, status, displayId, null);
+    }
+
+    @Transactional
+    public void update(long id, String name, String description, int status, Long displayId, Boolean growthClass) {
         String uid = actor(); classRow(id, true); requireManager(uid, id); validateClass(name, description, status); EduDisplayOrder.validate(displayId);
+        if (growthClass != null && !root(uid)) throw new EduException(403, "仅超级管理员可设置班级的成长资格");
+        if (Boolean.TRUE.equals(growthClass)) {
+            db.update("INSERT INTO edu_growth_class(class_id) VALUES (?) ON DUPLICATE KEY UPDATE class_id=VALUES(class_id)", id);
+        } else if (Boolean.FALSE.equals(growthClass)) {
+            db.update("DELETE FROM edu_growth_class WHERE class_id=?", id);
+        }
         db.update("UPDATE edu_class SET name=?,description=?,status=? WHERE id=?", name.trim(), description, status, id);
         if (displayId != null) db.update("INSERT INTO edu_class_display(class_id,display_id) VALUES (?,?) ON DUPLICATE KEY UPDATE display_id=VALUES(display_id)", id, displayId);
     }

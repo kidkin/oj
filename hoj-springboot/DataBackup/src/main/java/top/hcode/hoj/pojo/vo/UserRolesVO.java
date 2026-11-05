@@ -23,6 +23,10 @@ public class UserRolesVO implements Serializable {
     @ApiModelProperty(value = "用户id")
     private String uid;
 
+    private String accountType;
+
+    private String accountMode;
+
     @ApiModelProperty(value = "用户名")
     private String username;
 

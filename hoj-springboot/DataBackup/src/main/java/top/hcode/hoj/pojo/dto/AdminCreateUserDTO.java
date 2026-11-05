@@ -20,4 +20,6 @@ public class AdminCreateUserDTO {
 
     @Size(max = 50, message = "真实姓名不能超过50位")
     private String realname;
+
+    private String accountMode;
 }

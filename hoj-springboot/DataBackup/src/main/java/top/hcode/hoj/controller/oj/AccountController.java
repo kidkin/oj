@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import top.hcode.hoj.annotation.AnonApi;
 import top.hcode.hoj.pojo.dto.*;
 import top.hcode.hoj.common.result.CommonResult;
+import top.hcode.hoj.edu.PracticeLevelService;
 import top.hcode.hoj.pojo.vo.*;
 import top.hcode.hoj.service.oj.AccountService;
 
@@ -21,6 +22,9 @@ public class AccountController {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private PracticeLevelService practiceLevels;
 
     /**
      * @MethodName checkUsernameOrEmail
@@ -103,6 +107,9 @@ public class AccountController {
     @PostMapping("/change-userInfo")
     @RequiresAuthentication
     public CommonResult<UserInfoVO> changeUserInfo(@RequestBody UserInfoVO userInfoVo) {
+        if (!practiceLevels.canEditCurrentProfile()) {
+            return CommonResult.errorResponse(PracticeLevelService.PROFILE_LOCKED, 403);
+        }
         return accountService.changeUserInfo(userInfoVo);
     }
 

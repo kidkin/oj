@@ -22,11 +22,25 @@ class PracticeLevelServiceTest {
     }
     @Test void resolvesMultipleUsernamesAndUidsWithOneBoundQueryAndDistinctProblems() {
         JdbcTemplate db = mock(JdbcTemplate.class);
-        Map<String, Object> row = new HashMap<>(); row.put("uid", "u1"); row.put("username", "学生"); row.put("solvedCount", 61L);
+        Map<String, Object> row = new HashMap<>(); row.put("uid", "u1"); row.put("username", "学生"); row.put("solvedCount", 61L); row.put("accountType", "formal");
         when(db.queryForList(anyString(), eq("u1"), eq("学生"))).thenReturn(Collections.singletonList(row));
         List<Map<String, Object>> levels = new PracticeLevelService(db).users(Arrays.asList("u1", "u1"), Collections.singletonList("学生"));
         assertEquals("expert", levels.get(0).get("key")); assertEquals(61L, levels.get(0).get("score"));
         verify(db).queryForList(contains("COUNT(DISTINCT a.pid)"), eq("u1"), eq("学生"));
+    }
+    @Test void trialAccountsKeepSolvedHistoryButHaveZeroGrowthAndLockedSettings() {
+        JdbcTemplate db = mock(JdbcTemplate.class);
+        Map<String, Object> trial = new HashMap<>(), formal = new HashMap<>();
+        trial.put("accountType", "trial"); trial.put("accountMode", "auto"); trial.put("solvedCount", 61L);
+        formal.put("accountType", "formal"); formal.put("accountMode", "formal"); formal.put("solvedCount", 1L);
+        when(db.queryForList(anyString(), eq("trial"), eq("formal"))).thenReturn(Arrays.asList(trial, formal));
+        List<Map<String, Object>> levels = new PracticeLevelService(db).users(Arrays.asList("trial", "formal"), null);
+        assertEquals(0L, levels.get(0).get("score"));
+        assertEquals(61L, levels.get(0).get("solvedCount"));
+        assertEquals(false, levels.get(0).get("canEditProfile"));
+        assertEquals("pupil", levels.get(1).get("key"));
+        assertEquals(true, levels.get(1).get("canEditProfile"));
+        assertFalse(levels.get(1).containsKey("accountMode"));
     }
     @Test void emptyLookupsAndInvalidBatchesNeverHitTheDatabase() {
         JdbcTemplate db = mock(JdbcTemplate.class); PracticeLevelService service = new PracticeLevelService(db);

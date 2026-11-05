@@ -21,6 +21,7 @@ import top.hcode.hoj.dao.user.UserInfoEntityService;
 import top.hcode.hoj.dao.user.UserRecordEntityService;
 import top.hcode.hoj.dao.user.UserRoleEntityService;
 import top.hcode.hoj.manager.msg.AdminNoticeManager;
+import top.hcode.hoj.edu.PracticeLevelService;
 import top.hcode.hoj.pojo.dto.AdminEditUserDTO;
 import top.hcode.hoj.pojo.dto.AdminCreateUserDTO;
 import top.hcode.hoj.pojo.entity.user.UserInfo;
@@ -58,16 +59,37 @@ public class AdminUserManager {
     @Autowired
     private RedisUtils redisUtils;
 
+    @Autowired
+    private PracticeLevelService practiceLevels;
+
     public IPage<UserRolesVO> getUserList(Integer limit, Integer currentPage, Boolean onlyAdmin, String keyword) {
         if (currentPage == null || currentPage < 1) currentPage = 1;
         if (limit == null || limit < 1) limit = 10;
         if (keyword != null) {
             keyword = keyword.trim();
         }
-        return userRoleEntityService.getUserList(limit, currentPage, keyword, onlyAdmin);
+        IPage<UserRolesVO> page = userRoleEntityService.getUserList(limit, currentPage, keyword, onlyAdmin);
+        List<UserRolesVO> records = page.getRecords();
+        for (int start = 0; start < records.size(); start += 100) {
+            List<UserRolesVO> batch = records.subList(start, Math.min(start + 100, records.size()));
+            List<String> uids = batch.stream().map(UserRolesVO::getUid).collect(Collectors.toList());
+            Map<String, Map<String, Object>> accountTypes = practiceLevels.adminUsers(uids).stream()
+                    .collect(Collectors.toMap(row -> (String) row.get("uid"), row -> row));
+            for (UserRolesVO user : batch) {
+                Map<String, Object> row = accountTypes.get(user.getUid());
+                if (row != null) {
+                    user.setAccountType((String) row.get("accountType"));
+                    user.setAccountMode((String) row.get("accountMode"));
+                }
+            }
+        }
+        return page;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void editUser(AdminEditUserDTO adminEditUserDto) throws StatusFailException {
+        String accountMode = adminEditUserDto.getAccountMode();
+        PracticeLevelService.validateAccountMode(accountMode);
 
         String username = adminEditUserDto.getUsername();
         String uid = adminEditUserDto.getUid();
@@ -119,6 +141,7 @@ public class AdminUserManager {
                 .set("title_color", titleColor)
                 .set("status", status);
         boolean updateUserInfo = userInfoEntityService.update(userInfoUpdateWrapper);
+        if (accountMode != null) practiceLevels.setAccountMode(uid, accountMode);
 
         QueryWrapper<UserRole> userRoleQueryWrapper = new QueryWrapper<>();
         // Teaching is an additional business role, managed in the class UI.
@@ -166,6 +189,8 @@ public class AdminUserManager {
 
     @Transactional(rollbackFor = Exception.class)
     public void createUser(AdminCreateUserDTO user) throws StatusFailException {
+        String accountMode = user.getAccountMode();
+        PracticeLevelService.validateAccountMode(accountMode);
         // Login trims passwords, so reject whitespace at either end instead of
         // creating an account whose chosen password can never authenticate.
         if (!user.getPassword().equals(user.getPassword().trim())) {
@@ -177,6 +202,7 @@ public class AdminUserManager {
             throw new StatusFailException("用户名已存在，请更换用户名。");
         }
         final String uid = addNewUser(Arrays.asList(user.getUsername(), user.getPassword(), null, user.getRealname()));
+        if (accountMode != null && !"auto".equals(accountMode)) practiceLevels.setAccountMode(uid, accountMode);
         // Provisioning the account, ordinary-user role and statistics is one
         // transaction. Deliver existing site notices only after it commits.
         Runnable notify = () -> {
