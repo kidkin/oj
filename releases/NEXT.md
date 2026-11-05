@@ -18,6 +18,8 @@ Local verification on 2026-11-04:
 
 ## Curriculum data awaiting deployment
 
+Update on 2026-11-05: this private curriculum and historical-result data batch has now been deployed and verified online. See [data-update-20261105.md](data-update-20261105.md). The notes below describe its original preparation; database contents and uploaded icons are still intentionally absent from public source/image releases.
+
 The local database has 44 courses: 43 published and one empty advanced homework draft. Ten school courses were added, 33 migration descriptions were cleaned, and all 44 course icons were replaced. C++ and Python school courses use their respective language icons; courses from the first five original teams use the corresponding gauge icons.
 
 These are database and file changes. Git and application images do not contain the course records, class references, uploaded icons, test files or student verdicts. Prepare and validate a private migration package, preserving new server submissions, before deploying this curriculum update.
