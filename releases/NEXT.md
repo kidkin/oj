@@ -1,6 +1,6 @@
-# Pending local changes — not published
+# v0.3.4 deployment preparation
 
-The next release must include `V006__judge_error_utf8mb4`, `V007__course_chapters`, and new backend/frontend images.
+The v0.3.4 release includes `V006__judge_error_utf8mb4`, `V007__course_chapters`, and new backend/frontend images.
 Do not amend the published v0.3.3 manifest: its images and five migrations remain the historical release record.
 
 ## Compiler diagnostic encoding
@@ -24,7 +24,7 @@ These are database and file changes. Git and application images do not contain t
 
 The local judge's larger heap and parallel settings were chosen for this Windows development machine. Review memory and concurrency separately for the 2-core / 4-GiB server; do not copy that local override as a production default.
 
-Neither the server nor the GitHub branch has been updated with these changes yet.
+The 2026-11-05 deployment updates application code and chapter numbers for existing online courses. The ten additional local courses, local icon/description changes and historical rejudge results remain separate private data work; this release does not replace the online database with a local dump.
 
 ## Course chapters and practice-based name colors
 
@@ -35,4 +35,8 @@ Neither the server nor the GitHub branch has been updated with these changes yet
 - Name text shares one batched lookup/cache across navigation, profiles, rankings, submissions, course ownership, class rosters, discussions, comments, messages and legacy contest/team pages. Ranking chart labels and copied class-progress images also use the same colors.
 - Visible name colors refresh every minute and when the page regains focus. The personal profile includes a growth-score badge and a level explanation.
 
-Local validation: 67 Java tests; frontend production compilation; batched-name, recycled-row, first-profile-load and refresh regression checks; independent live SQL/API score comparisons; unchanged student course access and chapter editing restrictions; visible course, rank and profile acceptance. No cloud deployment or registry push has occurred.
+Local validation: 67 Java tests; frontend production compilation; batched-name, recycled-row, first-profile-load and refresh regression checks; independent live SQL/API score comparisons; unchanged student course access and chapter editing restrictions; visible course, rank and profile acceptance. The cloud build repeats the new Java and frontend regression tests without starting local Docker.
+
+## Rollback compatibility
+
+V006 widens compiler diagnostic encoding and V007 adds a separate chapter table. The previous application can run against this additive schema. A routine application rollback restores the saved immutable images and configuration while preserving current online submissions; it does not run a full database restore or remove the new columns/tables. Old release verification requires exactly its original migration set, so use the deployment's compatibility check for a rollback with newer additive migrations. The private pre-update backup is available for a separate full disaster recovery operation.
