@@ -4,7 +4,7 @@
     <div v-if="failed" class="summary-error">学习概览暂时无法加载 <el-button type="text" @click="$emit('retry')">重试</el-button></div>
     <template v-else-if="summary">
       <div class="summary-stats">
-        <div class="summary-stat"><i class="el-icon-sunny" aria-hidden="true" /><div><el-tooltip content="已加入课程中，有已判定的普通练习提交的自然日数量，同一天只计一次" placement="top"><span>已学习</span></el-tooltip><strong>{{ summary.learningDays }}<small>天</small></strong></div></div>
+        <div class="summary-stat"><i class="el-icon-sunny" aria-hidden="true" /><div><el-tooltip content="从第一次提交到今天的自然天数，首次提交当天算第1天；没有提交则为0天" placement="top"><span>已学习</span></el-tooltip><strong>{{ summary.learningDays }}<small>天</small></strong></div></div>
         <div class="summary-stat"><i class="el-icon-reading" aria-hidden="true" /><div><span>已加入课程</span><strong>{{ summary.courseCount }}<small>门</small></strong></div></div>
         <div class="summary-stat"><i class="el-icon-circle-check" aria-hidden="true" /><div><span>已完成题目</span><strong>{{ summary.completedCount }}<small>道</small></strong></div></div>
       </div>

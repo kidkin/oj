@@ -11,7 +11,6 @@
       <LearningCard v-for="row in records" :key="row.id" :to="courseTarget(row)" :title="row | courseTitle" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :owner-uid="row.ownerUid" :badge="access.isTeacher && row.status !== 1 ? states[row.status] : ''" :meta="row.problemCount + ' 道公开题'" :completed="row.completedCount" :total="row.problemCount" :restricted="!access.isTeacher && !row.canAccess" :show-progress="!!(access.isTeacher || row.canAccess)" @restricted-click="$message.info('加入相关班级后可学习本课程')" />
       <p v-if="!loading && !records.length" class="edu-empty">{{ access.isTeacher ? '暂无符合条件的课程' : '暂无已加入的课程，请联系老师开通课程' }}</p>
     </div>
-    <el-pagination class="pagination" layout="prev, pager, next, total" :current-page.sync="query.page" :page-size="query.limit" :total="total" @current-change="load" />
     <el-dialog title="创建共享课程" :visible.sync="createDialog" width="min(600px, 94vw)" :close-on-click-modal="false">
       <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程显示ID（排序）"><el-input v-model.trim="form.displayId" maxlength="10" placeholder="留空自动填写" aria-label="课程显示ID" /></el-form-item><el-form-item label="章节序号"><el-input-number v-model="form.chapterNumber" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item></el-form>
 
@@ -24,15 +23,24 @@ import edu from '@/common/edu-api'
 import eduLayout from '@/common/edu-layout'
 import LearningCard from './LearningCard.vue'
 import LearningSummary from './LearningSummary.vue'
+import {loadCourseCatalog} from '@/common/course-catalog'
 export default {
   mixins: [eduLayout], components: {LearningCard, LearningSummary},
-  data: () => ({access: {}, query: {page: 1, limit: 12, keyword: '', scope: 'mine'}, records: [], total: 0, summary: null, summaryLoading: true, summaryFailed: false, loading: true, saving: false, createDialog: false, form: {title: '', description: '', displayId: '', chapterNumber: null}, states: ['草稿', '已发布', '已归档']}),
+  data: () => ({access: {}, query: {keyword: '', scope: 'mine'}, records: [], catalogRequest: 0, summary: null, summaryLoading: true, summaryFailed: false, loading: true, saving: false, createDialog: false, form: {title: '', description: '', displayId: '', chapterNumber: null}, states: ['草稿', '已发布', '已归档']}),
   async mounted () { try { this.access = await edu.me(); this.query.scope = this.access.isTeacher ? 'library' : 'mine'; await Promise.all([this.load(), this.access.isTeacher ? Promise.resolve() : this.loadSummary()]) } catch (_) { this.loading = false } },
+  beforeDestroy () { this.catalogRequest++ },
   methods: {
     courseTarget (row) { return {path:'/course/' + row.id} },
     async loadSummary () { this.summaryLoading = true; this.summaryFailed = false; try { this.summary = await edu.learningSummary() } catch (_) { this.summaryFailed = true } finally { this.summaryLoading = false } },
-    async load () { this.loading = true; try { const data = await edu.courses(this.query); this.records = data.records; this.total = data.total } catch (_) { this.records = []; this.total = 0 } finally { this.loading = false } },
-    search () { this.query.page = 1; this.load() },
+    async load () {
+      const request = ++this.catalogRequest; this.loading = true
+      try {
+        const records = await loadCourseCatalog(edu.courses, {...this.query}, () => request !== this.catalogRequest)
+        if (request === this.catalogRequest) this.records = records
+      } catch (_) { if (request === this.catalogRequest) this.records = [] }
+      finally { if (request === this.catalogRequest) this.loading = false }
+    },
+    search () { this.load() },
     async create () {
       if (!this.form.title || this.saving) return
       if (this.form.displayId && (!/^[1-9]\d{0,9}$/.test(this.form.displayId) || Number(this.form.displayId) > 2147483647)) { this.$message.error('显示ID须为1至2147483647的整数'); return }

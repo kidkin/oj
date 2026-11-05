@@ -10,6 +10,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,6 +23,7 @@ public class EduCourseService {
     private final JdbcTemplate db;
     private final EduClassService classes;
     private final CourseIconStore icons = new CourseIconStore();
+    private Clock learningClock = Clock.system(ZoneId.of("Asia/Shanghai"));
     public EduCourseService(JdbcTemplate db, EduClassService classes) { this.db = db; this.classes = classes; }
 
     static final String PUBLIC_PROBLEM = EduProgress.PUBLIC_PROBLEM;
@@ -85,12 +91,20 @@ public class EduCourseService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("courseCount", count("SELECT COUNT(*) FROM (" + enrolled + ") enrolled", access.uid));
         result.put("problemCount", count("SELECT COUNT(*) FROM (" + problems + ") enrolled", access.uid));
-        Map<String, Object> activity = db.queryForMap("SELECT COUNT(DISTINCT CASE WHEN j.status=0 THEN j.pid END) AS completedCount," +
-                "COUNT(DISTINCT DATE(j.submit_time)) AS learningDays FROM judge j WHERE j.uid=? AND j.cid=0 AND j.gid IS NULL " +
-                "AND j.status IN (-3,-2,-1,0,1,2,3,4,8) AND j.pid IN (" + problems + ")", access.uid, access.uid);
-        result.put("completedCount", activity.get("completedCount"));
-        result.put("learningDays", activity.get("learningDays"));
+        result.put("completedCount", count("SELECT COUNT(DISTINCT j.pid) FROM judge j WHERE j.uid=? AND j.cid=0 AND j.gid IS NULL " +
+                "AND j.status=0 AND j.pid IN (" + problems + ")", access.uid, access.uid));
+        Timestamp first = db.queryForObject("SELECT MIN(started_at) FROM (" +
+                "SELECT MIN(submit_time) AS started_at FROM judge WHERE uid=? UNION ALL " +
+                "SELECT first_submit_at AS started_at FROM edu_user_learning_start WHERE uid=?) history",
+                new Object[]{access.uid, access.uid}, Timestamp.class);
+        result.put("learningDays", elapsedLearningDays(first == null ? null : first.toLocalDateTime().toLocalDate(), learningClock));
         return result;
+    }
+
+    static long elapsedLearningDays(LocalDate first, Clock clock) {
+        if (first == null) return 0L;
+        LocalDate today = LocalDate.now(clock.withZone(ZoneId.of("Asia/Shanghai")));
+        return Math.max(0L, ChronoUnit.DAYS.between(first, today) + 1L);
     }
 
     private Map<String, Object> paged(String sql, String counter, List<Object> args, int page, int limit, String order, Access access) {

@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.*;
+import java.sql.Timestamp;
+import java.time.*;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -52,15 +55,30 @@ class EduCourseServiceTest {
         verify(db, times(3)).queryForList(contains("AND c.status=1 AND EXISTS"), eq("%%"), eq("owner"), eq(12), eq(0));
         noWrites();
     }
-    @Test void learningTotalsCountDistinctCourseProblemsAndDaysForCurrentStudent() {
-        when(db.queryForObject(anyString(), any(Object[].class), eq(Long.class))).thenReturn(4L, 90L);
-        Map<String, Object> activity = new HashMap<>(); activity.put("completedCount", 12L); activity.put("learningDays", 3L);
-        when(db.queryForMap(contains("COUNT(DISTINCT DATE(j.submit_time))"), eq("owner"), eq("owner"))).thenReturn(activity);
+    @Test void learningTotalsKeepCourseCompletionButCountDaysFromTheFirstSubmissionAnywhere() {
+        when(db.queryForObject(anyString(), any(Object[].class), eq(Long.class))).thenReturn(4L, 90L, 12L);
+        ReflectionTestUtils.setField(service, "learningClock", Clock.fixed(Instant.parse("2026-11-05T00:30:00Z"), ZoneOffset.UTC));
+        when(db.queryForObject(contains("SELECT MIN(started_at)"), any(Object[].class), eq(Timestamp.class)))
+                .thenReturn(Timestamp.valueOf("2026-11-03 23:59:59"));
         Map<String, Object> summary = service.learningSummary();
         assertEquals(4L, summary.get("courseCount")); assertEquals(90L, summary.get("problemCount"));
         assertEquals(12L, summary.get("completedCount")); assertEquals(3L, summary.get("learningDays"));
-        verify(db).queryForObject(contains("SELECT DISTINCT p.id"), any(Object[].class), eq(Long.class));
+        verify(db, times(2)).queryForObject(contains("SELECT DISTINCT p.id"), any(Object[].class), eq(Long.class));
+        verify(db).queryForObject(contains("FROM judge WHERE uid=? UNION ALL"), any(Object[].class), eq(Timestamp.class));
         noWrites();
+    }
+    @Test void firstLearningDayIsInclusiveAndNeverRequiresAnAcceptedOrEnrolledSubmission() {
+        Clock now = Clock.fixed(Instant.parse("2026-11-05T00:30:00Z"), ZoneOffset.UTC);
+        assertEquals(1L, EduCourseService.elapsedLearningDays(LocalDate.of(2026, 11, 5), now));
+        assertEquals(3L, EduCourseService.elapsedLearningDays(LocalDate.of(2026, 11, 3), now));
+        assertEquals(0L, EduCourseService.elapsedLearningDays(null, now));
+        assertEquals(0L, EduCourseService.elapsedLearningDays(LocalDate.of(2026, 11, 6), now));
+    }
+    @Test void learningDayBoundariesFollowShanghaiTimeAndIncludeLeapDays() {
+        Clock before = Clock.fixed(Instant.parse("2024-02-29T15:59:59Z"), ZoneOffset.UTC);
+        Clock after = Clock.fixed(Instant.parse("2024-02-29T16:00:00Z"), ZoneOffset.UTC);
+        assertEquals(2L, EduCourseService.elapsedLearningDays(LocalDate.of(2024, 2, 28), before));
+        assertEquals(3L, EduCourseService.elapsedLearningDays(LocalDate.of(2024, 2, 28), after));
     }
     @Test void studentsCannotCreateCoursesOrBrowseProblemPicker() {
         when(classes.hasRole("owner", "teacher")).thenReturn(false);
