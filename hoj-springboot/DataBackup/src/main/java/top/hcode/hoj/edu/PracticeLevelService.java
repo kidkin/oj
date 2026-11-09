@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class PracticeLevelService {
     public static final String PROFILE_LOCKED = "正式账号达到绿色等级（1 分）后可修改资料";
     private static final long GREEN = 1;
-    private static final long[] MINIMUMS = {0, GREEN, 30, 60, 100, 160, 240, 400};
+    private static final long[] MINIMUMS = {0, GREEN, 100, 250, 450, 650, 800, 900};
     private static final int[] TOP_PERCENT = {0, 0, 0, 0, 20, 10, 5, 1};
     private static final String[] KEYS = {"newbie", "pupil", "specialist", "expert", "candidate", "master", "grandmaster", "legend"};
     private static final String[] TITLES = {"初学", "起步", "进阶", "熟练", "优秀", "精英", "卓越", "传奇"};
