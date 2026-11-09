@@ -76,4 +76,20 @@ class PracticeLevelServiceTest {
         assertThrows(EduException.class, () -> service.users(Arrays.asList("u", ""), null));
         verifyNoInteractions(db);
     }
+
+    @Test void privateWalletDebitKeepsEarnedGrowthAndDoesNotChargeARetry() {
+        JdbcTemplate db = mock(JdbcTemplate.class);
+        PracticeLevelService levels = mock(PracticeLevelService.class);
+        GrowthAccountService service = new GrowthAccountService(db, levels);
+        when(db.queryForList(contains("FOR UPDATE"), eq(String.class), eq("u1"))).thenReturn(Collections.singletonList("u1"));
+        when(db.queryForList(contains("operation_id=?"), eq(Long.class), eq("u1"), eq("use:1")))
+                .thenReturn(Collections.emptyList(), Collections.singletonList(3L));
+        when(db.queryForObject(contains("SUM(units)"), eq(Long.class), eq("u1"))).thenReturn(0L, 3L);
+        when(levels.currentEarnedUnits("u1")).thenReturn(10L);
+        Map<String, Object> first = service.debit("u1", "use:1", 3);
+        assertEquals(5.0, first.get("earned"));
+        assertEquals(3.5, first.get("balance"));
+        assertEquals(first, service.debit("u1", "use:1", 3));
+        verify(db, times(1)).update(contains("INSERT INTO edu_growth_wallet_debit"), eq("u1"), eq("use:1"), eq(3L));
+    }
 }

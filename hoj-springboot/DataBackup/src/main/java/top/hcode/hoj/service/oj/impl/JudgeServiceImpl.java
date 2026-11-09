@@ -2,6 +2,7 @@ package top.hcode.hoj.service.oj.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
+import top.hcode.hoj.edu.GrowthAccountService;
 import top.hcode.hoj.common.exception.*;
 import top.hcode.hoj.common.result.CommonResult;
 import top.hcode.hoj.common.result.ResultStatus;
@@ -18,6 +19,7 @@ import top.hcode.hoj.pojo.vo.TestJudgeVO;
 import top.hcode.hoj.service.oj.JudgeService;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.HashMap;
 
 /**
@@ -30,6 +32,9 @@ public class JudgeServiceImpl implements JudgeService {
 
     @Resource
     private JudgeManager judgeManager;
+
+    @Resource
+    private GrowthAccountService growthAccounts;
 
     @Override
     public CommonResult<Judge> submitProblemJudge(SubmitJudgeDTO judgeDto) {
@@ -73,7 +78,11 @@ public class JudgeServiceImpl implements JudgeService {
     @Override
     public CommonResult<SubmissionInfoVO> getSubmission(Long submitId) {
         try {
-            return CommonResult.successResponse(judgeManager.getSubmission(submitId));
+            SubmissionInfoVO result = judgeManager.getSubmission(submitId);
+            if (result.getSubmission() != null && result.getSubmission().getSubmitId() != null) {
+                result.setGrowthInvalid(growthAccounts.invalidSubmissions(Collections.singletonList(submitId)).contains(submitId));
+            }
+            return CommonResult.successResponse(result);
         } catch (StatusNotFoundException e) {
             return CommonResult.errorResponse(e.getMessage(), ResultStatus.NOT_FOUND);
         } catch (StatusAccessDeniedException e) {
@@ -100,14 +109,16 @@ public class JudgeServiceImpl implements JudgeService {
                                                      Boolean completeProblemID,
                                                      Long gid) {
         try {
-            return CommonResult.successResponse(judgeManager.getJudgeList(limit,
+            IPage<JudgeVO> result = judgeManager.getJudgeList(limit,
                     currentPage,
                     onlyMine,
                     searchPid,
                     searchStatus,
                     searchUsername,
                     completeProblemID,
-                    gid));
+                    gid);
+            growthAccounts.annotateSubmissions(result.getRecords());
+            return CommonResult.successResponse(result);
         } catch (StatusAccessDeniedException e) {
             return CommonResult.errorResponse(e.getMessage(), ResultStatus.ACCESS_DENIED);
         }

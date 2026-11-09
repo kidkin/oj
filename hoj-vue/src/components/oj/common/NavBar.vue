@@ -138,6 +138,7 @@
                 <el-dropdown-item command="/status?onlyMine=true">{{
                   $t('m.NavBar_Submissions')
                 }}</el-dropdown-item>
+                <el-dropdown-item command="/my-points">我的积分</el-dropdown-item>
                 <el-dropdown-item command="/setting">{{
                   $t('m.NavBar_Setting')
                 }}</el-dropdown-item>
@@ -352,6 +353,10 @@
                   $t('m.NavBar_Submissions')
                 }}</mu-list-item-title>
               </mu-list-item-content>
+            </mu-list-item>
+            <mu-divider></mu-divider>
+            <mu-list-item button value="/my-points">
+              <mu-list-item-content><mu-list-item-title>我的积分</mu-list-item-title></mu-list-item-content>
             </mu-list-item>
             <mu-divider></mu-divider>
             <mu-list-item button value="/setting">

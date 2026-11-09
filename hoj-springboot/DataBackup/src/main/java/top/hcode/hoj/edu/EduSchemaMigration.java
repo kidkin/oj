@@ -48,7 +48,7 @@ public class EduSchemaMigration implements ApplicationRunner {
             statement.execute("CREATE TABLE IF NOT EXISTS edu_schema_history (version VARCHAR(64) PRIMARY KEY, " +
                     "checksum CHAR(64) NOT NULL, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB");
         }
-        for (String version : new String[]{"V001__class_members", "V002__shared_courses", "V003__course_icons", "V004__display_order", "V005__weekly_release", "V006__judge_error_utf8mb4", "V007__course_chapters", "V008__learning_start", "V009__growth_account_types"}) apply(connection, version);
+        for (String version : new String[]{"V001__class_members", "V002__shared_courses", "V003__course_icons", "V004__display_order", "V005__weekly_release", "V006__judge_error_utf8mb4", "V007__course_chapters", "V008__learning_start", "V009__growth_account_types", "V010__growth_reviews_wallet"}) apply(connection, version);
     }
 
     private void apply(Connection connection, String version) throws Exception {
@@ -97,6 +97,10 @@ public class EduSchemaMigration implements ApplicationRunner {
                 statement.executeQuery("SELECT id,course_id,pid,sort_order FROM edu_course_problem LIMIT 0").close();
             }
             if ("V003__course_icons".equals(version)) statement.executeQuery("SELECT course_id,filename,gmt_modified FROM edu_course_icon LIMIT 0").close();
+            if ("V010__growth_reviews_wallet".equals(version)) {
+                statement.executeQuery("SELECT submit_id,invalidated_by,reason,invalidated_at,restored_by,restored_at FROM edu_growth_invalid_submission LIMIT 0").close();
+                statement.executeQuery("SELECT uid,operation_id,units,created_at FROM edu_growth_wallet_debit LIMIT 0").close();
+            }
             if ("V005__weekly_release".equals(version)) statement.executeQuery("SELECT training_id,published_at FROM edu_weekly_release LIMIT 0").close();
             if ("V004__display_order".equals(version)) {
                 statement.executeQuery("SELECT class_id,display_id FROM edu_class_display LIMIT 0").close();

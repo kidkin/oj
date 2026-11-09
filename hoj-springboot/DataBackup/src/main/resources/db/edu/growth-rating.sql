@@ -33,7 +33,12 @@ WITH formal_accounts AS (
     LEFT JOIN assigned_problems a ON a.uid = j.uid AND a.pid = j.pid
     LEFT JOIN weekly_problems w ON w.pid = j.pid
     LEFT JOIN contest c ON c.id = j.cid AND c.visible = 1 AND c.end_time <= CURRENT_TIMESTAMP
-    WHERE j.status = 0 AND (
+    WHERE j.status = 0
+      AND NOT EXISTS (
+          SELECT 1 FROM edu_growth_invalid_submission flag
+          WHERE flag.submit_id = j.submit_id AND flag.restored_at IS NULL
+      )
+      AND (
         (COALESCE(j.cid, 0) = 0 AND p.auth = 1)
         OR (c.id IS NOT NULL AND EXISTS (
             SELECT 1 FROM contest_problem cp WHERE cp.cid = c.id AND cp.pid = j.pid

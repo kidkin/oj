@@ -224,6 +224,7 @@
                   </span>
                 </el-popover>
               </el-tooltip>
+              <el-tag v-if="row.growthInvalid" type="danger" size="mini" style="margin-left: 5px;">无效</el-tag>
               <el-tooltip
                 class="item"
                 effect="dark"
@@ -285,14 +286,7 @@
                   <div slot="content">
                     {{ $t('m.Problem_Score') }}：{{
                       row.score != null ? row.score : $t('m.Unknown')
-                    }}<br />{{ $t('m.OI_Rank_Score') }}：{{
-                      row.oiRankScore != null
-                        ? row.oiRankScore
-                        : $t('m.Unknown')
-                    }}<br />
-                    {{
-                      $t('m.OI_Rank_Calculation_Rule')
-                    }}：(score*0.1+difficulty*2)
+                    }}
                   </div>
                   <el-tag
                     effect="plain"

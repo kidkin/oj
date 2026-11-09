@@ -85,7 +85,7 @@ def main():
         assert before[table].issubset(set(sql('SELECT %s FROM %s;'%(key,table)).splitlines()))
     assert relations=={table:sql('SELECT * FROM %s ORDER BY 1,2;'%table) for table in relations}
     versions=sql('SELECT version FROM edu_schema_history ORDER BY version;').splitlines()
-    assert versions==['V001__class_members','V002__shared_courses','V003__course_icons','V004__display_order','V005__weekly_release','V006__judge_error_utf8mb4','V007__course_chapters','V008__learning_start','V009__growth_account_types']
+    assert versions==['V001__class_members','V002__shared_courses','V003__course_icons','V004__display_order','V005__weekly_release','V006__judge_error_utf8mb4','V007__course_chapters','V008__learning_start','V009__growth_account_types','V010__growth_reviews_wallet']
     report={'Passed':True,'PublicationOrderAcrossPages':True,'NumericQuestionOrder':[2,10,30],'AllStudentsCanUsePublicPractice':True,'PrivateAndHiddenNotListed':True,'EditingKeepsPublicationDate':True,'FutureDateRejected':True,'StudentCannotPublish':True,'OriginalDataAndRelationshipsPreserved':True,'Migrations':versions,'VisibleDemoIssues':3,'RetainedDemoTrainings':state['Trainings']}
     hb.write_json(REPO/'logs/weekly-api-acceptance.json',report)
     print('WEEKLY API PASSED: publication ordering, numeric question IDs, shared access, validation, migration and original data retention')

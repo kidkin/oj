@@ -131,6 +131,17 @@ public class PracticeLevelService {
         return current != null && System.nanoTime() - current.createdAt < REFRESH_NANOS ? current : refresh();
     }
 
+    synchronized void invalidateRating() {
+        cached = null;
+    }
+
+    long currentEarnedUnits(String uid) {
+        for (Map<String, Object> row : db.queryForList(RATING_QUERY)) {
+            if (uid.equals(row.get("uid"))) return number(row, "scoreUnits");
+        }
+        return 0;
+    }
+
     public Map<String, Object> rating(int page, int requestedLimit, String keyword) {
         Snapshot current = snapshot();
         String search = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
@@ -236,6 +247,6 @@ public class PracticeLevelService {
         } else {
             db.update("INSERT INTO edu_growth_account(uid,mode) VALUES (?,?) ON DUPLICATE KEY UPDATE mode=VALUES(mode)", uid, mode);
         }
-        cached = null;
+        invalidateRating();
     }
 }

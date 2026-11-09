@@ -2,6 +2,7 @@ import Home from '@/views/oj/Home.vue'
 import SetNewPassword from "@/views/oj/user/SetNewPassword.vue"
 import UserHome from "@/views/oj/user/UserHome.vue"
 import Setting from "@/views/oj/user/Setting.vue"
+import MyGrowthPoints from "@/views/oj/user/MyGrowthPoints.vue"
 import ProblemLIst from "@/views/oj/problem/ProblemList.vue"
 import Logout from "@/views/oj/user/Logout.vue"
 import SubmissionList from "@/views/oj/status/SubmissionList.vue"
@@ -273,6 +274,12 @@ const ojRoutes = [
     path: '/user-home',
     component: UserHome,
     meta: { title: 'User Home' }
+  },
+  {
+    name: 'MyGrowthPoints',
+    path: '/my-points',
+    component: MyGrowthPoints,
+    meta: { requireAuth: true, title: '我的积分' }
   },
   {
     name: 'Setting',

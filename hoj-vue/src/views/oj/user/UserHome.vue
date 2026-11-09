@@ -40,6 +40,9 @@
           </span>
         </p>
         <PracticeLevelInfo :uid="profile.uid" :username="profile.username" />
+        <router-link v-if="$store.getters.isSuperAdmin && profile.uid" :to="{name:'MyGrowthPoints',query:{uid:profile.uid}}">
+          查看账号积分
+        </router-link>
         <p v-if="profile.titleName">
           <span>
             <el-tag effect="dark" size="small" :color="profile.titleColor">

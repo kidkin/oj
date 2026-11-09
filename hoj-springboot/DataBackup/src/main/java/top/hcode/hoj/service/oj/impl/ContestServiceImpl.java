@@ -2,6 +2,7 @@ package top.hcode.hoj.service.oj.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
+import top.hcode.hoj.edu.GrowthAccountService;
 import top.hcode.hoj.common.exception.StatusFailException;
 import top.hcode.hoj.common.exception.StatusForbiddenException;
 import top.hcode.hoj.common.exception.StatusNotFoundException;
@@ -29,6 +30,9 @@ public class ContestServiceImpl implements ContestService {
 
     @Resource
     private ContestManager contestManager;
+
+    @Resource
+    private GrowthAccountService growthAccounts;
 
     @Override
     public CommonResult<IPage<ContestVO>> getContestList(Integer limit, Integer currentPage, Integer status, Integer type, String keyword) {
@@ -103,7 +107,7 @@ public class ContestServiceImpl implements ContestService {
                                                                  Boolean completeProblemID,
                                                                  Boolean isContainsContestEndJudge) {
         try {
-            return CommonResult.successResponse(contestManager.getContestSubmissionList(limit,
+            IPage<JudgeVO> result = contestManager.getContestSubmissionList(limit,
                     currentPage,
                     onlyMine,
                     displayId,
@@ -112,7 +116,9 @@ public class ContestServiceImpl implements ContestService {
                     searchCid,
                     beforeContestSubmit,
                     completeProblemID,
-                    isContainsContestEndJudge));
+                    isContainsContestEndJudge);
+            growthAccounts.annotateSubmissions(result.getRecords());
+            return CommonResult.successResponse(result);
         } catch (StatusFailException e) {
             return CommonResult.errorResponse(e.getMessage());
         } catch (StatusForbiddenException e) {

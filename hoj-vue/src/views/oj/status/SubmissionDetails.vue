@@ -40,6 +40,13 @@
           </div>
         </template>
       </el-alert>
+      <div v-if="growthInvalid || (isSuperAdmin && submission.submitId)" style="margin-top: 10px;">
+        <el-tag v-if="growthInvalid" type="danger" size="small">无效 · 不计成长分</el-tag>
+        <el-button v-if="isSuperAdmin && submission.submitId" size="small" plain
+          :type="growthInvalid ? 'primary' : 'danger'" :loading="reviewingGrowth" @click="reviewGrowthSubmission">
+          {{ growthInvalid ? '撤销无效标记' : '标记无效' }}
+        </el-button>
+      </div>
     </el-col>
 
     <el-col
@@ -327,6 +334,7 @@ import {
   JUDGE_CASE_MODE,
 } from "@/common/constants";
 import utils from "@/common/utils";
+import { loadPracticeLevels } from "@/common/practice-user";
 import myMessage from "@/common/message";
 import { addCodeBtn } from "@/common/codeblock";
 import Highlight from "@/components/oj/common/Highlight";
@@ -356,6 +364,8 @@ export default {
         share: true,
       },
       tableData: [],
+      growthInvalid: false,
+      reviewingGrowth: false,
       testCaseResult: {},
       codeShare: true,
       isIOProblem: false,
@@ -379,6 +389,30 @@ export default {
     this.JUDGE_CASE_MODE = Object.assign({}, JUDGE_CASE_MODE);
   },
   methods: {
+    async reviewGrowthSubmission() {
+      const invalid = !this.growthInvalid;
+      let reason = '';
+      try {
+        if (invalid) {
+          const answer = await this.$prompt('本次提交将从成长分和积分计算中排除。可填写复核备注。', '标记提交无效', {
+            confirmButtonText: '标记无效', cancelButtonText: '取消',
+            inputValidator: value => (value || '').length <= 255 || '备注最多255个字符'
+          });
+          reason = answer.value || '';
+        } else {
+          await this.$confirm('恢复这次提交的计分资格？', '撤销无效标记', {type: 'warning'});
+        }
+      } catch (_) { return; }
+      this.reviewingGrowth = true;
+      try {
+        await api.setGrowthSubmissionReview(this.submission.submitId, invalid, reason);
+        this.growthInvalid = invalid;
+        this.$message.success(invalid ? '已标记无效' : '已撤销无效标记');
+        loadPracticeLevels([{uid: this.submission.uid, username: this.submission.username}]).catch(() => {});
+      } finally {
+        this.reviewingGrowth = false;
+      }
+    },
     doCopy() {
       this.$copyText(this.submission.code).then(
         () => {
@@ -465,6 +499,7 @@ export default {
             data.submission.displayPid = this.$route.params.problemID;
           }
           this.submission = data.submission;
+          this.growthInvalid = !!data.growthInvalid;
           this.tableData = [data.submission];
           if (data.submission.cid != 0) {
             // 比赛的提交不可分享
@@ -519,6 +554,7 @@ export default {
     },
   },
   computed: {
+    isSuperAdmin() { return this.$store.getters.isSuperAdmin; },
     status() {
       return {
         type: JUDGE_STATUS[this.submission.status].type,

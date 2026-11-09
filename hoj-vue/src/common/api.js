@@ -342,6 +342,9 @@ const ojApi = {
       data
     })
   },
+  setGrowthSubmissionReview(submitId, invalid, reason) {
+    return ajax('/api/admin/growth-submission-review/' + submitId, 'put', {data: {invalid, reason}})
+  },
   // 获取单个提交的信息
   getSubmission(submitId) {
     return ajax('/api/get-submission-detail', 'get', {

@@ -83,4 +83,6 @@ public class JudgeVO {
 
     @ApiModelProperty(value = "是否人工评测")
     private Boolean isManual;
+
+    private boolean growthInvalid;
 }
