@@ -33,7 +33,7 @@ function paint (element) {
   if (level) {
     element.setAttribute('data-practice-score', String(level.score))
     element.setAttribute('data-practice-level', level.key)
-    const title = level.title + ' · 成长分 ' + level.score + ' · 累计通过 ' + level.solvedCount + ' 题'
+    const title = level.key === 'staff' ? '工作人员 · 不参与评级' : level.title + ' · 成长分 ' + level.score + ' · 累计通过 ' + level.solvedCount + ' 题'
     binding.autoTitle = binding.originalTitle ? binding.originalTitle + ' · ' + title : title
     element.setAttribute('title', binding.autoTitle)
   } else {

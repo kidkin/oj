@@ -18,12 +18,13 @@ class PracticeLevelServiceTest {
         assertEquals("expert", PracticeLevelService.level(199, 1, 100).get("key"));
         assertEquals("candidate", PracticeLevelService.level(200, 20, 100).get("key"));
         assertEquals("expert", PracticeLevelService.level(900, 21, 100).get("key"));
-        assertEquals("master", PracticeLevelService.level(320, 5, 100).get("key"));
-        assertEquals("candidate", PracticeLevelService.level(900, 6, 100).get("key"));
-        assertEquals("grandmaster", PracticeLevelService.level(480, 1, 100).get("key"));
-        assertEquals("master", PracticeLevelService.level(900, 2, 100).get("key"));
-        assertEquals("master", PracticeLevelService.level(900, 1, 99).get("key"));
-        assertEquals(7, new PracticeLevelService(null).rules().size());
+        assertEquals("master", PracticeLevelService.level(320, 10, 100).get("key"));
+        assertEquals("candidate", PracticeLevelService.level(900, 11, 100).get("key"));
+        assertEquals("grandmaster", PracticeLevelService.level(480, 5, 100).get("key"));
+        assertEquals("master", PracticeLevelService.level(900, 6, 100).get("key"));
+        assertEquals("legend", PracticeLevelService.level(800, 1, 99).get("key"));
+        assertEquals("grandmaster", PracticeLevelService.level(900, 2, 99).get("key"));
+        assertEquals(8, new PracticeLevelService(null).rules().size());
     }
 
     private Map<String, Object> user(String uid, String username, String type, long solved) {
@@ -54,6 +55,29 @@ class PracticeLevelServiceTest {
         assertEquals(level.get("color"), ((Map<?, ?>) ranked.get(0)).get("color"));
         assertTrue(((List<?>) service.rating(Integer.MAX_VALUE, 100, "").get("records")).isEmpty());
         verify(db).queryForList(contains("MAX(GREATEST"));
+    }
+
+    @Test void staffKeepsPrivateEarningsButHasNoRankOrSeat() {
+        JdbcTemplate db = mock(JdbcTemplate.class);
+        Map<String, Object> staff = user("staff", "Teacher", "formal", 30);
+        staff.put("staff", 1);
+        staff.put("scoreUnits", 1200L);
+        Map<String, Object> student = user("student", "Student", "formal", 20);
+        student.put("scoreUnits", 800L);
+        when(db.queryForList(anyString())).thenReturn(Arrays.asList(staff, student));
+        when(db.queryForList(anyString(), eq("staff"))).thenAnswer(call -> Collections.singletonList(new HashMap<>(staff)));
+        PracticeLevelService service = new PracticeLevelService(db);
+        Map<String, Object> board = service.rating(1, 20, "");
+        assertEquals(1, board.get("formalCount"));
+        assertEquals(1, board.get("rankedCount"));
+        Map<?, ?> first = (Map<?, ?>) ((List<?>) board.get("records")).get(0);
+        assertEquals("student", first.get("uid"));
+        assertEquals(1, first.get("rank"));
+        Map<String, Object> publicStaff = service.users(Collections.singletonList("staff"), null).get(0);
+        assertEquals("#000000", publicStaff.get("color"));
+        assertNull(publicStaff.get("rank"));
+        assertEquals(0.0, publicStaff.get("score"));
+        assertEquals(600.0, service.adminUsers(Collections.singletonList("staff")).get(0).get("score"));
     }
 
     @Test void trialAccountsKeepSolvedHistoryButHaveZeroGrowthAndLockedSettings() {

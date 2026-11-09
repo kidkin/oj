@@ -1,5 +1,5 @@
 WITH formal_accounts AS (
-    SELECT u.uuid AS uid, u.username
+    SELECT u.uuid AS uid, u.username, /*staff*/ AS staff
     FROM user_info u
     LEFT JOIN edu_growth_account o ON o.uid = u.uuid
     WHERE u.status = 0 AND /*account_type*/ = 'formal'
@@ -50,7 +50,7 @@ WITH formal_accounts AS (
     FROM accepted_problems
     GROUP BY uid
 )
-SELECT f.uid, f.username, COALESCE(s.solved_count, 0) AS solvedCount, COALESCE(s.score_units, 0) AS scoreUnits
+SELECT f.uid, f.username, f.staff, COALESCE(s.solved_count, 0) AS solvedCount, COALESCE(s.score_units, 0) AS scoreUnits
 FROM formal_accounts f
 LEFT JOIN scores s ON s.uid = f.uid
 ORDER BY scoreUnits DESC, solvedCount DESC, f.uid
