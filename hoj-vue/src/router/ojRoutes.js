@@ -1,5 +1,4 @@
 import Home from '@/views/oj/Home.vue'
-import SetNewPassword from "@/views/oj/user/SetNewPassword.vue"
 import UserHome from "@/views/oj/user/UserHome.vue"
 import Setting from "@/views/oj/user/Setting.vue"
 import MyGrowthPoints from "@/views/oj/user/MyGrowthPoints.vue"
@@ -265,9 +264,7 @@ const ojRoutes = [
   },
   {
     path: '/reset-password',
-    name: 'SetNewPassword',
-    component: SetNewPassword,
-    meta: { title: 'Reset Password' }
+    redirect: { path: '/home', query: {}, hash: '' }
   },
   {
     name: 'UserHome',

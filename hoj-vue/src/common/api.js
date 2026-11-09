@@ -260,17 +260,6 @@ const ojApi = {
     return ajax('/api/get-user-auth-info', 'get')
   },
 
-  // 账户的相关操作
-  applyResetPassword(data) {
-    return ajax('/api/apply-reset-password', 'post', {
-      data
-    })
-  },
-  resetPassword(data) {
-    return ajax('/api/reset-password', 'post', {
-      data
-    })
-  },
   // Problem List页的相关请求
   getProblemTagList(oj) {
     return ajax('/api/get-all-problem-tags', 'get', {

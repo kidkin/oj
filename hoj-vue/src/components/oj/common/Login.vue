@@ -67,12 +67,6 @@
         >
         </el-alert>
       </el-popover>
-      <el-link
-        type="primary"
-        @click="switchMode('ResetPwd')"
-        style="float: right"
-        >{{ $t('m.Login_Forget_Password') }}</el-link
-      >
     </div>
   </div>
 </template>
@@ -137,12 +131,6 @@ export default {
   },
   methods: {
     ...mapActions(['changeModalStatus']),
-    switchMode(mode) {
-      this.changeModalStatus({
-        mode,
-        visible: true,
-      });
-    },
     enterHandleLogin() {
       if (this.needVerify) {
         this.visible.loginSlideBlock = true;

@@ -11,88 +11,31 @@
       <footer v-if="showFooter" class="fix-to-bottom">
         <div class="mundb-footer">
           <el-row>
-            <el-col
-              :md="6"
-              :xs="24"
-            >
-              <h1>{{ websiteConfig.name }}</h1>
+            <el-col :span="24">
+              <h1>{{ footerBrand.name }}</h1>
               <span
+                v-if="websiteConfig.description"
                 style="line-height:25px"
                 v-html="websiteConfig.description"
                 v-katex
                 v-highlight
-              >
-              </span>
-            </el-col>
-            <el-col class="hr-none">
-              <el-divider></el-divider>
-            </el-col>
-            <el-col
-              :md="6"
-              :xs="24"
-            >
-              <h1>{{ $t('m.Service') }}</h1>
-              <p>
-                <a @click="goRoute('/status')">{{ $t('m.Judging_Queue') }}</a>
-              </p>
-              <p>
-                <a @click="goRoute('/developer')">{{ $t('m.System_Info') }}</a>
-              </p>
-            </el-col>
-            <el-col class="hr-none">
-              <el-divider></el-divider>
-            </el-col>
-            <el-col
-              :md="6"
-              :xs="24"
-            >
-              <h1>{{ $t('m.Development') }}</h1>
-              <p class="mb-1">
-                <a
-                  href="https://gitee.com/himitzh0730/hoj"
-                  target="_blank"
-                >{{
-                  $t('m.Open_Source')
-                }}</a>
-              </p>
-              <p class="mb-1"><a @click="goRoute('/#')">API</a></p>
-            </el-col>
-            <el-col class="hr-none">
-              <el-divider></el-divider>
-            </el-col>
-            <el-col
-              :md="6"
-              :xs="24"
-            >
-              <h1>{{ $t('m.Support') }}</h1>
-              <p>
-                <i
-                  class="fa fa-info-circle"
-                  aria-hidden="true"
-                ></i><a @click="goRoute('/introduction')"> {{ $t('m.NavBar_About') }}</a>
-              </p>
-              <p>
-                <i class="el-icon-document"></i>
-                <a
-                  href="https://docs.hdoi.cn"
-                  target="_blank"
-                > {{ $t('m.Help') }}</a>
-              </p>
+              ></span>
+              <img v-else :src="footerQr" width="100" height="100" alt="羚力编程二维码">
             </el-col>
           </el-row>
         </div>
         <div class="mundb-footer">
           <a
             style="color:#1E9FFF"
-            :href="websiteConfig.recordUrl"
+            :href="footerBrand.recordUrl"
             target="_blank"
-          >{{ websiteConfig.recordName }}</a>
+          >{{ footerBrand.recordName }}</a>
           Powered by
           <a
-            :href="websiteConfig.projectUrl"
+            :href="footerBrand.projectUrl"
             style="color:#1E9FFF"
             target="_blank"
-          >{{ websiteConfig.projectName }}</a>
+          >{{ footerBrand.projectName }}</a>
           <span style="margin-left:10px">
             <el-dropdown
               @command="changeWebLanguage"
@@ -129,6 +72,7 @@
 
 <script>
 import NavBar from "@/components/oj/common/NavBar";
+import footerQr from "@/assets/footer-qr.jpg";
 import { mapActions, mapState, mapGetters } from "vuex";
 import { LOGO, MOTTO } from "@/common/logo";
 import storage from "@/common/storage";
@@ -143,16 +87,12 @@ export default {
     return {
       isAdminView: false,
       showFooter: true,
+      footerQr,
       languages:[],
     };
   },
   methods: {
     ...mapActions(["changeDomTitle", "getWebsiteConfig"]),
-    goRoute(path) {
-      this.$router.push({
-        path: path,
-      });
-    },
     changeWebLanguage(language) {
       this.$store.commit("changeWebLanguage", { language: language });
     },
@@ -245,6 +185,19 @@ export default {
     },
   },
   computed: {
+    footerBrand() {
+      const { name, recordName, recordUrl, projectName, projectUrl } = this.websiteConfig;
+      const useBrandLink = !recordName && !recordUrl;
+      const useProjectLink = (!projectName || projectName === 'HOJ') &&
+        (!projectUrl || projectUrl === 'https://gitee.com/himitzh0730/hoj');
+      return {
+        name: !name || name === 'Hcode Online Judge' ? '羚力编程' : name,
+        recordName: useBrandLink ? '羚力编程' : recordName,
+        recordUrl: useBrandLink ? 'https://typing.scmaao.com' : recordUrl,
+        projectName: useProjectLink ? '羚力编程' : projectName,
+        projectUrl: useProjectLink ? 'https://visualgo.net/zh/' : projectUrl,
+      };
+    },
     isEduView() { return /^\/(class|course|training)(\/|$)/.test(this.$route.path); },
     ...mapState(["websiteConfig"]),
     ...mapGetters(["webLanguage", "token", "isAuthenticated"]),
@@ -754,11 +707,6 @@ footer h1 {
   font-weight: 400;
   font-size: 1rem;
   line-height: 1;
-}
-@media (min-width: 768px) {
-  .hr-none {
-    display: none !important;
-  }
 }
 .el-empty {
   max-width: 256px;

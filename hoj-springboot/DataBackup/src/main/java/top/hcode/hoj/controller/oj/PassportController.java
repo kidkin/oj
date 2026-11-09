@@ -6,10 +6,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import top.hcode.hoj.annotation.AnonApi;
 import top.hcode.hoj.common.result.CommonResult;
-import top.hcode.hoj.pojo.dto.ApplyResetPasswordDTO;
 import top.hcode.hoj.pojo.dto.LoginDTO;
 import top.hcode.hoj.pojo.dto.RegisterDTO;
-import top.hcode.hoj.pojo.dto.ResetPasswordDTO;
 import top.hcode.hoj.pojo.vo.RegisterCodeVO;
 import top.hcode.hoj.pojo.vo.UserInfoVO;
 import top.hcode.hoj.service.oj.PassportService;
@@ -67,34 +65,6 @@ public class PassportController {
     @AnonApi
     public CommonResult<Void> register(@Validated @RequestBody RegisterDTO registerDto) {
         return passportService.register(registerDto);
-    }
-
-
-    /**
-     * @param applyResetPasswordDto
-     * @MethodName applyResetPassword
-     * @Description 发送重置密码的链接邮件
-     * @Return
-     * @Since 2020/11/6
-     */
-    @PostMapping("/apply-reset-password")
-    @AnonApi
-    public CommonResult<Void> applyResetPassword(@RequestBody ApplyResetPasswordDTO applyResetPasswordDto) {
-        return passportService.applyResetPassword(applyResetPasswordDto);
-    }
-
-
-    /**
-     * @param resetPasswordDto
-     * @MethodName resetPassword
-     * @Description 用户重置密码
-     * @Return
-     * @Since 2020/11/6
-     */
-    @PostMapping("/reset-password")
-    @AnonApi
-    public CommonResult<Void> resetPassword(@RequestBody ResetPasswordDTO resetPasswordDto) {
-        return passportService.resetPassword(resetPasswordDto);
     }
 
 

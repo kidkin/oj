@@ -233,7 +233,7 @@
           >
           <span @click="changeWebLanguage">
           {{
-            websiteConfig.shortName ? websiteConfig.shortName : 'OJ'
+            siteShortName
           }}
           </span>
         </el-tooltip>
@@ -525,7 +525,6 @@
 </template>
 <script>
 import Login from '@/components/oj/common/Login';
-import ResetPwd from '@/components/oj/common/ResetPassword';
 import MsgSvg from '@/components/oj/msg/msgSvg';
 import { mapGetters, mapActions } from 'vuex';
 import Avatar from 'vue-avatar';
@@ -535,7 +534,6 @@ import { toolboxLinks } from '@/common/toolbox';
 export default {
   components: {
     Login,
-    ResetPwd,
     Avatar,
     MsgSvg,
   },
@@ -718,19 +716,12 @@ export default {
         this.changeModalStatus({ visible: value });
       },
     },
-    title: {
-      get() {
-        let ojName = this.websiteConfig.shortName
-          ? this.websiteConfig.shortName
-          : 'OJ';
-        if (this.modalStatus.mode == 'ResetPwd') {
-          return this.$i18n.t('m.Dialog_Reset_Password') + ' - ' + ojName;
-        } else {
-          return (
-            this.$i18n.t('m.Dialog_' + this.modalStatus.mode) + ' - ' + ojName
-          );
-        }
-      },
+    siteShortName() {
+      const { shortName } = this.websiteConfig;
+      return !shortName || shortName === 'HOJ' ? '羚力编程OJ' : shortName;
+    },
+    title() {
+      return this.$i18n.t('m.Dialog_' + this.modalStatus.mode) + ' - ' + this.siteShortName;
     },
   },
   watch: {
