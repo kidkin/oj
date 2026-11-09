@@ -23,6 +23,13 @@ public class PracticeLevelController {
         return CommonResult.successResponse(service.currentProfileAccess());
     }
 
+    @GetMapping("/growth-rating")
+    public CommonResult<Map<String, Object>> rating(@RequestParam(defaultValue = "1") int page,
+                                                   @RequestParam(defaultValue = "20") int limit,
+                                                   @RequestParam(required = false) String keyword) {
+        return CommonResult.successResponse(service.rating(page, limit, keyword));
+    }
+
     @GetMapping("/practice-level-rules")
     public CommonResult<List<Map<String, Object>>> rules() { return CommonResult.successResponse(service.rules()); }
     @ExceptionHandler(EduException.class)

@@ -45,17 +45,7 @@
               ><i class="el-icon-s-marketing"></i
               >{{ $t('m.NavBar_Status') }}</el-menu-item
             >
-            <el-submenu index="rank">
-              <template slot="title"
-                ><i class="el-icon-s-data"></i>{{ $t('m.NavBar_Rank') }}</template
-              >
-              <el-menu-item index="/acm-rank">{{
-                $t('m.NavBar_ACM_Rank')
-              }}</el-menu-item>
-              <el-menu-item index="/oi-rank">{{
-                $t('m.NavBar_OI_Rank')
-              }}</el-menu-item>
-            </el-submenu>
+            <el-menu-item index="/rating-rank"><i class="el-icon-s-data"></i>Rating 榜</el-menu-item>
             <el-submenu index="toolbox" popper-class="toolbox-menu">
               <template slot="title"><i class="el-icon-s-tools"></i>工具箱</template>
               <li v-for="tool in toolboxLinks" :key="tool.id" role="none" class="toolbox-item" :class="{'toolbox-download':tool.download}">
@@ -483,48 +473,9 @@
             <mu-list-item-title>{{ $t('m.NavBar_Status') }}</mu-list-item-title>
           </mu-list-item>
 
-          <mu-list-item
-            button
-            :ripple="false"
-            nested
-            :open="openSideMenu === 'rank'"
-            @toggle-nested="openSideMenu = arguments[0] ? 'rank' : ''"
-          >
-            <mu-list-item-action>
-              <mu-icon value=":el-icon-s-data" size="24"></mu-icon>
-            </mu-list-item-action>
-            <mu-list-item-title>{{ $t('m.NavBar_Rank') }}</mu-list-item-title>
-            <mu-list-item-action>
-              <mu-icon
-                class="toggle-icon"
-                size="24"
-                value=":el-icon-arrow-down"
-              ></mu-icon>
-            </mu-list-item-action>
-            <mu-list-item
-              button
-              :ripple="false"
-              slot="nested"
-              to="/acm-rank"
-              @click="opendrawer = !opendrawer"
-              active-class="mobile-menu-active"
-            >
-              <mu-list-item-title>{{
-                $t('m.NavBar_ACM_Rank')
-              }}</mu-list-item-title>
-            </mu-list-item>
-            <mu-list-item
-              button
-              :ripple="false"
-              slot="nested"
-              to="/oi-rank"
-              @click="opendrawer = !opendrawer"
-              active-class="mobile-menu-active"
-            >
-              <mu-list-item-title>{{
-                $t('m.NavBar_OI_Rank')
-              }}</mu-list-item-title>
-            </mu-list-item>
+          <mu-list-item button :ripple="false" to="/rating-rank" @click="opendrawer = false" active-class="mobile-menu-active">
+            <mu-list-item-action><mu-icon value=":el-icon-s-data" size="24"></mu-icon></mu-list-item-action>
+            <mu-list-item-title>Rating 榜</mu-list-item-title>
           </mu-list-item>
 
           <mu-list-item button :ripple="false" nested :open="openSideMenu === 'toolbox'" @toggle-nested="openSideMenu = arguments[0] ? 'toolbox' : ''">

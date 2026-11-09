@@ -138,36 +138,14 @@ export const JUDGE_STATUS_RESERVE={
 }
 
 export const PROBLEM_LEVEL={
-  '0':{
-    name:{
-      'zh-CN':'简单',
-      'en-US':'Easy',
-      'zh-TW':'簡單',
-      'ja-JP':'簡単',
-      'ko-KR':'간단한'
-    },
-    color:'#19be6b'
-  },
-  '1':{
-    name:{
-      'zh-CN':'中等',
-      'en-US':'Mid',
-      'zh-TW':'中等',
-      'ja-JP':'中等',
-      'ko-KR':'중간'
-    },
-    color:'#2d8cf0'
-  },
-  '2':{
-    name:{
-      'zh-CN':'困难',
-      'en-US':'Hard',
-      'zh-TW':'困難​​',
-      'ja-JP':'困難',
-      'ko-KR':'곤란'
-    },
-    color:'#ed3f14'
-  }
+  '0': {name: {'zh-CN':'入门','zh-TW':'入門','en-US':'Introductory','ja-JP':'入門','ko-KR':'입문'}, color:'#008000'},
+  '1': {name: {'zh-CN':'普及−','zh-TW':'普及−','en-US':'Elementary−','ja-JP':'初級−','ko-KR':'초급−'}, color:'#008b8b'},
+  '2': {name: {'zh-CN':'普及','zh-TW':'普及','en-US':'Elementary','ja-JP':'初級','ko-KR':'초급'}, color:'#164dcc'},
+  '3': {name: {'zh-CN':'普及+/提高−','zh-TW':'普及+/提高−','en-US':'Elementary+/Intermediate−','ja-JP':'初級+/中級−','ko-KR':'초급+/중급−'}, color:'#a020c0'},
+  '4': {name: {'zh-CN':'提高','zh-TW':'提高','en-US':'Intermediate','ja-JP':'中級','ko-KR':'중급'}, color:'#c77700'},
+  '5': {name: {'zh-CN':'提高+/省选−','zh-TW':'提高+/省選−','en-US':'Intermediate+/Advanced−','ja-JP':'中級+/上級−','ko-KR':'중급+/고급−'}, color:'#e02020'},
+  '6': {name: {'zh-CN':'省选/NOI−','zh-TW':'省選/NOI−','en-US':'Advanced/NOI−','ja-JP':'上級/NOI−','ko-KR':'고급/NOI−'}, color:'#b50920'},
+  '7': {name: {'zh-CN':'NOI/NOI+/CTS','zh-TW':'NOI/NOI+/CTS','en-US':'NOI/NOI+/CTS','ja-JP':'NOI/NOI+/CTS','ko-KR':'NOI/NOI+/CTS'}, color:'#171717'}
 }
 
 

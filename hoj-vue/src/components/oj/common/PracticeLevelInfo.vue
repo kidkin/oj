@@ -4,7 +4,7 @@
       <i class="el-icon-user" />试用账号<span class="practice-points">成长分 0</span>
     </span>
     <el-popover v-else placement="bottom" width="270" trigger="hover">
-      <div class="practice-level-rules"><strong>成长等级</strong><p>正式账号每通过一道不同题目获得 1 分，重复通过不叠加。</p><div v-for="rule in rules" :key="rule.key" class="practice-rule"><span :style="{color:rule.color}">{{ rule.title }}</span><span>{{ rule.minimum }} 分起</span></div></div>
+      <div class="practice-level-rules"><strong>成长等级</strong><p>成长分按题目难度和课程、周周练、比赛系数计算。同题只取最高一次。</p><div v-for="rule in rules" :key="rule.key" class="practice-rule"><span :style="{color:rule.color}">{{ rule.title }}</span><span>{{ rule.minimum }} 分{{ rule.topPercent ? '且前 ' + rule.topPercent + '%' : '' }}</span></div></div>
       <span slot="reference" class="practice-level-pill" :style="{color:level.color}"><i class="el-icon-medal" />{{ level.title }}<span class="practice-points">成长分 {{ level.score }}</span><i class="el-icon-info" /></span>
     </el-popover>
   </div>
