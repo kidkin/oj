@@ -25,7 +25,7 @@ public class PracticeLevelService {
     private static final String[] COLORS = {"#777777", "#008000", "#008b8b", "#164dcc", "#a020c0", "#c77700", "#e02020"};
     private static final int[] BASE_POINTS = {1, 2, 3, 5, 8, 13, 21, 34};
     // Scores are stored in half-point units during calculation, so ties compare exactly.
-    private static final int NORMAL = 2, WEEKLY = 3, CONTEST = 3, COURSE = 4;
+    private static final int NORMAL = 2, WEEKLY = 4, CONTEST = 3, COURSE = 3;
     private static final long REFRESH_NANOS = TimeUnit.SECONDS.toNanos(20);
     private static final String ACCOUNT_TYPE =
             "COALESCE(o.mode, CASE WHEN EXISTS (SELECT 1 FROM edu_class_member m " +
