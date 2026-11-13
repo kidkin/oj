@@ -8,6 +8,11 @@ const root = path.resolve(__dirname, '../..')
 async function main () {
   const requests = []; const listeners = {}; let directive; let now = Date.now(); let fail = false
   const users = {a: {uid:'a', username:'alice', score:10, solvedCount:10, key:'pupil', color:'#008000', title:'起步'}, b:{uid:'b', username:'bob', score:70, solvedCount:70, key:'expert', color:'#164dcc', title:'熟练'}}
+  const createElement = () => ({
+    styles: new Map(), parentNode: null, textContent: '',
+    style: {setProperty (key, value) { this.owner.styles.set(key, value) }},
+    remove () { if (this.parentNode) this.parentNode.badge = null; this.parentNode = null }
+  })
   const context = {
     Vue: {observable:value => value, set:(object,key,value) => { object[key] = value }},
     axios: {create: () => ({post:async (url, body) => {
@@ -15,7 +20,7 @@ async function main () {
       return {data:{status:200, data:Object.values(users).filter(user => body.uids.includes(user.uid) || body.usernames.includes(user.username))}}
     }})},
     window: {setTimeout, setInterval:callback => { listeners.interval = callback }, addEventListener:(event, callback) => { listeners[event] = callback }},
-    document: {hidden:false, addEventListener:(event,callback) => { listeners[event] = callback }},
+    document: {hidden:false, createElement: () => { const node = createElement(); node.style.owner = node; return node }, addEventListener:(event,callback) => { listeners[event] = callback }},
     Date: {now:() => now}, Map, Set, WeakMap, Error, String, Array, Object, Promise
   }
   const source = fs.readFileSync(path.join(root,'src/common/practice-user.js'),'utf8')
@@ -24,7 +29,7 @@ async function main () {
   context.api.plugin.install({directive:(name,value) => { directive = value }})
   const element = () => {
     const attrs = new Map(); const classes = new Set(); const styles = new Map()
-    return {attrs,classes,styles,classList:{add:(...values) => values.forEach(v => classes.add(v)),remove:(...values) => values.forEach(v => classes.delete(v))},
+    return {attrs,classes,styles,badge:null,appendChild (node) { this.badge = node; node.parentNode = this },classList:{add:(...values) => values.forEach(v => classes.add(v)),remove:(...values) => values.forEach(v => classes.delete(v))},
       style:{setProperty:(key,value) => styles.set(key,value),removeProperty:key => styles.delete(key)},
       getAttribute:key => attrs.has(key) ? attrs.get(key) : null, setAttribute:(key,value) => attrs.set(key,value), removeAttribute:key => attrs.delete(key)}
   }
@@ -33,7 +38,11 @@ async function main () {
   await wait(100)
   assert.strictEqual(requests.length,1,'Repeated names must share one batch')
   assert.strictEqual(requests[0].body.uids.length,1)
-  names.forEach(node => assert.strictEqual(node.styles.get('--practice-user-color'),'#008000'))
+  names.forEach(node => {
+    assert.strictEqual(node.styles.has('--practice-user-color'),false,'Names retain their normal color')
+    assert.strictEqual(node.badge.styles.get('--practice-user-color'),'#008000')
+    assert.strictEqual(node.badge.textContent,'起步')
+  })
   const alias = element(); directive.inserted(alias,{value:{username:'ALICE'}}); await wait(50)
   assert.strictEqual(requests.length,1,'UID and username aliases must share their result')
   assert.strictEqual(alias.attrs.get('data-practice-score'),'10')
@@ -42,18 +51,18 @@ async function main () {
   const recycled = element(); directive.inserted(recycled,{value:{uid:'a'}})
   await wait(25); directive.componentUpdated(recycled,{value:{uid:'b'}})
   await wait(120)
-  assert.strictEqual(recycled.styles.get('--practice-user-color'),'#164dcc','A stale response must not color a recycled row')
+  assert.strictEqual(recycled.badge.styles.get('--practice-user-color'),'#164dcc','A stale response must not update a recycled badge')
   assert.strictEqual(recycled.attrs.get('data-practice-score'),'70')
   const previous = requests.length; context.document.hidden = true; now += 60000; listeners.interval(); await wait(50)
   assert.strictEqual(requests.length,previous,'Hidden pages do not poll')
   context.document.hidden = false; fail = true; listeners.focus(); await wait(80)
-  assert.strictEqual(recycled.styles.get('--practice-user-color'),'#164dcc','Lookup failure must keep the existing name usable')
+  assert.strictEqual(recycled.badge.styles.get('--practice-user-color'),'#164dcc','Lookup failure must keep the existing name usable')
   fail = false; users.b = {...users.b,score:160,solvedCount:160,key:'master',color:'#c77700',title:'精英'}
   listeners.focus(); await wait(80)
   assert.strictEqual(recycled.attrs.get('data-practice-score'),'160','A later focus retries an unsuccessful refresh')
   directive.unbind(recycled)
   assert.strictEqual(recycled.styles.has('--practice-user-color'),false)
-  assert.strictEqual(recycled.classes.has('practice-user'),false)
+  assert.strictEqual(recycled.badge,null)
   assert.strictEqual(context.api.userIdentity({uid:'',username:''}),null)
 
   // A profile opened directly must update when the first lookup adds a new cache key.
