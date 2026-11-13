@@ -179,8 +179,7 @@ public class PracticeLevelService {
             if (TOP_PERCENT[i] > 0) tiers.get(i).put("seats", seats(current.formalCount, TOP_PERCENT[i]));
         }
         result.put("rules", tiers);
-        if (top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata())
-            result.put("basePoints", BASE_POINTS.clone());
+        result.put("basePoints", BASE_POINTS.clone());
         Map<String, Double> multipliers = new LinkedHashMap<>();
         multipliers.put("normal", NORMAL / 2.0);
         multipliers.put("course", COURSE / 2.0);

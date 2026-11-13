@@ -27,7 +27,9 @@ public class PracticeLevelController {
     public CommonResult<Map<String, Object>> rating(@RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int limit,
                                                    @RequestParam(required = false) String keyword) {
-        return CommonResult.successResponse(service.rating(page, limit, keyword));
+        Map<String, Object> result = service.rating(page, limit, keyword);
+        if (!top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata()) result.remove("basePoints");
+        return CommonResult.successResponse(result);
     }
 
     @GetMapping("/practice-level-rules")
