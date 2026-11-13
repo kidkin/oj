@@ -1,6 +1,10 @@
 <template>
   <div class="edu-page" :style="eduPageStyle">
     <header class="page-header"><h2>{{ access.isTeacher ? '课程总览' : '我的课程' }}</h2><el-button v-if="access.isTeacher" type="primary" @click="createDialog = true">创建课程</el-button></header>
+    <section v-if="courseSummary" class="course-total-progress" aria-labelledby="course-total-progress-title">
+      <h3 id="course-total-progress-title">课程总进度</h3>
+      <LearningProgress :completed="courseSummary.completedCount" :total="courseSummary.problemCount" />
+    </section>
     <el-form class="edu-toolbar" inline @submit.native.prevent="search">
       <el-form-item><el-input v-model="query.keyword" maxlength="128" placeholder="搜索课程名称" clearable @clear="search" /></el-form-item>
       <el-form-item v-if="access.isTeacher"><el-select v-model="query.scope" @change="search"><el-option value="library" label="课程库" /><el-option value="mine" label="我创建的" /></el-select></el-form-item>
@@ -32,11 +36,22 @@
 import edu from '@/common/edu-api'
 import eduLayout from '@/common/edu-layout'
 import LearningCard from './LearningCard.vue'
+import LearningProgress from './LearningProgress.vue'
 import {loadCourseCatalog} from '@/common/course-catalog'
 export default {
-  mixins: [eduLayout], components: {LearningCard},
-  data: () => ({access: {}, query: {keyword: '', scope: 'mine'}, records: [], catalogRequest: 0, stageProgress: [], openStages: [1, 2, 3, 4], loading: true, saving: false, createDialog: false, form: {title: '', description: '', displayId: '', chapterNumber: null}, states: ['草稿', '已发布', '已归档']}),
-  async mounted () { try { this.access = await edu.me(); this.query.scope = this.access.isTeacher ? 'library' : 'mine'; await Promise.all([this.load(), this.access.isTeacher ? Promise.resolve() : this.loadStages()]) } catch (_) { this.loading = false } },
+  mixins: [eduLayout], components: {LearningCard, LearningProgress},
+  data: () => ({access: {}, query: {keyword: '', scope: 'mine'}, records: [], catalogRequest: 0, stageProgress: [], courseSummary: null, openStages: [], loading: true, saving: false, createDialog: false, form: {title: '', description: '', displayId: '', chapterNumber: null}, states: ['草稿', '已发布', '已归档']}),
+  async mounted () {
+    try {
+      this.access = await edu.me()
+      this.query.scope = this.access.isTeacher ? 'library' : 'mine'
+      if (this.access.isTeacher) {
+        await this.load()
+      } else {
+        await Promise.all([this.load(), this.loadStages(), this.loadCourseSummary()])
+      }
+    } catch (_) { this.loading = false }
+  },
   computed: {
     groups () {
       if (this.access.isTeacher) return []
@@ -52,6 +67,9 @@ export default {
   methods: {
     courseTarget (row) { return {path:'/course/' + row.id} },
     async loadStages () { try { this.stageProgress = await edu.courseStages() } catch (_) {} },
+    async loadCourseSummary () {
+      try { this.courseSummary = await edu.learningSummary() } catch (_) {}
+    },
     toggle (id) { this.openStages = this.openStages.includes(id) ? this.openStages.filter(stage => stage !== id) : [...this.openStages, id] },
     percentage ({completedCount, problemCount}) { return problemCount ? Math.min(100, Math.round(completedCount * 100 / problemCount)) : 0 },
     async load () {
@@ -73,6 +91,14 @@ export default {
 }
 </script>
 <style scoped>
+.course-total-progress {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid #dce8f0;
+  border-radius: 14px;
+  background: #fff;
+}
+.course-total-progress h3 { margin: 0 0 10px; color: #263e55; font-size: 16px; }
 .course-stage { margin: 0 0 20px; }.stage-toggle { display:flex; align-items:center; justify-content:space-between; gap:16px; text-align:left; width:100%; padding:14px 18px; border:1px solid #dce8f0; border-radius:14px; background:#fff; color:#263e55; cursor:pointer; }
 .stage-toggle:hover,.stage-toggle:focus-visible { border-color:#7eb7e4; }.stage-name { font-size:16px; font-weight:650; }.stage-name i { margin-right:8px; }.stage-progress { width:clamp(90px, 30%, 290px); color:#47657c; font-size:12px; }.stage-progress span { display:block; text-align:right; margin-bottom:5px; }.stage-cards { margin:14px 0 24px; }
 </style>

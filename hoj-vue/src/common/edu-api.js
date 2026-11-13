@@ -7,6 +7,7 @@ export default {
   courses: params => request('get', '/courses', undefined, params),
   learningFootprint: () => request('get', '/learning-footprint'),
   courseStages: () => request('get', '/course-stages'),
+  learningSummary: () => request('get', '/learning-summary'),
   createCourse: data => request('post', '/courses', data),
   course: id => request('get', `/courses/${id}`),
   updateCourse: (id, data) => request('put', `/courses/${id}`, data),
