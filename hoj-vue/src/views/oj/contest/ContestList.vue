@@ -1,6 +1,5 @@
 <template>
   <div>
-      <!-- <ContestListAttention></ContestListAttention> -->
       <el-row type="flex" justify="space-around">
         <el-col :span="24">
           <el-card class="page-panel" shadow="never">
@@ -82,182 +81,12 @@
               </div>
             </div>
             <div v-loading="loading">
-              <p id="no-contest" v-show="contests.length == 0">
-                <el-empty :description="$t('m.No_contest')"></el-empty>
-              </p>
-              <ol id="contest-list">
-                <li
-                  v-for="contest in contests"
-                  :key="contest.title"
-                  :style="getborderColor(contest)"
-                >
-                  <el-row type="flex" justify="space-between" align="middle">
-                    <el-col :xs="10" :sm="4" :md="3" :lg="2">
-                      <template v-if="contest.type == 0">
-                        <el-image 
-                        :src="acmSrc" 
-                        class="trophy"
-                        style="width: 100px;"
-                        :preview-src-list="[acmSrc]">
-                        </el-image>
-                      </template>
-                      <template v-else>
-                        <el-image 
-                        :src="oiSrc" 
-                        class="trophy"
-                        style="width: 100px;"
-                        :preview-src-list="[oiSrc]">
-                        </el-image>
-                      </template>
-                    </el-col>
-                    <el-col
-                      :xs="10"
-                      :sm="16"
-                      :md="19"
-                      :lg="20"
-                      class="contest-main"
-                    >
-                      <p class="title">
-                        <a class="entry" @click.stop="toContest(contest)">
-                          {{ contest.title }}
-                        </a>
-                        <template v-if="contest.auth == 1">
-                          <i
-                            class="el-icon-lock"
-                            size="20"
-                            style="color:#d9534f"
-                          ></i>
-                        </template>
-                        <template v-if="contest.auth == 2">
-                          <i
-                            class="el-icon-lock"
-                            size="20"
-                            style="color:#f0ad4e"
-                          ></i>
-                        </template>
-                      </p>
-                      <ul class="detail">
-                        <li>
-                          <i
-                            class="fa fa-calendar"
-                            aria-hidden="true"
-                            style="color: #3091f2"
-                          ></i>
-                          {{ contest.startTime | localtime }}
-                        </li>
-                        <li>
-                          <i
-                            class="fa fa-clock-o"
-                            aria-hidden="true"
-                            style="color: #3091f2"
-                          ></i>
-                          {{ getDuration(contest.startTime, contest.endTime) }}
-                        </li>
-                        <li>
-                          <template v-if="contest.type == 0">
-                            <el-button
-                              size="mini"
-                              round
-                              :type="'primary'"
-                              @click="onRuleChange(contest.type)"
-                              ><i class="fa fa-trophy"></i>
-                              {{ contest.type | parseContestType }}
-                            </el-button>
-                          </template>
-                          <template v-else>
-                            <el-tooltip
-                              :content="
-                                $t('m.Contest_Rank') +
-                                  '：' +
-                                  (contest.oiRankScoreType == 'Recent'
-                                    ? $t(
-                                        'm.Based_on_The_Recent_Score_Submitted_Of_Each_Problem'
-                                      )
-                                    : $t(
-                                        'm.Based_on_The_Highest_Score_Submitted_For_Each_Problem'
-                                      ))
-                              "
-                              placement="top"
-                            >
-                              <el-button
-                                size="mini"
-                                round
-                                :type="'warning'"
-                                @click="onRuleChange(contest.type)"
-                                ><i class="fa fa-trophy"></i>
-                                {{ contest.type | parseContestType }}
-                              </el-button>
-                            </el-tooltip>
-                          </template>
-                        </li>
-                        <li>
-                          <el-tooltip
-                            :content="
-                              $t('m.' + CONTEST_TYPE_REVERSE[contest.auth].tips)
-                            "
-                            placement="top"
-                            effect="light"
-                          >
-                            <el-tag
-                              :type="CONTEST_TYPE_REVERSE[contest.auth]['color']"
-                              effect="plain"
-                            >
-                              {{
-                                $t(
-                                  'm.' + CONTEST_TYPE_REVERSE[contest.auth]['name']
-                                )
-                              }}
-                            </el-tag>
-                          </el-tooltip>
-                        </li>
-                        <li v-if="contest.count != null">
-                          <i
-                            class="el-icon-user-solid"
-                            style="color:rgb(48, 145, 242);"
-                          ></i
-                          >x{{ contest.count }}
-                        </li>
-                        <li v-if="contest.openRank">
-                          <el-tooltip
-                            :content="$t('m.Contest_Outside_ScoreBoard')"
-                            placement="top"
-                            effect="dark"
-                          >
-                            <el-button
-                              circle
-                              size="small"
-                              type="primary"
-                              :disabled="contest.status == CONTEST_STATUS.SCHEDULED"
-                              icon="el-icon-data-analysis"
-                              @click="
-                                toContestOutsideScoreBoard(contest.id, contest.type)
-                              "
-                            ></el-button>
-                          </el-tooltip>
-                        </li>
-                      </ul>
-                    </el-col>
-                    <el-col
-                      :xs="4"
-                      :sm="4"
-                      :md="2"
-                      :lg="2"
-                      style="text-align: center"
-                    >
-                      <el-tag
-                        effect="dark"
-                        :color="CONTEST_STATUS_REVERSE[contest.status]['color']"
-                        size="medium"
-                      >
-                        <i class="fa fa-circle" aria-hidden="true"></i>
-                        {{
-                          $t('m.' + CONTEST_STATUS_REVERSE[contest.status]['name'])
-                        }}
-                      </el-tag>
-                    </el-col>
-                  </el-row>
+              <el-empty v-if="!loading && !contests.length" :description="$t('m.No_contest')" />
+              <ul v-if="contests.length" class="contest-cards">
+                <li v-for="contest in contests" :key="contest.id">
+                  <ContestCard :contest="contest" @rule="onRuleChange" />
                 </li>
-              </ol>
+              </ul>
             </div>
           </el-card>
           <Pagination
@@ -273,24 +102,18 @@
 
 <script>
 import api from '@/common/api';
-import { mapGetters } from 'vuex';
 import utils from '@/common/utils';
-import time from '@/common/time';
-import {
-  CONTEST_STATUS_REVERSE,
-  CONTEST_TYPE_REVERSE,
-  CONTEST_STATUS,
-} from '@/common/constants';
-import myMessage from '@/common/message';
+import { CONTEST_STATUS_REVERSE } from '@/common/constants';
+import ContestCard from './ContestCard.vue';
+
 const Pagination = () => import('@/components/oj/common/Pagination');
-// const ContestListAttention = () => import('@/components/oj/contest/ContestListAttention');
 const limit = 10;
 
 export default {
   name: 'contest-list',
   components: {
     Pagination,
-    // ContestListAttention
+    ContestCard,
   },
   data() {
     return {
@@ -302,30 +125,19 @@ export default {
       },
       limit: limit,
       total: 0,
-      rows: '',
       contests: [],
-      CONTEST_STATUS_REVERSE: {},
-      CONTEST_STATUS: {},
-      CONTEST_TYPE_REVERSE: {},
-      acmSrc: require('@/assets/acm.jpg'),
-      oiSrc: require('@/assets/oi.jpg'),
+      CONTEST_STATUS_REVERSE,
       loading: true,
     };
   },
-  created() {
-    let route = this.$route.query;
-    this.currentPage = parseInt(route.currentPage) || 1;
-  },
   mounted() {
-    this.CONTEST_STATUS_REVERSE = Object.assign({}, CONTEST_STATUS_REVERSE);
-    this.CONTEST_TYPE_REVERSE = Object.assign({}, CONTEST_TYPE_REVERSE);
-    this.CONTEST_STATUS = Object.assign({}, CONTEST_STATUS);
     this.init();
   },
   methods: {
     init() {
       let route = this.$route.query;
-      this.query.status = route.status || '';
+      this.query.status = Object.prototype.hasOwnProperty.call(CONTEST_STATUS_REVERSE, route.status)
+        ? route.status : '';
       if(route.type === 0 || route.type === '0'){
         this.query.type = 0;
       }else if(route.type === 1 || route.type === '1'){
@@ -386,42 +198,6 @@ export default {
       this.currentPage = 1;
       this.filterByChange();
     },
-    toContest(contest) {
-      if (!this.isAuthenticated) {
-        myMessage.warning(this.$i18n.t('m.Please_login_first'));
-        this.$store.dispatch('changeModalStatus', { visible: true });
-      } else {
-        this.$router.push({
-          name: 'ContestDetails',
-          params: { contestID: contest.id },
-        });
-      }
-    },
-    toContestOutsideScoreBoard(cid, type) {
-      if (type == 0) {
-        this.$router.push({
-          name: 'ACMScoreBoard',
-          params: { contestID: cid },
-        });
-      } else if (type == 1) {
-        this.$router.push({
-          name: 'OIScoreBoard',
-          params: { contestID: cid },
-        });
-      }
-    },
-    getDuration(startTime, endTime) {
-      return time.formatSpecificDuration(startTime, endTime);
-    },
-    getborderColor(contest) {
-      return (
-        'border-left: 4px solid ' +
-        CONTEST_STATUS_REVERSE[contest.status]['color']
-      );
-    },
-  },
-  computed: {
-    ...mapGetters(['isAuthenticated', 'userInfo']),
   },
   watch: {
     $route(newVal, oldVal) {
@@ -434,78 +210,11 @@ export default {
 </script>
 <style scoped>
 .page-panel { border:1px solid #dce8f0; border-radius:16px; box-shadow:0 6px 22px #294d6d0b; }
-
-#no-contest {
-  text-align: center;
-  font-size: 16px;
-  padding: 20px;
-}
-.filter-row {
-  float: right;
-}
-@media screen and (max-width: 768px) {
-  .filter-row span {
-    margin-right: 2px;
-  }
-  ol {
-    padding-inline-start: 5px;
-  }
-  /deep/ .el-card__header {
-    margin-bottom: 5px;
-  }
-}
-@media screen and (min-width: 768px) {
-  .filter-row span {
-    margin-right: 20px;
-  }
-}
-/deep/ .el-card__header {
-  border-bottom: 0px;
-}
-
-#contest-list > li {
-  padding: 5px;
-  margin-left: -20px;
-  margin-top: 10px;
-  width: 100%;
-  border-bottom: 1px solid rgba(187, 187, 187, 0.5);
-  list-style: none;
-}
-#contest-list .trophy {
-  height: 70px;
-  margin-left: 10px;
-  margin-right: -20px;
-}
-@media screen and (max-width: 1500px) and (min-width: 1200px){
-  #contest-list .trophy {
-    width: 100% !important;
-  }
-  #contest-list .contest-main{
-    margin-left: 20px;
-  }
-}
-#contest-list .contest-main {
-  text-align: left;
-}
-#contest-list .contest-main .title {
-  font-size: 1.25rem;
-  padding-left: 8px;
-  margin-bottom: 0;
-}
-#contest-list .contest-main .title a.entry {
-  color: #495060;
-}
-#contest-list .contest-main .title a:hover {
-  color: #2d8cf0;
-  border-bottom: 1px solid #2d8cf0;
-}
-#contest-list .contest-main .detail {
-  font-size: 0.875rem;
-  padding-left: 0;
-  padding-bottom: 10px;
-}
-#contest-list .contest-main li {
-  display: inline-block;
-  padding: 10px 0 0 10px;
+.page-panel /deep/ .el-card__header > div { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px 20px; }
+.filter-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; }
+.drop-menu { cursor:pointer; }
+.contest-cards { display:grid; gap:12px; padding:0; margin:0; list-style:none; }
+@media (max-width:600px) {
+  .page-panel /deep/ .el-card__body { padding:12px; }
 }
 </style>
