@@ -33,6 +33,7 @@ public class EduCourseService {
     static final String PUBLIC_PROBLEM = EduProgress.PUBLIC_PROBLEM;
     private static final String MEMBERSHIP = "EXISTS (SELECT 1 FROM edu_class_course access_cc JOIN edu_class access_c ON access_c.id=access_cc.class_id " +
             "JOIN edu_class_member access_m ON access_m.class_id=access_c.id WHERE access_cc.course_id=c.id AND access_c.status=0 AND access_m.uid=? AND access_m.status=0)";
+    private static final String CORE_CURRICULUM = "c.id BETWEEN 1 AND 26";
     private static final String DISPLAY_ORDER = "COALESCE(cd.display_id,c.id),c.id";
     private static final String COLUMNS = "SELECT c.id,COALESCE(cd.display_id,c.id) AS displayId,COALESCE(ch.chapter_number,cd.display_id,c.id) AS chapterNumber,c.title,c.description,c.owner_uid AS ownerUid,u.username AS ownerUsername,c.status,c.revision," +
             "CONCAT('/api/public/course-icon/',ci.filename) AS iconUrl,c.gmt_create AS gmtCreate," +
@@ -89,7 +90,7 @@ public class EduCourseService {
     public List<Map<String, Object>> courseStages() {
         Access access = new Access();
         String stage = "CASE WHEN c.id BETWEEN 1 AND 8 THEN 1 WHEN c.id BETWEEN 9 AND 16 THEN 2 " +
-                "WHEN c.id BETWEEN 17 AND 26 THEN 3 ELSE 4 END";
+                "WHEN " + CORE_CURRICULUM + " THEN 3 ELSE 4 END";
         return db.queryForList("SELECT " + stage + " AS stage,COUNT(DISTINCT p.id) AS problemCount," +
                 "COUNT(DISTINCT ac.pid) AS completedCount FROM edu_course c " +
                 "LEFT JOIN edu_course_problem cp ON cp.course_id=c.id LEFT JOIN problem p ON p.id=cp.pid AND " + PUBLIC_PROBLEM +
@@ -127,10 +128,10 @@ public class EduCourseService {
         return result;
     }
 
-    /** Personal totals across enrolled courses; shared problems are counted once. */
+    /** Personal totals across the first three enrolled stages, with shared problems counted once. */
     public Map<String, Object> learningSummary() {
         Access access = new Access();
-        String enrolled = "SELECT c.id FROM edu_course c WHERE c.status=1 AND " + MEMBERSHIP;
+        String enrolled = "SELECT c.id FROM edu_course c WHERE c.status=1 AND " + CORE_CURRICULUM + " AND " + MEMBERSHIP;
         String problems = "SELECT DISTINCT p.id FROM edu_course_problem cp JOIN problem p ON p.id=cp.pid WHERE " +
                 PUBLIC_PROBLEM + " AND cp.course_id IN (" + enrolled + ")";
         Map<String, Object> result = new LinkedHashMap<>();
