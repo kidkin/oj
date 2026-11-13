@@ -8,8 +8,8 @@
         <template v-slot="{row}"><el-input-number v-if="editing" v-model="row.displayId" :aria-label="row.problemId + ' 的课程内ID'" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" size="small" :disabled="saving" /><span v-else>{{ row.displayId }}</span></template>
       </vxe-table-column>
       <vxe-table-column field="title" title="题目名称" min-width="240" show-overflow><template v-slot="{row}"><router-link v-if="row.available && !editing" :to="{name:'ProblemDetails',params:{problemID:row.problemId}}" @click.native.stop>{{ row.title }}</router-link><span v-else>{{ row.title || '不可用' }}</span></template></vxe-table-column>
-      <vxe-table-column field="difficulty" title="难度" min-width="160"><template v-slot="{row}"><span v-if="row.available" class="el-tag el-tag--small" :style="levelColor(row.difficulty)">{{ levelName(row.difficulty) }}</span><span v-else>不可用</span></template></vxe-table-column>
-      <vxe-table-column v-if="!editing" key="tags" title="标签" min-width="140"><template v-slot:header><el-link :type="showTags ? 'danger' : 'primary'" :underline="false" @click.stop="showTags = !showTags">{{ showTags ? '隐藏标签' : '显示标签' }}</el-link></template><template v-slot="{row}"><div v-if="showTags"><span v-for="tag in row.tags" :key="tag.id" class="el-tag el-tag--small problem-tag" :style="{backgroundColor:tag.color || '#409eff'}">{{ tag.name }}</span></div></template></vxe-table-column>
+      <vxe-table-column v-if="showMetadata" field="difficulty" title="难度" min-width="160"><template v-slot="{row}"><span v-if="row.available" class="el-tag el-tag--small" :style="levelColor(row.difficulty)">{{ levelName(row.difficulty) }}</span><span v-else>不可用</span></template></vxe-table-column>
+      <vxe-table-column v-if="showMetadata && !editing" key="tags" title="标签" min-width="140"><template v-slot:header><el-link :type="showTags ? 'danger' : 'primary'" :underline="false" @click.stop="showTags = !showTags">{{ showTags ? '隐藏标签' : '显示标签' }}</el-link></template><template v-slot="{row}"><div v-if="showTags"><span v-for="tag in row.tags" :key="tag.id" class="el-tag el-tag--small problem-tag" :style="{backgroundColor:tag.color || '#409eff'}">{{ tag.name }}</span></div></template></vxe-table-column>
       <vxe-table-column v-if="!editing" key="rate" title="通过率" min-width="150"><template v-slot="{row}"><el-tooltip v-if="row.available" :content="'公开普通提交：' + (row.ac || 0) + '/' + (row.total || 0)" placement="top"><el-progress :text-inside="true" :stroke-width="20" :percentage="passingRate(row)" /></el-tooltip></template></vxe-table-column>
       <vxe-table-column v-if="editing" key="actions" title="操作" width="220"><template v-slot="{row}"><el-button type="text" :disabled="saving || problems[0] === row" @click.stop="$emit('move',row,-1)">上移</el-button><el-button type="text" :disabled="saving || problems[problems.length-1] === row" @click.stop="$emit('move',row,1)">下移</el-button><el-button type="text" :disabled="saving" @click.stop="$emit('remove',row)">移除</el-button></template></vxe-table-column>
     </vxe-table>
@@ -22,7 +22,7 @@ import {JUDGE_STATUS} from '@/common/constants'
 import Pagination from '@/components/oj/common/Pagination'
 export default {
   components: {Pagination},
-  props: {problems: {type:Array, default:() => []}, editing:Boolean, saving:Boolean},
+  props: {problems: {type:Array, default:() => []}, editing:Boolean, saving:Boolean, showMetadata:Boolean},
   data: () => ({showTags:false, page:1, pageSize:50}),
   computed: {visibleProblems () { return this.editing ? this.problems : this.problems.slice((this.page-1)*this.pageSize, this.page*this.pageSize) }},
   watch: {problems () { this.page = 1 }, editing () { this.page = 1 }},

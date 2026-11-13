@@ -38,7 +38,6 @@
 </template>
 <script>
 import edu from '@/common/edu-api'
-import {loadPracticeLevels} from '@/common/practice-user'
 import eduLayout from '@/common/edu-layout'
 import {PROGRESS_STATES, progressPages, progressTime, renderProgressImage} from '@/common/progress-image'
 export default {
@@ -85,7 +84,7 @@ export default {
     async generate () {
       if (!this.selected.length || this.generating) return
       const classId=this.id; const version=++this.reportVersion; this.generating=true; this.clearImage(); this.renderVersion++
-      try { const report=await edu.classProgress(classId,this.selectedIds); if (version!==this.reportVersion) return; try { const levels=await loadPracticeLevels(report.students); report.students.forEach((student,index) => { student.nameColor=levels[index] ? levels[index].color : '#777777' }) } catch (_) {} if (version!==this.reportVersion) return; this.report=report; this.pageIndex=0; await this.prepareImage() } catch (_) { if (version===this.reportVersion) this.report=null } finally { if (version===this.reportVersion) this.generating=false }
+      try { const report=await edu.classProgress(classId,this.selectedIds); if (version!==this.reportVersion) return; if (version!==this.reportVersion) return; this.report=report; this.pageIndex=0; await this.prepareImage() } catch (_) { if (version===this.reportVersion) this.report=null } finally { if (version===this.reportVersion) this.generating=false }
     },
     async prepareImage () {
       const version=++this.renderVersion; this.clearImage(); if (!this.report || !this.pages.length) return; this.rendering=true

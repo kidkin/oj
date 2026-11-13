@@ -1,7 +1,7 @@
 <template>
   <el-row class="flex-container">
     <div id="main">
-      <el-card shadow>
+      <el-card class="page-panel" shadow="never">
         <div slot="header">
           <el-row :gutter="18">
             <el-col
@@ -283,7 +283,7 @@
               </template>
               <template v-else-if="row.score != null">
                 <el-tooltip placement="top">
-                  <div slot="content">
+                  <div slot="content" v-if="$store.getters.canSeeProblemMetadata">
                     {{ $t('m.Problem_Score') }}：{{
                       row.score != null ? row.score : $t('m.Unknown')
                     }}
@@ -1073,6 +1073,8 @@ export default {
 </script>
 
 <style scoped>
+.page-panel { border:1px solid #dce8f0; border-radius:16px; box-shadow:0 6px 22px #294d6d0b; }
+
 @media only screen and (max-width: 767px) {
   .search {
     margin-top: 20px;

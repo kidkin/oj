@@ -5,7 +5,8 @@ const request = (method, path, data, params) => axios({method, url: '/api/edu' +
 
 export default {
   courses: params => request('get', '/courses', undefined, params),
-  learningSummary: () => request('get', '/learning-summary'),
+  learningFootprint: () => request('get', '/learning-footprint'),
+  courseStages: () => request('get', '/course-stages'),
   createCourse: data => request('post', '/courses', data),
   course: id => request('get', `/courses/${id}`),
   updateCourse: (id, data) => request('put', `/courses/${id}`, data),

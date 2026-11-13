@@ -76,7 +76,7 @@
                       }}</el-tag>
                     </span>
                     <span
-                      v-else-if="problemData.tags.length > 0"
+                      v-else-if="$store.getters.canSeeProblemMetadata && problemData.tags.length > 0"
                     >
                       <el-popover
                         placement="right-start"
@@ -101,7 +101,7 @@
                       </el-popover>
                     </span>
                     <span
-                      v-else-if="problemData.tags.length == 0"
+                      v-else-if="$store.getters.canSeeProblemMetadata && problemData.tags.length == 0"
                     >
                       <el-tag
                         effect="plain"
@@ -170,7 +170,7 @@
                           problemData.problem.memoryLimit
                         }}MB</span><br />
                     </template>
-                    <template v-if="problemData.problem.difficulty != null">
+                    <template v-if="$store.getters.canSeeProblemMetadata && problemData.problem.difficulty != null">
                       <span>{{ $t('m.Level') }}：<span
                           class="el-tag el-tag--small"
                           :style="getLevelColor(problemData.problem.difficulty)"
@@ -179,7 +179,7 @@
                           }}</span></span>
                       <br />
                     </template>
-                    <template v-if="problemData.problem.type == 1">
+                    <template v-if="$store.getters.canSeeProblemMetadata && problemData.problem.type == 1">
                       <span>{{ $t('m.Score') }}：{{ problemData.problem.ioScore }}
                       </span>
                       <span
@@ -196,7 +196,7 @@
                       <br />
                     </template>
 
-                    <template v-if="problemData.problem.author">
+                    <template v-if="$store.getters.canSeeProblemMetadata && problemData.problem.author">
                       <span>{{ $t('m.Created') }}：<el-link
                           type="info"
                           class="author-name"
@@ -377,7 +377,7 @@
                     <vxe-table-column
                       :title="$t('m.Score')"
                       min-width="64"
-                      v-if="problemData.problem.type == 1"
+                      v-if="$store.getters.canSeeProblemMetadata && problemData.problem.type == 1"
                     >
                       <template v-slot="{ row }">
                         <template v-if="contestID && row.score != null">
@@ -389,7 +389,7 @@
                         </template>
                         <template v-else-if="row.score != null">
                           <el-tooltip placement="top">
-                            <div slot="content">
+                            <div slot="content" v-if="$store.getters.canSeeProblemMetadata">
                               {{ $t('m.Problem_Score') }}：{{
                                 row.score != null ? row.score : $t('m.Unknown')
                               }}<br />{{ $t('m.OI_Rank_Score') }}：{{

@@ -85,7 +85,7 @@
         </span>
         <hr id="split" />
         <el-row :gutter="12">
-          <el-col :md="6" :sm="24">
+          <el-col :md="8" :sm="24">
             <el-card shadow="always" class="submission">
               <p>
                 <i class="fa fa-th" aria-hidden="true"></i>
@@ -94,7 +94,7 @@
               <p class="data-number">{{ profile.total }}</p>
             </el-card>
           </el-col>
-          <el-col :md="6" :sm="24">
+          <el-col :md="8" :sm="24">
             <el-card shadow="always" class="solved">
               <p>
                 <i class="fa fa-check-circle" aria-hidden="true"></i>
@@ -103,24 +103,10 @@
               <p class="data-number">{{ profile.solvedList.length }}</p>
             </el-card>
           </el-col>
-          <el-col :md="6" :sm="24">
-            <el-card shadow="always" class="score">
-              <p>
-                <i class="fa fa-star" aria-hidden="true"></i>
-                {{ $t('m.UserHome_Score') }}
-              </p>
-              <p class="data-number">{{ getSumScore(profile.scoreList) }}</p>
-            </el-card>
-          </el-col>
-          <el-col :md="6" :sm="24">
+          <el-col :md="8" :sm="24">
             <el-card shadow="always" class="rating">
-              <p>
-                <i class="fa fa-user-secret" aria-hidden="true"></i>
-                {{ $t('m.UserHome_Rating') }}
-              </p>
-              <p class="data-number">
-                {{ profile.rating ? profile.rating : '--' }}
-              </p>
+              <p><i class="fa fa-star" aria-hidden="true"></i> 成长分</p>
+              <p class="data-number">{{ growthLevel ? growthLevel.score : '—' }}</p>
             </el-card>
           </el-col>
         </el-row>
@@ -238,6 +224,7 @@ import Avatar from 'vue-avatar';
 import 'vue-calendar-heatmap/dist/vue-calendar-heatmap.css'
 import { CalendarHeatmap } from 'vue-calendar-heatmap'
 import { PROBLEM_LEVEL } from '@/common/constants';
+import { practiceLevel } from '@/common/practice-user';
 import utils from '@/common/utils';
 import Markdown from '@/components/oj/common/Markdown';
 export default {
@@ -269,6 +256,7 @@ export default {
       PROBLEM_LEVEL: {},
     };
   },
+  computed: { growthLevel () { return practiceLevel(this.profile) } },
   created(){
     const uid = this.$route.query.uid;
     const username = this.$route.query.username;

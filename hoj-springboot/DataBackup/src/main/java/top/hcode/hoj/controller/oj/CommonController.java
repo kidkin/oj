@@ -48,18 +48,24 @@ public class CommonController {
     @GetMapping("/get-all-problem-tags")
     @AnonApi
     public CommonResult<List<Tag>> getAllProblemTagsList(@RequestParam(value = "oj", defaultValue = "ME") String oj) {
+        if (!top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata())
+            return CommonResult.successResponse(java.util.Collections.emptyList());
         return commonService.getAllProblemTagsList(oj);
     }
 
     @GetMapping("/get-problem-tags-and-classification")
     @AnonApi
     public CommonResult<List<ProblemTagVO>> getProblemTagsAndClassification(@RequestParam(value = "oj", defaultValue = "ME") String oj) {
+        if (!top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata())
+            return CommonResult.successResponse(java.util.Collections.emptyList());
         return commonService.getProblemTagsAndClassification(oj);
     }
 
     @GetMapping("/get-problem-tags")
     @AnonApi
     public CommonResult<Collection<Tag>> getProblemTags(Long pid) {
+        if (!top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata())
+            return CommonResult.successResponse(java.util.Collections.emptyList());
         return commonService.getProblemTags(pid);
     }
 

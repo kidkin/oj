@@ -2,8 +2,8 @@
   <main class="rating-page" aria-labelledby="rating-title">
     <header class="rating-hero">
       <div class="hero-copy">
-        <p class="eyebrow"><i class="el-icon-trophy" aria-hidden="true" /> 成长排行榜</p>
-        <h1 id="rating-title">Rating 榜</h1>
+        <p class="eyebrow"><i class="el-icon-trophy" aria-hidden="true" /> 学习成长</p>
+        <h1 id="rating-title">成长排行榜</h1>
         <p class="hero-description">按有效通过的题目累计成长分，每道题取最高计分。</p>
       </div>
       <dl v-if="multipliers" class="hero-stats">
@@ -18,7 +18,7 @@
         <article v-for="row in leaders" :key="row.uid" class="podium-card" :class="'place-' + row.rank">
           <span class="podium-medal" :aria-label="'第 ' + row.rank + ' 名'">{{ row.rank }}</span>
           <div class="podium-person">
-            <router-link :to="profile(row)" class="rating-name" :style="{color:row.color}" :title="row.username">
+            <router-link :to="profile(row)" class="rating-name" :title="row.username">
               {{ row.username }}
             </router-link>
             <span class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
@@ -42,7 +42,7 @@
       </header>
 
       <div v-if="error" class="rating-empty" role="alert">
-        <p>暂时无法加载 Rating 榜</p>
+        <p>暂时无法加载 成长排行榜</p>
         <el-button size="small" @click="load">重试</el-button>
       </div>
       <div v-else-if="!records.length && !loading" class="rating-empty">
@@ -56,7 +56,7 @@
           <tr v-for="row in records" :key="row.uid">
             <td><span class="rank-number" :class="row.rank <= 3 ? 'rank-top rank-' + row.rank : ''">{{ row.rank }}</span></td>
             <td>
-              <router-link :to="profile(row)" class="rating-name" :style="{color:row.color}" :title="row.username">{{ row.username }}</router-link>
+              <router-link :to="profile(row)" class="rating-name" :title="row.username">{{ row.username }}</router-link>
               <span class="tier-pill table-tier" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
               <span class="mobile-solved">{{ row.solvedCount }} 题</span>
             </td>
@@ -75,7 +75,7 @@
       <summary>成长分与颜色规则</summary>
       <div class="rules-body">
         <p>普通题 ×{{ multipliers.normal }} · 本班课程 ×{{ multipliers.course }} · 周周练 ×{{ multipliers.weekly }} · 正式比赛 ×{{ multipliers.contest }}</p>
-        <ul class="rule-list" aria-label="题目基础分">
+        <ul v-if="basePoints.length" class="rule-list" aria-label="题目基础分">
           <li v-for="(points, difficulty) in basePoints" :key="difficulty" :style="{'--tier-color':difficultyColor(difficulty)}">
             <i aria-hidden="true" />{{ difficultyName(difficulty) }} {{ points }} 分
           </li>
@@ -134,7 +134,7 @@ export default {
         this.formalCount = data.formalCount
         this.rankedCount = data.rankedCount
         this.rules = data.rules
-        this.basePoints = data.basePoints
+        this.basePoints = data.basePoints || []
         this.multipliers = data.multipliers
       } catch (_) {
         if (requestId === this.requestId) this.error = true

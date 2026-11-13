@@ -1,5 +1,6 @@
 <template>
   <div class="home-page">
+    <LearningSummary v-if="footprint && footprint.enabled" :key="token" :summary="footprint" />
     <el-row :gutter="24">
       <el-col :md="15" :sm="24" :xs="24">
         <el-card class="home-carousel-card" :body-style="{padding:'12px'}">
@@ -51,10 +52,14 @@
 <script>
 import api from '@/common/api'
 import Avatar from 'vue-avatar'
+import edu from '@/common/edu-api'
+import LearningSummary from './edu/LearningSummary.vue'
 import moment from 'moment'
 export default {
-  name: 'home', components: { Avatar },
-  data: () => ({ carouselImgList: [{url: require('@/assets/home1.jpeg')}], weeklyRank: [], recentContests: [], rankLoading: false, rankLoaded: false, rankError: false, contestLoading: false, contestLoaded: false, contestError: false, refreshTimer: null, refreshActive: false }),
+  name: 'home', components: { Avatar, LearningSummary },
+  data: () => ({ footprint: null, carouselImgList: [{url: require('@/assets/home1.jpeg')}], weeklyRank: [], recentContests: [], rankLoading: false, rankLoaded: false, rankError: false, contestLoading: false, contestLoaded: false, contestError: false, refreshTimer: null, refreshActive: false }),
+  computed: { token () { return this.$store.getters.token } },
+  watch: {token: {immediate: true, handler: 'loadFootprint'}},
   mounted () {
     this.getHomeCarousel(); this.refreshHome()
     this.refreshTimer = window.setInterval(this.refreshHome, 60000)
@@ -67,6 +72,14 @@ export default {
     window.removeEventListener('focus', this.onVisibilityChange)
   },
   methods: {
+    async loadFootprint (token) {
+      this.footprint = null
+      if (!token) return
+      try {
+        const result = await edu.learningFootprint()
+        if (token === this.token) this.footprint = result
+      } catch (_) {}
+    },
     async getHomeCarousel () {
       try { const res = await api.getHomeCarousel(); if (Array.isArray(res.data.data) && res.data.data.length) this.carouselImgList = res.data.data }
       catch (_) {}
@@ -114,7 +127,7 @@ export default {
 .rank-link { display:flex; align-items:center; gap:10px; padding:5px 10px; min-height:35px; color:#596d83; border-radius:9px; transition:background .2s,transform .2s; }.rank-link:hover { background:#f0f6fc; transform:translateX(2px); }.rank-link:focus-visible,.contest-entry:focus-visible { outline:2px solid #368bd4; outline-offset:-2px; }
 .rank-number { width:32px; text-align:center; font-size:12px; color:#9aabba; font-variant-numeric:tabular-nums; }.rank-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }.rank-score { margin-left:auto; font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }.rank-score small { font-size:10px; font-weight:400; padding-left:4px; opacity:.65; }
 .place-1 { --medal:#e2aa31; --ribbon:#e0ad48; --name:#a36b0b; background:linear-gradient(100deg,#fff6dd,#fffdf6); }.place-2 { --medal:#8ca7bf; --ribbon:#8eabc5; --name:#55758f; background:linear-gradient(100deg,#eef4fb,#fafcfe); }.place-3 { --medal:#cf8b5d; --ribbon:#ce986a; --name:#a06237; background:linear-gradient(100deg,#fdf0e7,#fffaf6); }
-.place-1 .rank-link,.place-2 .rank-link,.place-3 .rank-link { min-height:43px; }.place-1 .rank-name,.place-2 .rank-name,.place-3 .rank-name { color:var(--name); font-weight:700; }.place-1 .rank-score,.place-2 .rank-score,.place-3 .rank-score { color:var(--name); }
+.place-1 .rank-link,.place-2 .rank-link,.place-3 .rank-link { min-height:43px; }.place-1 .rank-score,.place-2 .rank-score,.place-3 .rank-score { color:var(--name); }
 .medal { position:relative; display:inline-block; width:32px; height:36px; flex-shrink:0; filter:drop-shadow(0 2px 2px #b47b2518); }.medal svg { width:32px; height:36px; }.medal-ribbon { fill:var(--ribbon); opacity:.5; }.medal-shield { fill:var(--medal); stroke:#fff; stroke-width:1.2; }.medal-star { fill:#fff; opacity:.3; }.medal>span { position:absolute; inset:11px 0 0; color:#fff; text-align:center; font-weight:800; font-size:13px; line-height:20px; }.place-1 .medal { animation:champion-glow 4s ease-in-out infinite; }
 @keyframes champion-glow { 0%,100% { filter:drop-shadow(0 2px 2px #b47b2525); } 50% { filter:drop-shadow(0 0 5px #e5ad4e80); } }
 .recent-contests { margin-top:18px; }.view-all { color:#8a9bac; font-size:12px; white-space:nowrap; }.view-all i { margin-left:2px; }.contest-list { padding:0 18px 6px; }.contest-entry { display:block; padding:12px 2px; border-top:1px solid #eef3f8; transition:background .2s; }.contest-entry:hover { background:#f8fbff; }.contest-entry-top { display:flex; align-items:center; justify-content:space-between; }.contest-status { display:inline-flex; align-items:center; gap:5px; color:#5586be; font-size:10px; }.contest-status.is-live { color:#2c9c82; }.contest-type { font-size:10px; letter-spacing:1px; color:#8c9aac; }.contest-entry h3 { color:#3b5069; margin:6px 0; font-size:14px; font-weight:600; overflow-wrap:anywhere; }.contest-time { display:flex; align-items:center; gap:5px; color:#95a3b3; font-size:11px; }.contest-arrow { margin-left:auto; }

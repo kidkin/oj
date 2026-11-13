@@ -25,6 +25,7 @@
               class="filter-mt"
             >
               <vxe-checkbox
+                v-if="$store.getters.canSeeProblemMetadata"
                 v-model="tagVisible"
                 @change="changeTagVisible(tagVisible)"
                 >{{ $t('m.Show_Tags') }}</vxe-checkbox
@@ -78,7 +79,7 @@
             </div>
           </section>
 
-          <section>
+          <section v-if="$store.getters.canSeeProblemMetadata">
             <b class="problem-filter">{{ $t('m.Level') }}</b>
             <div>
               <el-tag
@@ -177,6 +178,7 @@
           </vxe-table-column>
 
           <vxe-table-column
+            v-if="$store.getters.canSeeProblemMetadata"
             field="difficulty"
             :title="$t('m.Level')"
             min-width="100"
@@ -191,6 +193,7 @@
           </vxe-table-column>
 
           <vxe-table-column
+            v-if="$store.getters.canSeeProblemMetadata"
             field="tag"
             :title="$t('m.Tags')"
             min-width="230"
@@ -273,7 +276,7 @@
           </el-col>
         </el-row>
       </el-card>
-      <el-card :padding="10" style="margin-top:20px">
+      <el-card v-if="$store.getters.canSeeProblemMetadata" :padding="10" style="margin-top:20px">
         <div slot="header" style="text-align: center;">
           <span class="taglist-title">{{ OJName + ' ' + $t('m.Tags') }}</span>
           <div style="margin: 10px 0;">
@@ -414,7 +417,8 @@ export default {
     this.loadings.table = true;
     setTimeout(() => {
       // 将指定列设置为隐藏状态
-      this.$refs.problemList.getColumnByField('tag').visible = false;
+      const tags = this.$refs.problemList.getColumnByField('tag');
+      if (tags) tags.visible = false;
       this.$refs.problemList.refreshColumn();
       this.loadings.table = false;
     }, 200);
@@ -553,6 +557,7 @@ export default {
       );
     },
     getTagList(oj) {
+      if (!this.$store.getters.canSeeProblemMetadata) return;
       if (oj == 'Mine') {
         oj = 'ME';
       }
@@ -611,7 +616,8 @@ export default {
       }
     },
     changeTagVisible(visible) {
-      this.$refs.problemList.getColumnByField('tag').visible = visible;
+      const tags = this.$refs.problemList.getColumnByField('tag');
+      if (tags) tags.visible = visible;
       this.$refs.problemList.refreshColumn();
     },
     onReset() {

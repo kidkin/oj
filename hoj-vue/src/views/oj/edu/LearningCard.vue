@@ -1,5 +1,5 @@
 <template>
-  <component :is="restricted ? 'button' : disabled ? 'article' : 'router-link'" :type="restricted ? 'button' : undefined" class="learning-card" :class="{'learning-row': layout === 'row', locked: disabled, restricted}" :to="disabled || restricted ? undefined : to" :aria-label="title + '，' + (disabled || restricted ? disabledHint : progressText)" :aria-disabled="disabled ? 'true' : undefined" @click="restricted && $emit('restricted-click')">
+  <component :is="restricted ? 'button' : disabled ? 'article' : 'router-link'" :type="restricted ? 'button' : undefined" class="learning-card" :class="{'learning-row': layout === 'row', compact, locked: disabled, restricted}" :to="disabled || restricted ? undefined : to" :aria-label="title + '，' + (disabled || restricted ? disabledHint : progressText)" :aria-disabled="disabled ? 'true' : undefined" @click="restricted && $emit('restricted-click')">
     <aside class="card-cover" :class="kind">
       <img v-if="icon && !imageError" :src="icon" alt="" @error="imageError = true">
       <i v-else :class="kind === 'class' ? 'el-icon-school' : 'el-icon-reading'" aria-hidden="true" />
@@ -8,14 +8,14 @@
     <div class="card-content">
       <h3 :title="title">{{ title }}<span v-if="badge" class="card-badge">{{ badge }}</span></h3>
       <div class="card-body">
-        <p v-if="description" class="description">{{ description }}</p>
+        <p v-if="description && !compact" class="description">{{ description }}</p>
         <p v-if="disabled" class="locked-hint"><i class="el-icon-lock" aria-hidden="true" /> {{ disabledHint }}</p>
         <div v-else-if="showProgress" class="completion">
           <div class="completion-label"><span>{{ progressText }}</span><strong v-if="total">{{ percentage }}%</strong></div>
           <el-progress :percentage="percentage" :show-text="false" :stroke-width="7" :color="percentage === 100 ? '#31ad76' : '#528fd2'" />
         </div>
       </div>
-      <footer><span class="owner"><i class="el-icon-user-solid" aria-hidden="true" /> <span v-if="owner" v-user-level="{uid:ownerUid, username:owner}">{{ owner }}</span><span v-else>原账号已删除</span></span><span>{{ meta }}</span></footer>
+      <footer v-if="meta || !compact" :class="{'compact-footer': compact}"><span v-if="!compact" class="owner"><i class="el-icon-user-solid" aria-hidden="true" /> <span v-if="owner" v-user-level="{uid:ownerUid, username:owner}">{{ owner }}</span><span v-else>原账号已删除</span></span><span>{{ meta }}</span></footer>
     </div>
   </component>
 </template>
@@ -24,7 +24,7 @@ export default {
   props: {
     to: {type: [String, Object], default: '/class'}, title: String, description: String, owner: String, ownerUid: [String, Number], meta: String, icon: String, badge: String,
     kind: {type: String, default: 'course'}, layout: {type: String, default: 'card'}, completed: {type: Number, default: 0}, total: {type: Number, default: 0},
-    disabled: Boolean, restricted: Boolean, disabledHint: {type: String, default: '加入相关班级后可学习本课程'}, showProgress: {type: Boolean, default: true}
+    compact: Boolean, disabled: Boolean, restricted: Boolean, disabledHint: {type: String, default: '加入相关班级后可学习本课程'}, showProgress: {type: Boolean, default: true}
   },
   data: () => ({imageError: false}),
   watch: {icon () { this.imageError = false }},
@@ -49,4 +49,6 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
 .learning-row { width: 100%; min-height: 138px; }.learning-row .card-cover { flex-basis: 110px; }.learning-row .card-cover img { width: 64px; height: 64px; }.learning-row .card-cover > i { font-size: 38px; }.learning-row .card-cover { gap: 8px; }.learning-row .card-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 320px); align-items: center; gap: 20px; padding: 10px 16px; }.learning-row h3 { padding: 8px 16px; }.learning-row footer { padding: 6px 16px; }
 @media (max-width: 700px) { .learning-row .card-body { display: flex; gap: 12px; align-items: stretch; }.learning-row .card-cover { flex-basis: 80px; }.learning-row .card-cover img { width: 56px; height: 56px; } }
 @media (max-width: 440px) { .card-cover { flex-basis: 76px; }.card-cover > i { font-size: 38px; }.card-cover img { width: 56px; height: 56px; }h3 { font-size: 16px; }.card-body { padding: 12px; } }
+.learning-card.compact { min-height:134px; }.compact .card-cover { gap:6px; }.compact .card-cover img { width:60px; height:60px; }
+.compact .card-body { justify-content:center; padding:9px 14px; }.compact .compact-footer { justify-content:flex-end; padding:5px 14px; }
 </style>

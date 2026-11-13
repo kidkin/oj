@@ -31,6 +31,8 @@ const getters = {
       return false;
     }
   },
+  canSeeProblemMetadata: (state, getters) => getters.isAdminRole ||
+    (getters.userInfo.roleList || []).includes('teacher'),
   isSuperAdmin: (state, getters) => {
     if(getters.userInfo.roleList){
       return getters.userInfo.roleList.indexOf(USER_TYPE.SUPER_ADMIN) !=-1

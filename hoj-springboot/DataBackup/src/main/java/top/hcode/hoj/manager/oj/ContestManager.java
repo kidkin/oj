@@ -234,14 +234,14 @@ public class ContestManager {
         if (userRolesVo == null){ // 如果访问者没登录
             if (Objects.equals(contest.getOpenRank(), true)  // 比賽開放赛外榜单
                     && contest.getStatus().intValue() != Constants.Contest.STATUS_SCHEDULED.getCode()){
-                return contestProblemEntityService.getContestProblemList(cid,
+                return cleanContestTitles(contestProblemEntityService.getContestProblemList(cid,
                         contest.getStartTime(),
                         contest.getEndTime(),
                         Objects.equals(contest.getSealRank(), true) ? contest.getSealRankTime() : null,
                         false,
                         contest.getAuthor(),
                         groupRootUidList,
-                        isContainsContestEndJudge);
+                        isContainsContestEndJudge));
             }else{
                 // 比赛没有开启赛外榜单，同时访问者也没登录，则不允许访问比赛题目数据
                 throw new StatusForbiddenException("请您先登录！");
@@ -283,7 +283,12 @@ public class ContestManager {
                     isContainsContestEndJudge);
         }
 
-        return contestProblemList;
+        return cleanContestTitles(contestProblemList);
+    }
+
+    private List<ContestProblemVO> cleanContestTitles(List<ContestProblemVO> problems) {
+        problems.forEach(problem -> problem.setDisplayTitle(top.hcode.hoj.utils.ProblemSourceVisibility.cleanTitle(problem.getDisplayTitle())));
+        return problems;
     }
 
     public List<ProblemFullScreenListVO> getContestFullScreenProblemList(Long cid) throws StatusForbiddenException, StatusFailException {
@@ -353,6 +358,7 @@ public class ContestManager {
                 problemVO.setScore(pair_.getValue());
             }
         }
+        problemList.forEach(problem -> problem.setTitle(top.hcode.hoj.utils.ProblemSourceVisibility.cleanTitle(problem.getTitle())));
         return problemList;
     }
 
@@ -396,6 +402,7 @@ public class ContestManager {
             problem.setSource(null);
             problem.setAuthor(null);
             problem.setDifficulty(null);
+        } else if (top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata()) {
             QueryWrapper<ProblemTag> problemTagQueryWrapper = new QueryWrapper<>();
             problemTagQueryWrapper.eq("pid", contestProblem.getPid());
             // 获取该题号对应的标签id
@@ -457,7 +464,7 @@ public class ContestManager {
             }
         }
         // 将数据统一写入到一个Vo返回数据实体类中
-        return new ProblemInfoVO(top.hcode.hoj.utils.ProblemSourceVisibility.forViewer(problem), tags, languagesStr, problemCount, LangNameAndCode);
+        return top.hcode.hoj.utils.ProblemSourceVisibility.details(new ProblemInfoVO(problem, tags, languagesStr, problemCount, LangNameAndCode));
     }
 
 

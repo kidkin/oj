@@ -19,7 +19,7 @@
       <el-divider />
       <div class="page-header"><h3>课程题目</h3><div v-if="detail.canEdit"><el-button v-if="!editingProblems" :disabled="uploadingIcon" type="primary" @click="startProblems">编辑题目与顺序</el-button><template v-else><el-button :disabled="saving" @click="pickerDialog = true">从公开题库选题</el-button><el-button :disabled="saving" @click="sortDraft">按ID预览排序</el-button><el-button :disabled="saving" @click="cancelProblems">取消编辑</el-button><el-button type="primary" :loading="saving" @click="saveProblems">保存题目并同步</el-button></template></div></div>
       <el-tag v-if="editingProblems" class="selection-count">已选 {{ draftProblems.length }}/500 题</el-tag>
-      <CourseProblemTable :problems="shownProblems" :editing="editingProblems" :saving="saving" @move="move" @remove="removeProblem" />
+      <CourseProblemTable :show-metadata="!!access.isTeacher" :problems="shownProblems" :editing="editingProblems" :saving="saving" @move="move" @remove="removeProblem" />
     </section>
     <p v-else-if="!loading" class="edu-empty">无法访问该课程，请检查班级归属或课程发布状态。</p>
     <el-dialog title="编辑共享课程" :visible.sync="metadataDialog" width="min(600px, 94vw)" :close-on-click-modal="false">

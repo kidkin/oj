@@ -87,7 +87,8 @@
         >
         </vxe-table-column>
         <vxe-table-column
-          field="difficulty"
+        v-if="$store.getters.canSeeProblemMetadata"
+        field="difficulty"
           :title="$t('m.Level')"
           min-width="100"
         >
@@ -99,7 +100,7 @@
             >
           </template>
         </vxe-table-column>
-        <vxe-table-column field="tag" min-width="100">
+        <vxe-table-column v-if="$store.getters.canSeeProblemMetadata" field="tag" min-width="100">
           <template v-slot:header
             ><el-link
               type="primary"

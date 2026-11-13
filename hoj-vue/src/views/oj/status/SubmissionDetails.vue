@@ -1,5 +1,6 @@
 <template>
   <el-row
+    class="submission-panel"
     type="flex"
     justify="space-around"
   >
@@ -585,6 +586,8 @@ export default {
 </script>
 
 <style scoped>
+.submission-panel { padding:clamp(10px,2vw,20px); border:1px solid #dce8f0; border-radius:16px; background:#fff; box-shadow:0 6px 22px #294d6d0b; }
+
 #status .title {
   font-size: 20px;
 }

@@ -94,7 +94,9 @@ public class GroupProblemManager {
         if (currentPage == null || currentPage < 1) currentPage = 1;
         if (limit == null || limit < 1) limit = 10;
 
-        return groupProblemEntityService.getProblemList(limit, currentPage, gid);
+        IPage<ProblemVO> result = groupProblemEntityService.getProblemList(limit, currentPage, gid);
+        top.hcode.hoj.utils.ProblemSourceVisibility.list(result.getRecords());
+        return result;
     }
 
     public IPage<Problem> getAdminProblemList(Integer limit, Integer currentPage, Long gid) throws StatusNotFoundException, StatusForbiddenException {
@@ -379,7 +381,7 @@ public class GroupProblemManager {
         tagQueryWrapper.isNull("gid").or().eq("gid", gid);
         tagList = tagEntityService.list(tagQueryWrapper);
 
-        return tagList;
+        return top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata() ? tagList : java.util.Collections.emptyList();
     }
 
     public void compileSpj(CompileDTO compileDTO, Long gid) throws StatusForbiddenException, StatusNotFoundException, StatusFailException {

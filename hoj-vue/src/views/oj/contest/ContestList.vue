@@ -3,7 +3,7 @@
       <!-- <ContestListAttention></ContestListAttention> -->
       <el-row type="flex" justify="space-around">
         <el-col :span="24">
-          <el-card shadow>
+          <el-card class="page-panel" shadow="never">
             <div slot="header">
               <span class="panel-title"
                 >{{
@@ -433,6 +433,8 @@ export default {
 };
 </script>
 <style scoped>
+.page-panel { border:1px solid #dce8f0; border-radius:16px; box-shadow:0 6px 22px #294d6d0b; }
+
 #no-contest {
   text-align: center;
   font-size: 16px;

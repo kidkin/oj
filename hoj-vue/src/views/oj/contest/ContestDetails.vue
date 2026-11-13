@@ -2,7 +2,7 @@
   <div class="contest-body">
     <el-row>
       <el-col :xs="24" :md="24" :lg="24">
-        <el-card shadow>
+        <el-card class="page-panel" shadow="never">
           <div class="contest-title">
             <div slot="header">
               <span class="panel-title">{{ contest.title }}</span>
@@ -551,6 +551,8 @@ export default {
 };
 </script>
 <style scoped>
+.page-panel { border:1px solid #dce8f0; border-radius:16px; box-shadow:0 6px 22px #294d6d0b; }
+
 .panel-title {
   font-size: 1.5rem !important;
   font-weight: 500;

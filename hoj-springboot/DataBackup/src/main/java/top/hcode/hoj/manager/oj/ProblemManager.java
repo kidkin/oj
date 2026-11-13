@@ -97,8 +97,11 @@ public class ProblemManager {
         if (oj != null && !Constants.RemoteOJ.isRemoteOJ(oj)) {
             oj = "Mine";
         }
-        return problemEntityService.getProblemList(limit, currentPage, null, keyword,
-                difficulty, tagId, oj);
+        boolean metadata = top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata();
+        Page<ProblemVO> result = problemEntityService.getProblemList(limit, currentPage, null, keyword,
+                metadata ? difficulty : null, metadata ? tagId : null, oj);
+        top.hcode.hoj.utils.ProblemSourceVisibility.list(result.getRecords());
+        return result;
     }
 
     /**
@@ -321,7 +324,7 @@ public class ProblemManager {
                 .setSpjLanguage(null);
 
         // 将数据统一写入到一个Vo返回数据实体类中
-        return new ProblemInfoVO(top.hcode.hoj.utils.ProblemSourceVisibility.forViewer(problem), tags, languagesStr, problemCount, LangNameAndCode);
+        return top.hcode.hoj.utils.ProblemSourceVisibility.details(new ProblemInfoVO(problem, tags, languagesStr, problemCount, LangNameAndCode));
     }
 
     public LastAcceptedCodeVO getUserLastAcceptedCode(Long pid, Long cid) {

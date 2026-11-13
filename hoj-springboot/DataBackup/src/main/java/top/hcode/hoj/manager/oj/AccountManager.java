@@ -162,7 +162,7 @@ public class AccountManager {
             Map<Integer, List<UserHomeProblemVO>> map = problems.stream()
                     .map(this::convertProblemVO)
                     .collect(Collectors.groupingBy(UserHomeProblemVO::getDifficulty));
-            userHomeInfo.setSolvedGroupByDifficulty(map);
+            if (top.hcode.hoj.utils.ProblemSourceVisibility.canSeeMetadata()) userHomeInfo.setSolvedGroupByDifficulty(map);
             disPlayIdList = problems.stream().map(Problem::getProblemId).collect(Collectors.toList());
         }
         userHomeInfo.setSolvedList(disPlayIdList);

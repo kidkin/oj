@@ -172,7 +172,9 @@ public class TrainingManager {
         }
         trainingValidator.validateTrainingAuth(training);
 
-        return trainingProblemEntityService.getTrainingProblemList(tid);
+        List<ProblemVO> rows = trainingProblemEntityService.getTrainingProblemList(tid);
+        top.hcode.hoj.utils.ProblemSourceVisibility.list(rows);
+        return rows;
     }
 
     /**
@@ -472,6 +474,7 @@ public class TrainingManager {
                 problemVO.setScore(pair_.getValue());
             }
         }
+        problemList.forEach(problem -> problem.setTitle(top.hcode.hoj.utils.ProblemSourceVisibility.cleanTitle(problem.getTitle())));
         return problemList;
     }
 }

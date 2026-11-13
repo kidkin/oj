@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
+import top.hcode.hoj.utils.ProblemSourceVisibility;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 public class EduCourseService {
     private final JdbcTemplate db;
     private final EduClassService classes;
+    @org.springframework.beans.factory.annotation.Autowired private PracticeLevelService practiceLevels;
     private final CourseIconStore icons = new CourseIconStore();
     private Clock learningClock = Clock.system(ZoneId.of("Asia/Shanghai"));
     public EduCourseService(JdbcTemplate db, EduClassService classes) { this.db = db; this.classes = classes; }
@@ -80,6 +84,47 @@ public class EduCourseService {
         } else { where += "AND c.status=1 AND " + MEMBERSHIP; args.add(access.uid); }
         if (publishedOnly) where += " AND c.status=1 ";
         return paged(COLUMNS + where, "SELECT COUNT(*) FROM edu_course c " + where, args, page, limit, DISPLAY_ORDER, access);
+    }
+
+    public List<Map<String, Object>> courseStages() {
+        Access access = new Access();
+        String stage = "CASE WHEN c.id BETWEEN 1 AND 8 THEN 1 WHEN c.id BETWEEN 9 AND 16 THEN 2 " +
+                "WHEN c.id BETWEEN 17 AND 26 THEN 3 ELSE 4 END";
+        return db.queryForList("SELECT " + stage + " AS stage,COUNT(DISTINCT p.id) AS problemCount," +
+                "COUNT(DISTINCT ac.pid) AS completedCount FROM edu_course c " +
+                "LEFT JOIN edu_course_problem cp ON cp.course_id=c.id LEFT JOIN problem p ON p.id=cp.pid AND " + PUBLIC_PROBLEM +
+                " LEFT JOIN (SELECT DISTINCT pid FROM judge WHERE uid=? AND status=0 AND cid=0 AND gid IS NULL) ac ON ac.pid=p.id " +
+                "WHERE c.status=1 AND " + MEMBERSHIP + " GROUP BY " + stage, access.uid, access.uid);
+    }
+
+    /** The signed-in student's private, site-wide activity. */
+    public Map<String, Object> learningFootprint() {
+        Access access = new Access();
+        Map<String, Object> profile = practiceLevels.currentProfileAccess();
+        Map<String, Object> result = new LinkedHashMap<>();
+        boolean enabled = "formal".equals(profile.get("accountType")) && !"staff".equals(profile.get("key"));
+        result.put("enabled", enabled);
+        if (!enabled) return result;
+        LocalDate monday = LocalDate.now(learningClock.withZone(ZoneId.of("Asia/Shanghai")))
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        Timestamp weekStart = Timestamp.valueOf(monday.atStartOfDay());
+        Timestamp weekEnd = Timestamp.valueOf(monday.plusWeeks(1).atStartOfDay());
+        result.put("submissionCount", count("SELECT COUNT(*) FROM judge WHERE uid=?", access.uid));
+        result.put("weeklySubmissions", count("SELECT COUNT(*) FROM judge WHERE uid=? AND submit_time>=? AND submit_time<?",
+                access.uid, weekStart, weekEnd));
+        String accepted = " FROM judge j JOIN problem p ON p.id=j.pid WHERE j.uid=? AND j.status=0 " +
+                "AND NOT EXISTS (SELECT 1 FROM edu_growth_invalid_submission review WHERE review.submit_id=j.submit_id AND review.restored_at IS NULL)";
+        result.put("completedCount", count("SELECT COUNT(DISTINCT p.id)" + accepted, access.uid));
+        result.put("weeklyCompleted", count("SELECT COUNT(DISTINCT p.id)" + accepted + " AND j.submit_time>=? AND j.submit_time<?",
+                access.uid, weekStart, weekEnd));
+        result.put("difficultyCounts", db.queryForList("SELECT COALESCE(p.difficulty,0) AS difficulty," +
+                "COUNT(DISTINCT p.id) AS completed" + accepted + " GROUP BY COALESCE(p.difficulty,0) ORDER BY difficulty", access.uid));
+        Timestamp first = db.queryForObject("SELECT MIN(started_at) FROM (" +
+                "SELECT MIN(submit_time) AS started_at FROM judge WHERE uid=? UNION ALL " +
+                "SELECT first_submit_at AS started_at FROM edu_user_learning_start WHERE uid=?) history",
+                new Object[]{access.uid, access.uid}, Timestamp.class);
+        result.put("learningDays", elapsedLearningDays(first == null ? null : first.toLocalDateTime().toLocalDate(), learningClock));
+        return result;
     }
 
     /** Personal totals across enrolled courses; shared problems are counted once. */
@@ -151,7 +196,7 @@ public class EduCourseService {
         if (args.size() > 1) {
             for (Map<String, Object> item : db.queryForList("SELECT j.pid,j.status FROM judge j JOIN (SELECT MAX(submit_id) AS sid FROM judge WHERE uid=? AND cid=0 AND gid IS NULL AND pid IN (" + marks(args.size()-1) + ") GROUP BY pid) recent ON recent.sid=j.submit_id", args.toArray()))
                 latest.put(number(item, "pid"), item.get("status"));
-            for (Map<String, Object> tag : db.queryForList("SELECT pt.pid,t.id,t.name,t.color FROM problem_tag pt JOIN tag t ON t.id=pt.tid WHERE pt.pid IN (" + marks(args.size()-1) + ") ORDER BY t.id", args.subList(1,args.size()).toArray()))
+            if (access.teacher) for (Map<String, Object> tag : db.queryForList("SELECT pt.pid,t.id,t.name,t.color FROM problem_tag pt JOIN tag t ON t.id=pt.tid WHERE pt.pid IN (" + marks(args.size()-1) + ") ORDER BY t.id", args.subList(1,args.size()).toArray()))
                 tags.computeIfAbsent(number(tag,"pid"), ignored -> new ArrayList<>()).add(tag);
             for (Map<String, Object> item : db.queryForList("SELECT pid,COUNT(*) AS total,SUM(CASE WHEN status=0 THEN 1 ELSE 0 END) AS ac FROM judge WHERE cid=0 AND gid IS NULL AND status IN (-3,-2,-1,0,1,2,3,4,8) AND pid IN (" + marks(args.size()-1) + ") GROUP BY pid", args.subList(1,args.size()).toArray()))
                 statistics.put(number(item,"pid"),item);
@@ -161,7 +206,9 @@ public class EduCourseService {
             boolean ac = number(problem, "available") == 1 && completed.contains(number(problem, "pid"));
             problem.put("completed", ac); if (ac) completedCount++;
             problem.put("myStatus", ac ? 0 : latest.getOrDefault(number(problem, "pid"), -10));
-            problem.put("tags", tags.getOrDefault(number(problem, "pid"), Collections.emptyList()));
+            problem.put("title", ProblemSourceVisibility.cleanTitle((String) problem.get("title")));
+            if (access.teacher) problem.put("tags", tags.getOrDefault(number(problem, "pid"), Collections.emptyList()));
+            else problem.remove("difficulty");
             Map<String, Object> stats = statistics.get(number(problem,"pid"));
             problem.put("ac", stats == null ? 0L : stats.get("ac")); problem.put("total", stats == null ? 0L : stats.get("total"));
         }

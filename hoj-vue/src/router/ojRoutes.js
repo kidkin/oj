@@ -252,7 +252,7 @@ const ojRoutes = [
     path: '/rating-rank',
     name: 'RatingRank',
     component: RatingRank,
-    meta: { title: 'Rating' }
+    meta: { title: '成长排行榜' }
   },
   {
     path: '/acm-rank',

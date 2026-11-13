@@ -25,11 +25,19 @@ function paint (element) {
   if (!binding) return
   const record = state.records[binding.identity.key]
   const level = record && record.level
-  element.classList.add('practice-user')
-  if (binding.tier) element.classList.remove('practice-user--' + binding.tier)
-  binding.tier = level ? level.key : 'newbie'
-  element.classList.add('practice-user--' + binding.tier)
-  element.style.setProperty('--practice-user-color', level ? level.color : '#777777')
+  if (binding.badge && binding.badge.parentNode !== element) binding.badge = null
+  if (level && level.key !== 'staff') {
+    if (!binding.badge) {
+      binding.badge = document.createElement('span')
+      binding.badge.className = 'practice-user-badge'
+      element.appendChild(binding.badge)
+    }
+    binding.badge.style.setProperty('--practice-user-color', level.color)
+    binding.badge.textContent = level.title
+  } else if (binding.badge) {
+    binding.badge.remove()
+    binding.badge = null
+  }
   if (level) {
     element.setAttribute('data-practice-score', String(level.score))
     element.setAttribute('data-practice-level', level.key)
@@ -97,8 +105,7 @@ function unbind (element) {
   if (!old) return
   const nodes = elements.get(old.identity.key)
   if (nodes) { nodes.delete(element); if (!nodes.size) elements.delete(old.identity.key) }
-  element.classList.remove('practice-user', 'practice-user--' + old.tier)
-  element.style.removeProperty('--practice-user-color')
+  if (old.badge) old.badge.remove()
   element.removeAttribute('data-practice-score'); element.removeAttribute('data-practice-level')
   if (element.getAttribute('title') === old.autoTitle) {
     if (old.originalTitle === null) element.removeAttribute('title')
@@ -112,7 +119,7 @@ function update (element, value) {
   if (!identity) { unbind(element); return }
   if (old && old.identity.key !== identity.key) unbind(element)
   if (!bindings.has(element)) {
-    bindings.set(element, {identity, originalTitle: element.getAttribute('title'), tier: null, autoTitle: null})
+    bindings.set(element, {identity, originalTitle: element.getAttribute('title'), badge: null, autoTitle: null})
     if (!elements.has(identity.key)) elements.set(identity.key, new Set())
     elements.get(identity.key).add(element)
   }

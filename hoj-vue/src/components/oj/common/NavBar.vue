@@ -45,7 +45,7 @@
               ><i class="el-icon-s-marketing"></i
               >{{ $t('m.NavBar_Status') }}</el-menu-item
             >
-            <el-menu-item index="/rating-rank"><i class="el-icon-s-data"></i>Rating 榜</el-menu-item>
+            <el-menu-item index="/rating-rank"><i class="el-icon-s-data"></i>成长排行榜</el-menu-item>
             <el-submenu index="toolbox" popper-class="toolbox-menu">
               <template slot="title"><i class="el-icon-s-tools"></i>工具箱</template>
               <li v-for="tool in toolboxLinks" :key="tool.id" role="none" class="toolbox-item" :class="{'toolbox-download':tool.download}">
@@ -480,7 +480,7 @@
 
           <mu-list-item button :ripple="false" to="/rating-rank" @click="opendrawer = false" active-class="mobile-menu-active">
             <mu-list-item-action><mu-icon value=":el-icon-s-data" size="24"></mu-icon></mu-list-item-action>
-            <mu-list-item-title>Rating 榜</mu-list-item-title>
+            <mu-list-item-title>成长排行榜</mu-list-item-title>
           </mu-list-item>
 
           <mu-list-item button :ripple="false" nested :open="openSideMenu === 'toolbox'" @toggle-nested="openSideMenu = arguments[0] ? 'toolbox' : ''">
