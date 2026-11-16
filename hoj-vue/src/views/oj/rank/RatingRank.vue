@@ -4,7 +4,7 @@
       <div class="hero-copy">
         <p class="eyebrow"><i class="el-icon-trophy" aria-hidden="true" /> 学习成长</p>
         <h1 id="rating-title">成长排行榜</h1>
-        <p class="hero-description">正式和试用账号同榜排名。每道有效通过的题目取最高计分。</p>
+        <p class="hero-description">每道有效通过的题目取最高计分。</p>
       </div>
       <dl v-if="multipliers" class="hero-stats">
         <div><dt>正式账号</dt><dd>{{ formalCount }}</dd></div>
@@ -12,24 +12,17 @@
       </dl>
     </header>
 
-    <aside class="rating-account-note">
-      <span class="account-pill is-formal"><i class="el-icon-medal" aria-hidden="true" />正式账号</span>
-      <p>正式账号可累积成长分、获得专属等级，并在首页查看个人学习足迹。需要开通时，请联系老师。</p>
-    </aside>
-
     <section v-if="leaders.length && !submittedKeyword" aria-labelledby="podium-title" class="rating-podium">
       <h2 id="podium-title">榜单前三</h2>
       <div class="podium-grid" :class="'podium-size-' + leaders.length">
-        <article v-for="row in leaders" :key="row.uid" class="podium-card" :class="['place-' + row.rank, { 'official-podium': row.accountType === 'formal' }]">
+        <article v-for="row in leaders" :key="row.uid" class="podium-card" :class="'place-' + row.rank">
           <span class="podium-medal" :aria-label="'第 ' + row.rank + ' 名'">{{ row.rank }}</span>
           <div class="podium-person">
             <router-link :to="profile(row)" class="rating-name" :title="row.username">
               {{ row.username }}
             </router-link>
             <div class="rating-badges">
-              <span class="account-pill" :class="{ 'is-formal': row.accountType === 'formal' }">
-                <i v-if="row.accountType === 'formal'" class="el-icon-medal" aria-hidden="true" />{{ row.accountType === 'formal' ? '正式' : '试用' }}
-              </span>
+              <span v-if="row.accountType === 'trial'" class="account-pill">试用</span>
               <span v-if="row.accountType === 'formal'" class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
             </div>
           </div>
@@ -63,14 +56,12 @@
           <tr><th scope="col">排名</th><th scope="col">选手</th><th scope="col" class="solved-col">计分题数</th><th scope="col">榜单分</th></tr>
         </thead>
         <tbody>
-          <tr v-for="row in records" :key="row.uid" :class="{ 'official-row': row.accountType === 'formal' }">
+          <tr v-for="row in records" :key="row.uid">
             <td><span class="rank-number" :class="row.rank <= 3 ? 'rank-top rank-' + row.rank : ''">{{ row.rank }}</span></td>
             <td>
               <router-link :to="profile(row)" class="rating-name" :title="row.username">{{ row.username }}</router-link>
               <div class="rating-badges table-tier">
-                <span class="account-pill" :class="{ 'is-formal': row.accountType === 'formal' }">
-                  <i v-if="row.accountType === 'formal'" class="el-icon-medal" aria-hidden="true" />{{ row.accountType === 'formal' ? '正式' : '试用' }}
-                </span>
+                <span v-if="row.accountType === 'trial'" class="account-pill">试用</span>
                 <span v-if="row.accountType === 'formal'" class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
               </div>
               <span class="mobile-solved">{{ row.solvedCount }} 题</span>
@@ -178,16 +169,11 @@ export default {
 .hero-stats > div { padding: 10px 14px; border: 1px solid rgba(227, 240, 255, .2); border-radius: 12px; background: rgba(255,255,255,.08); }
 .hero-stats dt { font-size: 12px; color: #d1ddeb; white-space: nowrap; }
 .hero-stats dd { font-size: 24px; font-weight: 750; font-variant-numeric: tabular-nums; }
-.rating-account-note {
-  display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-top:14px; padding:11px 15px;
-  border:1px solid #efe0b5; border-radius:12px; background:#fffbef; color:#65460c; font-size:13px; line-height:1.55;
-}
 .rating-badges { display:inline-flex; flex-wrap:wrap; align-items:center; gap:5px; }
 .account-pill {
   display:inline-flex; align-items:center; gap:4px; padding:2px 7px; border-radius:999px;
   background:#eef1f5; color:#556478; font-size:12px; font-weight:650; white-space:nowrap;
 }
-.account-pill.is-formal { background:#ffedbd; color:#79470b; }
 .rating-podium { margin-top: 24px; }
 .rating-page h2 { font-size: 18px; font-weight: 750; }
 .podium-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 11px; align-items: end; }
@@ -200,7 +186,6 @@ export default {
 }
 .place-1 { --medal-ink: #875009; --medal-bg: #ffdf9b; border-color: #ebcb88; background: linear-gradient(138deg, #fff8e8, #fff); padding-top: 24px; padding-bottom: 24px; }
 .place-2 { background: linear-gradient(138deg, #f1f5fa, #fff); }
-.podium-card.official-podium { border-color:#e5ce8c; box-shadow:inset 0 2px #f5d78a; }
 .place-3 { --medal-ink: #8b4b29; --medal-bg: #ffe5d1; border-color: #ead9cf; background: linear-gradient(138deg, #fff4eb, #fff); }
 .podium-size-3 .podium-card { grid-row: 1; }
 .podium-size-3 .place-1 { grid-column: 2; }
@@ -231,9 +216,8 @@ export default {
 .rank-3 { background: #fff0e4; color: #8b4b29; }
 .score-cell { font-weight: 800; font-variant-numeric: tabular-nums; white-space:nowrap; }
 .score-cell small { display:block; font-size:11px; font-weight:500; color:#617084; }
-.official-row td:first-child { box-shadow:inset 3px 0 #e5c26a; }
 .table-tier { margin-left: 7px; vertical-align: middle; }
-.standings-table .rating-name { max-width: calc(100% - 122px); }
+.standings-table .rating-name { max-width: calc(100% - 65px); }
 .mobile-solved { display: none; }
 .rating-empty { padding: 34px 12px; text-align: center; color: #52647a; }
 .rating-empty button { margin-top: 8px; }
