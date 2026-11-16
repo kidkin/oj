@@ -21,7 +21,7 @@
             <router-link :to="profile(row)" class="rating-name" :title="row.username">
               {{ row.username }}
             </router-link>
-            <span v-if="row.schools && row.schools.length" class="rating-school" :title="row.schools.join(' · ')">{{ row.schools.join(' · ') }}</span>
+            <span v-if="row.school" class="rating-school" :title="row.school">{{ row.school }}</span>
             <div class="rating-badges">
               <span v-if="row.accountType === 'trial'" class="account-pill">试用</span>
               <span v-if="row.accountType === 'formal'" class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
@@ -65,7 +65,7 @@
                 <span v-if="row.accountType === 'trial'" class="account-pill">试用</span>
                 <span v-if="row.accountType === 'formal'" class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
               </div>
-              <span v-if="row.schools && row.schools.length" class="rating-school table-school" :title="row.schools.join(' · ')">{{ row.schools.join(' · ') }}</span>
+              <span v-if="row.school" class="rating-school table-school" :title="row.school">{{ row.school }}</span>
               <span class="mobile-solved">{{ row.solvedCount }} 题</span>
             </td>
             <td class="solved-col">{{ row.solvedCount }}</td>

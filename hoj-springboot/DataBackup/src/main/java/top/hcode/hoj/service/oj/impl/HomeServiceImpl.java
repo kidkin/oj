@@ -47,9 +47,9 @@ public class HomeServiceImpl implements HomeService {
     @Override
     public CommonResult<List<ACMRankVO>> getCurrentWeekACRank(boolean previous) {
         List<ACMRankVO> rows = homeManager.getWeeklyACRank(previous);
-        Map<String, List<String>> schools = RankingSchools.find(db,
+        Map<String, String> schools = RankingSchools.find(db,
                 rows.stream().map(ACMRankVO::getUid).collect(Collectors.toList()));
-        rows.forEach(row -> row.setSchools(schools.get(row.getUid())));
+        rows.forEach(row -> row.setSchool(schools.get(row.getUid())));
         return CommonResult.successResponse(rows);
     }
 

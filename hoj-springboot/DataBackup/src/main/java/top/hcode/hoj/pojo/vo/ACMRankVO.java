@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * @Author: Himit_ZH
@@ -49,5 +48,5 @@ public class ACMRankVO implements Serializable {
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @ApiModelProperty(value = "学校")
-    private List<String> schools;
+    private String school;
 }

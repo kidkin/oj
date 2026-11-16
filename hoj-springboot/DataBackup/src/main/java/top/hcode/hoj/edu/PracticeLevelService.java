@@ -194,7 +194,7 @@ public class PracticeLevelService {
         Set<String> uids = new LinkedHashSet<>();
         pageRows.forEach(row -> uids.add((String) row.get("uid")));
         leaders.forEach(row -> uids.add((String) row.get("uid")));
-        Map<String, List<String>> schools = RankingSchools.find(db, uids);
+        Map<String, String> schools = RankingSchools.find(db, uids);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("records", withSchools(pageRows, schools));
@@ -217,12 +217,12 @@ public class PracticeLevelService {
         return result;
     }
 
-    private List<Map<String, Object>> withSchools(List<Map<String, Object>> rows, Map<String, List<String>> schools) {
+    private List<Map<String, Object>> withSchools(List<Map<String, Object>> rows, Map<String, String> schools) {
         List<Map<String, Object>> result = new ArrayList<>(rows.size());
         for (Map<String, Object> row : rows) {
             Map<String, Object> entry = new LinkedHashMap<>(row);
-            List<String> names = schools.get(row.get("uid"));
-            if (names != null && !names.isEmpty()) entry.put("schools", names);
+            String school = schools.get(row.get("uid"));
+            if (school != null) entry.put("school", school);
             result.add(entry);
         }
         return result;

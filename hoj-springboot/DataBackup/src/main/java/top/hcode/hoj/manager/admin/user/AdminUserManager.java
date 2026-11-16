@@ -94,6 +94,11 @@ public class AdminUserManager {
         String username = adminEditUserDto.getUsername();
         String uid = adminEditUserDto.getUid();
         String realname = adminEditUserDto.getRealname();
+        boolean updateSchool = adminEditUserDto.getSchool() != null;
+        String school = StrUtil.trim(adminEditUserDto.getSchool());
+        if (StrUtil.isNotBlank(school) && school.length() > 100) {
+            throw new StatusFailException("学校名称不能超过100个字符");
+        }
         String email = adminEditUserDto.getEmail();
         String password = adminEditUserDto.getPassword();
         int type = adminEditUserDto.getType();
@@ -135,6 +140,7 @@ public class AdminUserManager {
         userInfoUpdateWrapper.eq("uuid", uid)
                 .set("username", username)
                 .set("realname", realname)
+                .set(updateSchool, "school", StrUtil.isBlank(school) ? null : school)
                 .set("email", email)
                 .set(setNewPwd, "password", SecureUtil.md5(password))
                 .set("title_name", titleName)

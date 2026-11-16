@@ -77,6 +77,7 @@
           min-width="140"
           show-overflow
         ><template v-slot="{row}"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.realname }}</span></template></vxe-table-column>
+        <vxe-table-column field="school" :title="$t('m.School')" min-width="128" show-overflow />
         <vxe-table-column
           field="email"
           :title="$t('m.Email')"
@@ -464,6 +465,9 @@
             </el-form-item>
           </el-col>
           <el-col :span="24">
+            <el-form-item :label="$t('m.School')" prop="school">
+              <el-input v-model.trim="selectUser.school" size="small" maxlength="100" clearable />
+            </el-form-item>
             <el-form-item :label="$t('m.Email')" prop="email">
               <el-input v-model="selectUser.email" size="small"></el-input>
             </el-form-item>
@@ -680,6 +684,7 @@ export default {
         uid: '',
         username: '',
         realname: '',
+        school: '',
         accountMode: 'auto',
         email: '',
         password: '',
@@ -840,6 +845,7 @@ export default {
       this.selectUser.uid = row.uid;
       this.selectUser.username = row.username;
       this.selectUser.realname = row.realname;
+      this.selectUser.school = row.school || '';
       this.selectUser.accountMode = row.accountMode || 'auto';
       this.selectUser.email = row.email;
       this.selectUser.setNewPwd = false;

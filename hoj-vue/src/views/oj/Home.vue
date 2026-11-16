@@ -36,7 +36,7 @@
                 <Avatar :username="row.username" :inline="true" :size="index < 3 ? 31 : 26" color="#fff" :src="row.avatar" />
                 <span class="rank-identity">
                   <span class="rank-name" :title="row.username"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></span>
-                  <span v-if="row.schools && row.schools.length" class="rank-school" :title="row.schools.join(' · ')">{{ row.schools.join(' · ') }}</span>
+                  <span v-if="row.school" class="rank-school" :title="row.school">{{ row.school }}</span>
                 </span>
                 <span class="rank-score">{{ row.ac }}<small>题</small></span>
               </router-link>
