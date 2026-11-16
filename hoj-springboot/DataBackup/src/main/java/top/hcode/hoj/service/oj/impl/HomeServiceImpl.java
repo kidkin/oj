@@ -1,10 +1,8 @@
 package top.hcode.hoj.service.oj.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import top.hcode.hoj.common.result.CommonResult;
-import top.hcode.hoj.edu.RankingSchools;
 import top.hcode.hoj.manager.oj.HomeManager;
 import top.hcode.hoj.pojo.vo.*;
 import top.hcode.hoj.service.oj.HomeService;
@@ -13,7 +11,6 @@ import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @Author: Himit_ZH
@@ -25,9 +22,6 @@ public class HomeServiceImpl implements HomeService {
 
     @Resource
     private HomeManager homeManager;
-
-    @Resource
-    private JdbcTemplate db;
 
     @Override
     public CommonResult<List<ContestVO>> getRecentContest() {
@@ -46,11 +40,7 @@ public class HomeServiceImpl implements HomeService {
 
     @Override
     public CommonResult<List<ACMRankVO>> getCurrentWeekACRank(boolean previous) {
-        List<ACMRankVO> rows = homeManager.getWeeklyACRank(previous);
-        Map<String, String> schools = RankingSchools.find(db,
-                rows.stream().map(ACMRankVO::getUid).collect(Collectors.toList()));
-        rows.forEach(row -> row.setSchool(schools.get(row.getUid())));
-        return CommonResult.successResponse(rows);
+        return CommonResult.successResponse(homeManager.getWeeklyACRank(previous));
     }
 
     @Override

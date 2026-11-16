@@ -34,10 +34,7 @@
                 </span>
                 <span v-else class="rank-number">{{ String(index+1).padStart(2,'0') }}</span>
                 <Avatar :username="row.username" :inline="true" :size="index < 3 ? 31 : 26" color="#fff" :src="row.avatar" />
-                <span class="rank-identity">
-                  <span class="rank-name" :title="row.username"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></span>
-                  <span v-if="row.school" class="rank-school" :title="row.school">{{ row.school }}</span>
-                </span>
+                <span class="rank-name" :title="row.username"><span v-user-level="{uid: row.uid, username: row.username}">{{ row.username }}</span></span>
                 <span class="rank-score">{{ row.ac }}<small>题</small></span>
               </router-link>
             </li>
@@ -185,9 +182,7 @@ export default {
 .live-label { display:inline-flex; align-items:center; gap:5px; font-size:11px; white-space:nowrap; color:#5a9183; }.live-label>span { width:5px; height:5px; border-radius:50%; background:currentColor; }.live-label>span { box-shadow:0 0 0 3px #57b59a12; }
 .rank-caption { display:flex; justify-content:space-between; padding:11px 23px 8px; color:#8a9aaa; font-size:11px; }.rank-list { padding:0 12px 12px; margin:0; list-style:none; }.rank-row { margin:2px 0; border-radius:9px; }
 .rank-link { display:flex; align-items:center; gap:10px; padding:5px 10px; min-height:35px; color:#596d83; border-radius:9px; transition:background .2s,transform .2s; }.rank-link:hover { background:#f0f6fc; transform:translateX(2px); }.rank-link:focus-visible { outline:2px solid #368bd4; outline-offset:-2px; }
-.rank-number { width:32px; text-align:center; font-size:12px; color:#9aabba; font-variant-numeric:tabular-nums; }.rank-identity { display:flex; flex:1; min-width:0; flex-direction:column; gap:2px; }
-.rank-name,.rank-school { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.rank-name { font-size:13px; }.rank-school { font-size:11px; color:#63798e; }.rank-score { margin-left:auto; font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }.rank-score small { font-size:10px; font-weight:400; padding-left:4px; opacity:.65; }
+.rank-number { width:32px; text-align:center; font-size:12px; color:#9aabba; font-variant-numeric:tabular-nums; }.rank-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }.rank-score { margin-left:auto; font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }.rank-score small { font-size:10px; font-weight:400; padding-left:4px; opacity:.65; }
 .place-1 { --medal:#e2aa31; --ribbon:#e0ad48; --name:#a36b0b; background:linear-gradient(100deg,#fff6dd,#fffdf6); }.place-2 { --medal:#8ca7bf; --ribbon:#8eabc5; --name:#55758f; background:linear-gradient(100deg,#eef4fb,#fafcfe); }.place-3 { --medal:#cf8b5d; --ribbon:#ce986a; --name:#a06237; background:linear-gradient(100deg,#fdf0e7,#fffaf6); }
 .place-1 .rank-link,.place-2 .rank-link,.place-3 .rank-link { min-height:43px; }.place-1 .rank-score,.place-2 .rank-score,.place-3 .rank-score { color:var(--name); }
 .medal { position:relative; display:inline-block; width:32px; height:36px; flex-shrink:0; filter:drop-shadow(0 2px 2px #b47b2518); }.medal svg { width:32px; height:36px; }.medal-ribbon { fill:var(--ribbon); opacity:.5; }.medal-shield { fill:var(--medal); stroke:#fff; stroke-width:1.2; }.medal-star { fill:#fff; opacity:.3; }.medal>span { position:absolute; inset:11px 0 0; color:#fff; text-align:center; font-weight:800; font-size:13px; line-height:20px; }.place-1 .medal { animation:champion-glow 4s ease-in-out infinite; }

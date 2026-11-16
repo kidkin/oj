@@ -43,6 +43,11 @@
             GROUP BY j.uid
         ) r ON r.uid=u.uuid
         WHERE u.status=0
+          AND NOT EXISTS (
+              SELECT 1 FROM user_role ur JOIN role staff ON staff.id=ur.role_id
+              WHERE ur.uid=u.uuid AND staff.status=0
+                AND staff.role IN ('root','admin','problem_admin','teacher')
+          )
         ORDER BY r.ac DESC,u.uuid ASC
         LIMIT 10
     </select>
