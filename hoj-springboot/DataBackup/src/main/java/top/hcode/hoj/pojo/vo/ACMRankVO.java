@@ -1,10 +1,12 @@
 package top.hcode.hoj.pojo.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * @Author: Himit_ZH
@@ -44,4 +46,8 @@ public class ACMRankVO implements Serializable {
 
     @ApiModelProperty(value = "cf得分")
     private Integer rating;
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @ApiModelProperty(value = "学校")
+    private List<String> schools;
 }

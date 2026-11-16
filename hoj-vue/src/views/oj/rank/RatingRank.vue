@@ -21,6 +21,7 @@
             <router-link :to="profile(row)" class="rating-name" :title="row.username">
               {{ row.username }}
             </router-link>
+            <span v-if="row.schools && row.schools.length" class="rating-school" :title="row.schools.join(' · ')">{{ row.schools.join(' · ') }}</span>
             <div class="rating-badges">
               <span v-if="row.accountType === 'trial'" class="account-pill">试用</span>
               <span v-if="row.accountType === 'formal'" class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
@@ -64,6 +65,7 @@
                 <span v-if="row.accountType === 'trial'" class="account-pill">试用</span>
                 <span v-if="row.accountType === 'formal'" class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
               </div>
+              <span v-if="row.schools && row.schools.length" class="rating-school table-school" :title="row.schools.join(' · ')">{{ row.schools.join(' · ') }}</span>
               <span class="mobile-solved">{{ row.solvedCount }} 题</span>
             </td>
             <td class="solved-col">{{ row.solvedCount }}</td>
@@ -195,6 +197,8 @@ export default {
 .podium-person { min-width: 0; display: flex; align-items: flex-start; flex-direction: column; gap: 5px; }
 .rating-name { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 750; vertical-align: middle; }
 .rating-name:hover, .rating-name:focus-visible { text-decoration: underline; }
+.rating-school { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#63798e; font-size:12px; }
+.table-school { margin-top:4px; }
 .tier-pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid #e3e9ef; border-radius: 999px; background: #fff; color: var(--tier-color); font-size: 12px; white-space: nowrap; }
 .tier-pill i, .rule-list i { width: 7px; height: 7px; border-radius: 50%; background: var(--tier-color); }
 .podium-score { display: grid; justify-items: end; white-space: nowrap; }

@@ -189,12 +189,19 @@ public class PracticeLevelService {
         }
         int limit = Math.max(1, Math.min(100, requestedLimit));
         int offset = (int) Math.min(matches.size(), (Math.max(1L, page) - 1) * limit);
+        List<Map<String, Object>> pageRows = matches.subList(offset, Math.min(matches.size(), offset + limit));
+        List<Map<String, Object>> leaders = current.ranked.subList(0, Math.min(3, current.ranked.size()));
+        Set<String> uids = new LinkedHashSet<>();
+        pageRows.forEach(row -> uids.add((String) row.get("uid")));
+        leaders.forEach(row -> uids.add((String) row.get("uid")));
+        Map<String, List<String>> schools = RankingSchools.find(db, uids);
+
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("records", matches.subList(offset, Math.min(matches.size(), offset + limit)));
+        result.put("records", withSchools(pageRows, schools));
         result.put("total", matches.size());
         result.put("formalCount", current.formalCount);
         result.put("rankedCount", current.ranked.size());
-        result.put("leaders", current.ranked.subList(0, Math.min(3, current.ranked.size())));
+        result.put("leaders", withSchools(leaders, schools));
         List<Map<String, Object>> tiers = rules();
         for (int i = 0; i < tiers.size(); i++) {
             if (TOP_PERCENT[i] > 0) tiers.get(i).put("seats", seats(current.formalCount, TOP_PERCENT[i]));
@@ -207,6 +214,17 @@ public class PracticeLevelService {
         multipliers.put("weekly", WEEKLY / 2.0);
         multipliers.put("contest", CONTEST / 2.0);
         result.put("multipliers", multipliers);
+        return result;
+    }
+
+    private List<Map<String, Object>> withSchools(List<Map<String, Object>> rows, Map<String, List<String>> schools) {
+        List<Map<String, Object>> result = new ArrayList<>(rows.size());
+        for (Map<String, Object> row : rows) {
+            Map<String, Object> entry = new LinkedHashMap<>(row);
+            List<String> names = schools.get(row.get("uid"));
+            if (names != null && !names.isEmpty()) entry.put("schools", names);
+            result.add(entry);
+        }
         return result;
     }
 
