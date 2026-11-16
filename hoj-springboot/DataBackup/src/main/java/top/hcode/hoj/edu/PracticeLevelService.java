@@ -2,6 +2,7 @@ package top.hcode.hoj.edu;
 
 import org.apache.shiro.SecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 import top.hcode.hoj.common.exception.StatusFailException;
@@ -11,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /** Shared growth score and color for the leaderboard, profiles and usernames. */
 @Service
@@ -26,7 +26,7 @@ public class PracticeLevelService {
     private static final int[] BASE_POINTS = {1, 2, 3, 5, 8, 13, 21, 34};
     // Scores are stored in half-point units during calculation, so ties compare exactly.
     private static final int NORMAL = 2, WEEKLY = 4, CONTEST = 3, COURSE = 3;
-    private static final long REFRESH_NANOS = TimeUnit.SECONDS.toNanos(20);
+    private static final long REFRESH_MILLIS = 60 * 60 * 1000L;
     private static final String STAFF =
             "EXISTS (SELECT 1 FROM user_role ur JOIN role r ON r.id=ur.role_id " +
             "WHERE ur.uid=u.uuid AND r.status=0 AND r.role IN ('root','admin','problem_admin','teacher'))";
@@ -114,7 +114,6 @@ public class PracticeLevelService {
     }
 
     private static final class Snapshot {
-        final long createdAt = System.nanoTime();
         final int formalCount;
         final List<Map<String, Object>> ranked = new ArrayList<>();
         final Map<String, Map<String, Object>> byUid = new HashMap<>();
@@ -149,16 +148,21 @@ public class PracticeLevelService {
 
     private synchronized Snapshot refresh() {
         Snapshot current = cached;
-        if (current == null || System.nanoTime() - current.createdAt >= REFRESH_NANOS) {
+        if (current == null) {
             current = new Snapshot(db.queryForList(RATING_QUERY));
             cached = current;
         }
         return current;
     }
 
+    @Scheduled(fixedRate = REFRESH_MILLIS)
+    public synchronized void refreshRankingInBackground() {
+        cached = new Snapshot(db.queryForList(RATING_QUERY));
+    }
+
     private Snapshot snapshot() {
         Snapshot current = cached;
-        return current != null && System.nanoTime() - current.createdAt < REFRESH_NANOS ? current : refresh();
+        return current != null ? current : refresh();
     }
 
     synchronized void invalidateRating() {

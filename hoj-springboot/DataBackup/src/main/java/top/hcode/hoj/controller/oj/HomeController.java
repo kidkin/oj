@@ -70,8 +70,9 @@ public class HomeController {
     }
 
     @GetMapping("/get-current-week-ac-rank")
-    public CommonResult<List<ACMRankVO>> getCurrentWeekACRank() {
-        return homeService.getCurrentWeekACRank();
+    public CommonResult<List<ACMRankVO>> getCurrentWeekACRank(
+            @RequestParam(defaultValue = "false") boolean previous) {
+        return homeService.getCurrentWeekACRank(previous);
     }
 
 

@@ -77,8 +77,13 @@ public class HomeManager {
     private Clock weeklyRankClock = Clock.system(RANK_ZONE);
 
     public List<ACMRankVO> getCurrentWeekACRank() {
+        return getWeeklyACRank(false);
+    }
+
+    public List<ACMRankVO> getWeeklyACRank(boolean previous) {
         LocalDate monday = LocalDate.now(weeklyRankClock.withZone(RANK_ZONE))
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        if (previous) monday = monday.minusWeeks(1);
         return userRecordEntityService.getCurrentWeekACRank(
                 Date.from(monday.atStartOfDay(RANK_ZONE).toInstant()),
                 Date.from(monday.plusWeeks(1).atStartOfDay(RANK_ZONE).toInstant()));

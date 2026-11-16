@@ -21,10 +21,10 @@
         :class="{ 'home-side-column--wide': !hasMainPanel }">
         <section class="weekly-rank" aria-labelledby="weekly-rank-title" v-loading="rankLoading && !rankLoaded">
           <header class="section-heading rank-heading">
-            <div class="heading-title"><span class="heading-emblem"><i class="el-icon-trophy" /></span><h2 id="weekly-rank-title">本周排行榜</h2></div>
-            <span class="live-label" title="北京时间每周一零点开始统计，每分钟自动更新"><span />实时更新</span>
+            <div class="heading-title"><span class="heading-emblem"><i class="el-icon-trophy" /></span><h2 id="weekly-rank-title">{{ previousRank ? '上周排行榜' : '本周排行榜' }}</h2></div>
+            <span class="live-label" title="北京时间每周一零点开始统计，每小时更新"><span />每小时更新</span>
           </header>
-          <div class="rank-caption"><span>每一份努力，都值得闪耀</span><span>过题数</span></div>
+          <div class="rank-caption"><span>{{ previousRank ? '本周暂无通过记录' : '本周通过的不同题目' }}</span><span>过题数</span></div>
           <el-alert v-if="rankError" class="home-alert" title="榜单更新失败，稍后自动重试" type="warning" :closable="false" show-icon />
           <ol v-if="weeklyRank.length" class="rank-list">
             <li v-for="(row,index) in weeklyRank" :key="row.uid" class="rank-row" :class="'place-' + (index + 1)">
@@ -63,7 +63,7 @@ import { CONTEST_STATUS } from '@/common/constants'
 import defaultCarouselImage from '@/assets/home1.jpeg'
 export default {
   name: 'home', components: { Avatar, ContestCard, LearningSummary },
-  data: () => ({ footprint: null, defaultCarouselImage, carouselImages: [{url: defaultCarouselImage}], carouselRequested: false, weeklyRank: [], recentContests: [], rankLoading: false, rankLoaded: false, rankError: false, contestLoading: false, contestLoaded: false, contestError: false, refreshTimer: null, refreshActive: false }),
+  data: () => ({ footprint: null, defaultCarouselImage, carouselImages: [{url: defaultCarouselImage}], carouselRequested: false, weeklyRank: [], previousRank: false, rankFetchedAt: 0, recentContests: [], rankLoading: false, rankLoaded: false, rankError: false, contestLoading: false, contestLoaded: false, contestError: false, refreshTimer: null, refreshActive: false }),
   computed: {
     token () { return this.$store.getters.token },
     isStaff () {
@@ -116,8 +116,19 @@ export default {
       finally { this.refreshActive = false }
     },
     async getWeeklyRank () {
+      if (Date.now() - this.rankFetchedAt < 60 * 60 * 1000) return
       this.rankLoading = true
-      try { const res = await api.getCurrentWeekACRank(); if (!Array.isArray(res.data.data)) throw new Error('Invalid ranking'); this.weeklyRank = res.data.data.slice(0, 10); this.rankError = false }
+      try {
+        const current = await api.getCurrentWeekACRank()
+        if (!Array.isArray(current.data.data)) throw new Error('Invalid ranking')
+        const previous = current.data.data.length === 0 ? await api.getCurrentWeekACRank(true) : null
+        const rows = previous ? previous.data.data : current.data.data
+        if (!Array.isArray(rows)) throw new Error('Invalid ranking')
+        this.weeklyRank = rows.slice(0, 10)
+        this.previousRank = Boolean(previous && rows.length)
+        this.rankFetchedAt = Date.now()
+        this.rankError = false
+      }
       catch (_) { this.rankError = true }
       finally { this.rankLoading = false; this.rankLoaded = true }
     },

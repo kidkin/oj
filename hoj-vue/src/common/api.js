@@ -198,8 +198,8 @@ const ojApi = {
     return ajax('/api/get-recent-seven-ac-rank', 'get', {
     })
   },
-  getCurrentWeekACRank() {
-    return ajax('/api/get-current-week-ac-rank', 'get', {})
+  getCurrentWeekACRank(previous = false) {
+    return ajax('/api/get-current-week-ac-rank', 'get', { params: { previous } })
   },
   getLastWeekSubmissionStatistics(forceRefresh){
     let params = {

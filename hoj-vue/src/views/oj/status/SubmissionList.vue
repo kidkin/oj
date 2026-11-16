@@ -673,11 +673,13 @@ export default {
           let data = res.data.data;
           let index = 0;
           for (let v of data.records) {
-            if (
+            const submittedAt = new Date(v.submitTime).getTime();
+            const recent = Number.isFinite(submittedAt) && Date.now() - submittedAt <= 10 * 60 * 1000;
+            if (recent && (
               v.status == JUDGE_STATUS_RESERVE["Pending"] ||
               v.status == JUDGE_STATUS_RESERVE["Compiling"] ||
               v.status == JUDGE_STATUS_RESERVE["Judging"]
-            ) {
+            )) {
               this.needCheckSubmitIds[v.submitId] = index;
             }
             v.loading = false;

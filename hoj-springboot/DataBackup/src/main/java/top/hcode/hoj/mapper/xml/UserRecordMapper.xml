@@ -31,10 +31,16 @@
         SELECT u.uuid AS uid,u.nickname,u.username,u.avatar,u.title_name,u.title_color,r.ac
         FROM user_info u
         JOIN (
-            SELECT uid,COUNT(DISTINCT pid) AS ac
-            FROM user_acproblem
-            WHERE gmt_create &gt;= #{weekStart} AND gmt_create &lt; #{weekEnd}
-            GROUP BY uid
+            SELECT j.uid,COUNT(DISTINCT j.pid) AS ac
+            FROM judge j
+            JOIN problem p ON p.id=j.pid AND p.auth=1 AND p.gid IS NULL AND COALESCE(p.is_group,0)=0
+            WHERE j.status=0 AND j.cid=0 AND j.cpid=0 AND j.gid IS NULL
+              AND j.submit_time &gt;= #{weekStart} AND j.submit_time &lt; #{weekEnd}
+              AND NOT EXISTS (
+                  SELECT 1 FROM edu_growth_invalid_submission flag
+                  WHERE flag.submit_id=j.submit_id AND flag.restored_at IS NULL
+              )
+            GROUP BY j.uid
         ) r ON r.uid=u.uuid
         WHERE u.status=0
         ORDER BY r.ac DESC,u.uuid ASC
