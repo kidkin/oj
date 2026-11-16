@@ -1,11 +1,24 @@
 <template>
   <div class="home-page">
     <el-row :gutter="24">
-      <el-col v-if="hasFootprint" :md="15" :sm="24" :xs="24" class="home-learning-column">
-        <LearningSummary :key="token" :summary="footprint" />
+      <el-col v-if="hasMainPanel" :md="15" :sm="24" :xs="24" class="home-learning-column">
+        <LearningSummary v-if="hasFootprint" :key="footprintToken" :summary="footprint" />
+        <section v-else class="home-carousel-card" aria-label="首页轮播图">
+          <el-carousel :interval="5000" height="clamp(220px, 34vw, 480px)"
+            :arrow="carouselImages.length > 1 ? 'hover' : 'never'"
+            :indicator-position="carouselImages.length > 1 ? 'outside' : 'none'">
+            <el-carousel-item v-for="(image, index) in carouselImages" :key="image.id || image.url"
+              :label="String(index + 1)">
+              <el-image :src="image.url" fit="contain" class="home-carousel-image"
+                :alt="image.title || '首页轮播图 ' + (index + 1)">
+                <img slot="error" :src="defaultCarouselImage" class="home-carousel-fallback" alt="首页轮播图" />
+              </el-image>
+            </el-carousel-item>
+          </el-carousel>
+        </section>
       </el-col>
-      <el-col :md="hasFootprint ? 9 : 24" :sm="24" :xs="24" class="home-side-column"
-        :class="{ 'home-side-column--wide': !hasFootprint }">
+      <el-col :md="hasMainPanel ? 9 : 24" :sm="24" :xs="24" class="home-side-column"
+        :class="{ 'home-side-column--wide': !hasMainPanel }">
         <section class="weekly-rank" aria-labelledby="weekly-rank-title" v-loading="rankLoading && !rankLoaded">
           <header class="section-heading rank-heading">
             <div class="heading-title"><span class="heading-emblem"><i class="el-icon-trophy" /></span><h2 id="weekly-rank-title">本周排行榜</h2></div>
@@ -47,14 +60,25 @@ import edu from '@/common/edu-api'
 import LearningSummary from './edu/LearningSummary.vue'
 import ContestCard from './contest/ContestCard.vue'
 import { CONTEST_STATUS } from '@/common/constants'
+import defaultCarouselImage from '@/assets/home1.jpeg'
 export default {
   name: 'home', components: { Avatar, ContestCard, LearningSummary },
-  data: () => ({ footprint: null, weeklyRank: [], recentContests: [], rankLoading: false, rankLoaded: false, rankError: false, contestLoading: false, contestLoaded: false, contestError: false, refreshTimer: null, refreshActive: false }),
+  data: () => ({ footprint: null, defaultCarouselImage, carouselImages: [{url: defaultCarouselImage}], carouselRequested: false, weeklyRank: [], recentContests: [], rankLoading: false, rankLoaded: false, rankError: false, contestLoading: false, contestLoaded: false, contestError: false, refreshTimer: null, refreshActive: false }),
   computed: {
     token () { return this.$store.getters.token },
-    hasFootprint () { return Boolean(this.footprint && this.footprint.enabled) }
+    isStaff () {
+      const roles = this.$store.getters.userInfo.roleList || []
+      return this.$store.getters.isAdminRole || roles.includes('teacher')
+    },
+    showCarousel () { return !this.token || this.isStaff },
+    footprintToken () { return this.showCarousel ? '' : this.token },
+    hasFootprint () { return Boolean(this.footprintToken && this.footprint && this.footprint.enabled) },
+    hasMainPanel () { return this.showCarousel || this.hasFootprint }
   },
-  watch: {token: {immediate: true, handler: 'loadFootprint'}},
+  watch: {
+    footprintToken: {immediate: true, handler: 'loadFootprint'},
+    showCarousel: {immediate: true, handler: 'loadCarousel'}
+  },
   mounted () {
     this.refreshHome()
     this.refreshTimer = window.setInterval(this.refreshHome, 60000)
@@ -72,8 +96,17 @@ export default {
       if (!token) return
       try {
         const result = await edu.learningFootprint()
-        if (token === this.token) this.footprint = result
+        if (token === this.footprintToken) this.footprint = result
       } catch (_) {}
+    },
+    async loadCarousel (visible) {
+      if (!visible || this.carouselRequested) return
+      this.carouselRequested = true
+      try {
+        const { data } = await api.getHomeCarousel()
+        const images = Array.isArray(data.data) ? data.data.filter(image => image && image.url) : []
+        if (images.length) this.carouselImages = images
+      } catch (_) { this.carouselRequested = false }
     },
     onVisibilityChange () { if (!document.hidden) this.refreshHome() },
     async refreshHome () {
@@ -116,6 +149,9 @@ export default {
 </script>
 <style scoped>
 .home-page { width:100%; }
+.home-carousel-card { padding:12px; border:1px solid #e5edf4; border-radius:16px; background:#fff; overflow:hidden; }
+.home-carousel-image,.home-carousel-fallback { width:100%; height:100%; display:block; }
+.home-carousel-fallback { object-fit:contain; }
 .home-side-column { display:grid; gap:18px; }
 .home-learning-column /deep/ .learning-summary { margin-bottom:0; }
 @media(min-width:992px) {

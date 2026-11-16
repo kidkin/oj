@@ -85,6 +85,30 @@ class PracticeLevelServiceTest {
         assertEquals(600.0, service.adminUsers(Collections.singletonList("staff")).get(0).get("score"));
     }
 
+    @Test void trialScoresAffectOverallStandingsButNotFormalTiersOrWallet() {
+        JdbcTemplate db = mock(JdbcTemplate.class);
+        Map<String, Object> trial = user("trial", "Trial", "trial", 35);
+        trial.put("scoreUnits", 2200L);
+        Map<String, Object> formal = user("formal", "Formal", "formal", 30);
+        formal.put("scoreUnits", 1800L);
+        when(db.queryForList(anyString())).thenReturn(Arrays.asList(trial, formal));
+        PracticeLevelService service = new PracticeLevelService(db);
+
+        Map<String, Object> board = service.rating(1, 3, "");
+        List<?> records = (List<?>) board.get("records");
+        Map<?, ?> first = (Map<?, ?>) records.get(0);
+        Map<?, ?> second = (Map<?, ?>) records.get(1);
+        assertEquals(1, board.get("formalCount"));
+        assertEquals(2, board.get("rankedCount"));
+        assertEquals("trial", first.get("accountType"));
+        assertEquals(1100.0, first.get("rankingScore"));
+        assertEquals(0.0, first.get("score"));
+        assertEquals(0, service.currentEarnedUnits("trial"));
+        assertEquals(2, second.get("rank"));
+        assertEquals("legend", second.get("key"));
+        assertEquals(1800, service.currentEarnedUnits("formal"));
+    }
+
     @Test void trialAccountsKeepSolvedHistoryButHaveZeroGrowthAndLockedSettings() {
         JdbcTemplate db = mock(JdbcTemplate.class);
         Map<String, Object> trial = user("trial", "Trial", "trial", 61);

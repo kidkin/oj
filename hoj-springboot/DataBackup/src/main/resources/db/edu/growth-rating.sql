@@ -1,8 +1,8 @@
-WITH formal_accounts AS (
-    SELECT u.uuid AS uid, u.username, /*staff*/ AS staff
+WITH accounts AS (
+    SELECT u.uuid AS uid, u.username, /*account_type*/ AS accountType, /*staff*/ AS staff
     FROM user_info u
     LEFT JOIN edu_growth_account o ON o.uid = u.uuid
-    WHERE u.status = 0 AND /*account_type*/ = 'formal'
+    WHERE u.status = 0
 ), weekly_problems AS (
     SELECT tp.pid, MIN(COALESCE(w.published_at, t.gmt_create)) AS published_at
     FROM training_problem tp
@@ -14,7 +14,7 @@ WITH formal_accounts AS (
 ), assigned_problems AS (
     SELECT DISTINCT m.uid, cp.pid
     FROM edu_class_member m
-    JOIN formal_accounts f ON f.uid = m.uid
+    JOIN accounts f ON f.uid = m.uid
     JOIN edu_class c ON c.id = m.class_id AND c.status = 0
     JOIN edu_class_course cc ON cc.class_id = m.class_id
     JOIN edu_course course ON course.id = cc.course_id AND course.status = 1
@@ -28,7 +28,7 @@ WITH formal_accounts AS (
         CASE WHEN j.submit_time >= c.start_time AND j.submit_time < c.end_time THEN /*contest*/ ELSE /*normal*/ END
     )) AS multiplier
     FROM judge j
-    JOIN formal_accounts f ON f.uid = j.uid
+    JOIN accounts f ON f.uid = j.uid AND (f.staff = 0 OR f.accountType = 'formal')
     JOIN problem p ON p.id = j.pid
     LEFT JOIN assigned_problems a ON a.uid = j.uid AND a.pid = j.pid
     LEFT JOIN weekly_problems w ON w.pid = j.pid
@@ -50,7 +50,7 @@ WITH formal_accounts AS (
     FROM accepted_problems
     GROUP BY uid
 )
-SELECT f.uid, f.username, f.staff, COALESCE(s.solved_count, 0) AS solvedCount, COALESCE(s.score_units, 0) AS scoreUnits
-FROM formal_accounts f
+SELECT f.uid, f.username, f.accountType, f.staff, COALESCE(s.solved_count, 0) AS solvedCount, COALESCE(s.score_units, 0) AS scoreUnits
+FROM accounts f
 LEFT JOIN scores s ON s.uid = f.uid
 ORDER BY scoreUnits DESC, solvedCount DESC, f.uid

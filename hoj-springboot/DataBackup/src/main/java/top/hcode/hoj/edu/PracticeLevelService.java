@@ -109,6 +109,10 @@ public class PracticeLevelService {
         return Boolean.TRUE.equals(value) || (value instanceof Number && ((Number) value).intValue() != 0);
     }
 
+    private static boolean formal(Map<String, Object> row) {
+        return "formal".equals(row.get("accountType"));
+    }
+
     private static final class Snapshot {
         final long createdAt = System.nanoTime();
         final int formalCount;
@@ -116,16 +120,29 @@ public class PracticeLevelService {
         final Map<String, Map<String, Object>> byUid = new HashMap<>();
 
         Snapshot(List<Map<String, Object>> rows) {
-            formalCount = (int) rows.stream().filter(row -> !staff(row)).count();
+            formalCount = (int) rows.stream().filter(row -> formal(row) && !staff(row)).count();
+            int formalRank = 0;
             for (Map<String, Object> row : rows) {
                 long units = number(row, "scoreUnits");
+                boolean formal = formal(row);
                 boolean rankedAccount = units > 0 && !staff(row);
-                Map<String, Object> record = level(units, rankedAccount ? ranked.size() + 1 : 0, formalCount);
+                int tierRank = formal && rankedAccount ? ++formalRank : 0;
+                Map<String, Object> record = level(formal ? units : 0, tierRank, formalCount);
                 record.put("uid", row.get("uid"));
                 record.put("username", row.get("username"));
                 record.put("solvedCount", number(row, "solvedCount"));
-                byUid.put((String) row.get("uid"), record);
-                if (rankedAccount) ranked.add(record);
+                if (formal) byUid.put((String) row.get("uid"), record);
+                if (rankedAccount) {
+                    Map<String, Object> standing = new LinkedHashMap<>(record);
+                    standing.put("rank", ranked.size() + 1);
+                    standing.put("accountType", row.get("accountType"));
+                    standing.put("rankingScore", units / 2.0);
+                    if (!formal) {
+                        standing.put("key", "trial");
+                        standing.put("title", "试用");
+                    }
+                    ranked.add(standing);
+                }
             }
         }
     }
@@ -150,7 +167,7 @@ public class PracticeLevelService {
 
     long currentEarnedUnits(String uid) {
         for (Map<String, Object> row : db.queryForList(RATING_QUERY)) {
-            if (uid.equals(row.get("uid"))) return number(row, "scoreUnits");
+            if (uid.equals(row.get("uid")) && formal(row)) return number(row, "scoreUnits");
         }
         return 0;
     }
