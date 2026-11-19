@@ -14,7 +14,7 @@ public class ClassSimilarity {
     public ClassSimilarity(JdbcTemplate db,ContentReview access){ this.db=db; this.access=access; }
     private static String language(String family){
         switch (family) {
-            case "cpp": return "(LOWER(j.language) LIKE '%c++%' OR LOWER(j.language) IN ('c','c99','c11','c17','c89'))";
+            case "cpp": return "(LOWER(j.language) LIKE '%c++%' OR LOWER(j.language) IN ('c','c with o2','c99','c11','c17','c89'))";
             case "python": return "(LOWER(j.language) LIKE '%python%' OR LOWER(j.language) LIKE '%pypy%')";
             case "java": return "LOWER(j.language) LIKE 'java%' AND LOWER(j.language) NOT LIKE 'javascript%'";
             default: throw new EduException(400,"请选择支持的语言");
