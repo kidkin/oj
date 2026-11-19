@@ -4,6 +4,11 @@ import axios from 'axios'
 const request = (method, path, data, params) => axios({method, url: '/api/edu' + path, data, params}).then(r => r.data.data)
 
 export default {
+  reviewQueue: params => request('get', '/review/queue', undefined, params),
+  reviewDecision: (id, data) => request('post', `/review/${id}/decision`, data),
+  reviewRules: () => request('get', '/review/rules'),
+  saveReviewRules: data => request('put', '/review/rules', data),
+  similarity: params => request('get', '/review/similarity', undefined, params),
   courses: params => request('get', '/courses', undefined, params),
   learningFootprint: () => request('get', '/learning-footprint'),
   courseStages: () => request('get', '/course-stages'),

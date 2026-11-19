@@ -55,6 +55,9 @@ import java.util.stream.Collectors;
  */
 @Component
 public class JudgeManager {
+    @org.springframework.beans.factory.annotation.Autowired
+    private top.hcode.hoj.edu.ContentReview contentReview;
+
     @Autowired
     private JudgeEntityService judgeEntityService;
 
@@ -437,7 +440,7 @@ public class JudgeManager {
         }
 
         QueryWrapper<Judge> judgeQueryWrapper = new QueryWrapper<>();
-        judgeQueryWrapper.select("submit_id", "cid", "uid")
+        judgeQueryWrapper.select("submit_id", "cid", "uid", "code")
                 .eq("submit_id", judge.getSubmitId());
 
         Judge judgeInfo = judgeEntityService.getOne(judgeQueryWrapper);
@@ -445,7 +448,7 @@ public class JudgeManager {
         // 需要获取一下该token对应用户的数据
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
 
-        if (!userRolesVo.getUid().equals(judgeInfo.getUid())) { // 判断该提交是否为当前用户的
+        if (judgeInfo == null || !userRolesVo.getUid().equals(judgeInfo.getUid())) { // 判断该提交是否为当前用户的
             throw new StatusForbiddenException("对不起，您不能修改他人的代码分享权限！");
         }
 
@@ -453,6 +456,9 @@ public class JudgeManager {
             throw new StatusForbiddenException("对不起，您不能分享比赛题目的提交代码！");
         }
         UpdateWrapper<Judge> judgeUpdateWrapper = new UpdateWrapper<>();
+        if (judge.getShare() && !contentReview.canShare(judgeInfo)) {
+            throw new StatusForbiddenException("该提交尚未通过内容审核，暂不能公开分享");
+        }
         judgeUpdateWrapper.set("share", judge.getShare())
                 .eq("submit_id", judge.getSubmitId());
         boolean isOk = judgeEntityService.update(judgeUpdateWrapper);

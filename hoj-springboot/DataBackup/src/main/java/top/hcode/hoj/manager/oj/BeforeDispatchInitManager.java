@@ -43,6 +43,9 @@ import java.util.Objects;
  */
 @Component
 public class BeforeDispatchInitManager {
+    @org.springframework.beans.factory.annotation.Autowired
+    private top.hcode.hoj.edu.ContentReview contentReview;
+
 
     @Resource
     private ContestEntityService contestEntityService;
@@ -80,6 +83,7 @@ public class BeforeDispatchInitManager {
     @Autowired
     private GroupValidator groupValidator;
 
+    @Transactional(rollbackFor = Exception.class)
     public void initCommonSubmission(String problemId, Long gid, Judge judge) throws StatusForbiddenException {
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
 
@@ -114,6 +118,7 @@ public class BeforeDispatchInitManager {
 
         // 将新提交数据插入数据库
         judgeEntityService.save(judge);
+        contentReview.code(judge);
 
         trainingManager.checkAndSyncTrainingRecord(problem.getId(), judge.getSubmitId(), judge.getUid());
     }
@@ -174,6 +179,7 @@ public class BeforeDispatchInitManager {
         judge.setDisplayPid(problem.getProblemId());
         // 将新提交数据插入数据库
         judgeEntityService.save(judge);
+        contentReview.code(judge);
 
         // 同时初始化写入contest_record表
         ContestRecord contestRecord = new ContestRecord();
@@ -233,6 +239,7 @@ public class BeforeDispatchInitManager {
 
         // 将新提交数据插入数据库
         judgeEntityService.save(judge);
+        contentReview.code(judge);
 
         // 非私有训练不记录
         if (!training.getAuth().equals(Constants.Training.AUTH_PRIVATE.getValue())) {

@@ -27,6 +27,8 @@ import java.util.Objects;
 @Component
 @Slf4j(topic = "hoj")
 public class RemoteProblemManager {
+    @org.springframework.beans.factory.annotation.Autowired
+    private top.hcode.hoj.edu.ContentReview contentReview;
 
     @Autowired
     private ProblemEntityService problemEntityService;
@@ -97,6 +99,10 @@ public class RemoteProblemManager {
     public Problem adminAddOtherOJProblem(ProblemStrategy.RemoteProblemInfo remoteProblemInfo, String OJName) {
 
         Problem problem = remoteProblemInfo.getProblem();
+        top.hcode.hoj.pojo.dto.ProblemDTO candidate = new top.hcode.hoj.pojo.dto.ProblemDTO()
+                .setProblem(problem).setTags(remoteProblemInfo.getTagList());
+        String pending = contentReview.problem(candidate, false);
+        if (pending != null) throw new IllegalArgumentException(pending);
         boolean addProblemResult = problemEntityService.save(problem);
         // 为新的其它oj题目添加对应的language
         QueryWrapper<Language> languageQueryWrapper = new QueryWrapper<>();

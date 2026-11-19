@@ -1,6 +1,6 @@
 <template>
   <div class="edu-page" :style="eduPageStyle" v-loading="loading">
-    <div class="class-toolbar"><div class="edu-breadcrumb"><router-link to="/class">我的班级</router-link><template v-if="detail"><span>/</span><strong>{{ detail.name }}</strong></template></div><div v-if="detail && detail.canManage" class="class-actions"><el-button type="primary" @click="$router.push('/class/' + id + '/progress')">学习情况表</el-button><el-button @click="edit">编辑班级</el-button></div></div>
+    <div class="class-toolbar"><div class="edu-breadcrumb"><router-link to="/class">我的班级</router-link><template v-if="detail"><span>/</span><strong>{{ detail.name }}</strong></template></div><div v-if="detail && detail.canManage" class="class-actions"><el-button v-if="detail && detail.canManage" @click="reviewOpen = true">审核与查重</el-button><el-button type="primary" @click="$router.push('/class/' + id + '/progress')">学习情况表</el-button><el-button @click="edit">编辑班级</el-button></div></div>
     <section v-if="detail" class="class-content">
       <div class="class-about"><p class="description">{{ detail.description || '暂无班级介绍' }}</p></div>
       <el-alert v-if="detail.status !== 0" title="班级已归档" type="info" :closable="false" />
@@ -40,17 +40,19 @@
       </el-form>
       <span slot="footer"><el-button @click="memberDialog = false">取消</el-button><el-button type="primary" :loading="saving" :disabled="!memberForm.names.trim()" @click="addMembers">添加</el-button></span>
     </el-dialog>
+    <el-dialog title="审核与查重" :visible.sync="reviewOpen" width="min(980px, 95vw)"><ReviewDesk v-if="reviewOpen && detail && detail.canManage" :class-id="id" :key="id" /></el-dialog>
   </div>
 </template>
 <script>
+import ReviewDesk from './ReviewDesk.vue'
 import edu from '@/common/edu-api'
 import eduLayout from '@/common/edu-layout'
 import ClassCourses from './ClassCourses.vue'
 import LearningProgress from './LearningProgress.vue'
 export default {
   mixins: [eduLayout],
-  components: {ClassCourses, LearningProgress},
-  data: () => ({detail: null, loading: false, membersLoading: false, saving: false, members: [], memberTotal: 0, memberPage: 1, editDialog: false, memberDialog: false, form: {}, memberForm: {role: 'STUDENT', names: ''}}),
+  components: {ReviewDesk, ClassCourses, LearningProgress},
+  data: () => ({reviewOpen: false, detail: null, loading: false, membersLoading: false, saving: false, members: [], memberTotal: 0, memberPage: 1, editDialog: false, memberDialog: false, form: {}, memberForm: {role: 'STUDENT', names: ''}}),
   computed: {id () { return this.$route.params.classId }},
   watch: {id () { this.memberPage = 1; this.load() }},
   mounted () { this.load() },

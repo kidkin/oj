@@ -50,6 +50,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ProblemEntityServiceImpl extends ServiceImpl<ProblemMapper, Problem> implements ProblemEntityService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private top.hcode.hoj.edu.ContentReview contentReview;
+
 
     @Autowired
     private ProblemMapper problemMapper;
@@ -110,6 +113,8 @@ public class ProblemEntityServiceImpl extends ServiceImpl<ProblemMapper, Problem
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean adminUpdateProblem(ProblemDTO problemDto) {
+        String pending = contentReview.problem(problemDto, true);
+        if (pending != null) throw new IllegalArgumentException(pending);
 
         Problem problem = problemDto.getProblem();
         if (Constants.JudgeMode.DEFAULT.getMode().equals(problemDto.getJudgeMode())) {
@@ -392,6 +397,8 @@ public class ProblemEntityServiceImpl extends ServiceImpl<ProblemMapper, Problem
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean adminAddProblem(ProblemDTO problemDto) {
+        String pending = contentReview.problem(problemDto, false);
+        if (pending != null) throw new IllegalArgumentException(pending);
 
         Problem problem = problemDto.getProblem();
 
