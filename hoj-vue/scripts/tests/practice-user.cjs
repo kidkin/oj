@@ -60,6 +60,16 @@ async function main () {
   fail = false; users.b = {...users.b,score:160,solvedCount:160,key:'master',color:'#c77700',title:'精英'}
   listeners.focus(); await wait(80)
   assert.strictEqual(recycled.attrs.get('data-practice-score'),'160','A later focus retries an unsuccessful refresh')
+  users.b = {...users.b,accountType:'trial',school:'测试学校',score:0,key:'bronze',title:'英勇黄铜'}
+  now += 60000; listeners.focus(); await wait(80)
+  assert.strictEqual(recycled.badge.textContent,'测试学校')
+  assert.strictEqual(recycled.badge.styles.get('--practice-user-color'),'#8a919b')
+  assert.strictEqual(recycled.badge.className,'practice-user-badge practice-school-badge')
+  assert.strictEqual(recycled.attrs.get('title').includes('试用'),false)
+  users.b = {...users.b,school:null}
+  now += 60000; listeners.focus(); await wait(80)
+  assert.strictEqual(recycled.badge,null,'An account without a school has no trial badge')
+  users.b = {...users.b,accountType:'formal',score:160,key:'gold',title:'荣耀黄金'}
   directive.unbind(recycled)
   assert.strictEqual(recycled.styles.has('--practice-user-color'),false)
   assert.strictEqual(recycled.badge,null)
@@ -87,3 +97,14 @@ async function main () {
   console.log('PASS practice usernames: batching, aliases, recycled rows, refresh, failures, cleanup; chapter numbering and independent ordering')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })
+
+const placement = fs.readFileSync(path.join(root,'src/common/course-placement.js'),'utf8').replace(/export /g,'')
+const placementScope = {}; vm.createContext(placementScope)
+vm.runInContext(placement+'\nthis.api={courseTrack,compareCourses,availableCourseTracks};',placementScope)
+const mixed = [{id:200,category:1,categoryOrder:2},{id:3,category:4,categoryOrder:1},{id:80,category:1,categoryOrder:1}]
+assert.strictEqual(placementScope.api.courseTrack(mixed[0]),'training','Classification must not depend on internal IDs')
+assert.strictEqual(placementScope.api.courseTrack(mixed[1]),'school')
+assert.strictEqual(JSON.stringify(placementScope.api.availableCourseTracks(mixed)),JSON.stringify(['training','school']))
+assert.strictEqual(JSON.stringify(placementScope.api.availableCourseTracks([mixed[1]])),JSON.stringify(['school']))
+assert.strictEqual(JSON.stringify(placementScope.api.availableCourseTracks([mixed[0]])),JSON.stringify(['training']))
+assert.deepStrictEqual([...mixed].sort(placementScope.api.compareCourses).map(row => row.id),[80,200,3])

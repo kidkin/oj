@@ -33,12 +33,12 @@ public class EduCourseService {
     static final String PUBLIC_PROBLEM = EduProgress.PUBLIC_PROBLEM;
     private static final String MEMBERSHIP = "EXISTS (SELECT 1 FROM edu_class_course access_cc JOIN edu_class access_c ON access_c.id=access_cc.class_id " +
             "JOIN edu_class_member access_m ON access_m.class_id=access_c.id WHERE access_cc.course_id=c.id AND access_c.status=0 AND access_m.uid=? AND access_m.status=0)";
-    private static final String CORE_CURRICULUM = "c.id BETWEEN 1 AND 26";
-    private static final String DISPLAY_ORDER = "COALESCE(cd.display_id,c.id),c.id";
-    private static final String COLUMNS = "SELECT c.id,COALESCE(cd.display_id,c.id) AS displayId,COALESCE(ch.chapter_number,cd.display_id,c.id) AS chapterNumber,c.title,c.description,c.owner_uid AS ownerUid,u.username AS ownerUsername,c.status,c.revision," +
+    private static final String CORE_CURRICULUM = "EXISTS (SELECT 1 FROM edu_course_placement curriculum WHERE curriculum.course_id=c.id AND curriculum.category BETWEEN 1 AND 3)";
+    private static final String DISPLAY_ORDER = "COALESCE(cs.category,4),COALESCE(cs.sort_order,cd.display_id,c.id),c.id";
+    private static final String COLUMNS = "SELECT c.id,COALESCE(cd.display_id,c.id) AS displayId,COALESCE(ch.chapter_number,cd.display_id,c.id) AS chapterNumber,COALESCE(cs.category,4) AS category,COALESCE(cs.sort_order,cd.display_id,c.id) AS categoryOrder,c.title,c.description,c.owner_uid AS ownerUid,u.username AS ownerUsername,c.status,c.revision," +
             "CONCAT('/api/public/course-icon/',ci.filename) AS iconUrl,c.gmt_create AS gmtCreate," +
             "c.gmt_modified AS gmtModified,(SELECT COUNT(*) FROM edu_course_problem cp JOIN problem p ON p.id=cp.pid WHERE cp.course_id=c.id AND " + PUBLIC_PROBLEM + ") AS problemCount," +
-            "(SELECT COUNT(*) FROM edu_class_course refs WHERE refs.course_id=c.id) AS referenceCount FROM edu_course c LEFT JOIN user_info u ON u.uuid=c.owner_uid LEFT JOIN edu_course_icon ci ON ci.course_id=c.id LEFT JOIN edu_course_display cd ON cd.course_id=c.id LEFT JOIN edu_course_chapter ch ON ch.course_id=c.id ";
+            "(SELECT COUNT(*) FROM edu_class_course refs WHERE refs.course_id=c.id) AS referenceCount FROM edu_course c LEFT JOIN user_info u ON u.uuid=c.owner_uid LEFT JOIN edu_course_icon ci ON ci.course_id=c.id LEFT JOIN edu_course_display cd ON cd.course_id=c.id LEFT JOIN edu_course_chapter ch ON ch.course_id=c.id LEFT JOIN edu_course_placement cs ON cs.course_id=c.id ";
 
     private long count(String sql, Object... args) { return db.queryForObject(sql, args, Long.class); }
     private static String marks(int n) { return String.join(",", Collections.nCopies(n, "?")); }
@@ -89,10 +89,9 @@ public class EduCourseService {
 
     public List<Map<String, Object>> courseStages() {
         Access access = new Access();
-        String stage = "CASE WHEN c.id BETWEEN 1 AND 8 THEN 1 WHEN c.id BETWEEN 9 AND 16 THEN 2 " +
-                "WHEN " + CORE_CURRICULUM + " THEN 3 ELSE 4 END";
+        String stage = "COALESCE(cs.category,4)";
         return db.queryForList("SELECT " + stage + " AS stage,COUNT(DISTINCT p.id) AS problemCount," +
-                "COUNT(DISTINCT ac.pid) AS completedCount FROM edu_course c " +
+                "COUNT(DISTINCT ac.pid) AS completedCount FROM edu_course c LEFT JOIN edu_course_placement cs ON cs.course_id=c.id " +
                 "LEFT JOIN edu_course_problem cp ON cp.course_id=c.id LEFT JOIN problem p ON p.id=cp.pid AND " + PUBLIC_PROBLEM +
                 " LEFT JOIN (SELECT DISTINCT pid FROM judge WHERE uid=? AND status=0 AND cid=0 AND gid IS NULL) ac ON ac.pid=p.id " +
                 "WHERE c.status=1 AND " + MEMBERSHIP + " GROUP BY " + stage, access.uid, access.uid);
@@ -228,6 +227,11 @@ public class EduCourseService {
     }
     @Transactional
     public Map<String, Object> create(String title, String description, Long displayId, Long chapterNumber) {
+        return create(title, description, displayId, chapterNumber, null, null);
+    }
+    @Transactional
+    public Map<String, Object> create(String title, String description, Long displayId, Long chapterNumber, Integer category, Long categoryOrder) {
+        validatePlacement(category, categoryOrder);
         Access access = new Access(); access.requireTeacher(); validate(title, description, 0); EduDisplayOrder.validate(displayId);
         EduDisplayOrder.validate(chapterNumber);
         GeneratedKeyHolder key = new GeneratedKeyHolder();
@@ -238,8 +242,22 @@ public class EduCourseService {
         long id = Objects.requireNonNull(key.getKey()).longValue();
         db.update("INSERT INTO edu_course_display(course_id,display_id) VALUES (?,?)", id, displayId == null ? id : displayId);
         db.update("INSERT INTO edu_course_chapter(course_id,chapter_number) VALUES (?,?)", id, chapterNumber == null ? (displayId == null ? id : displayId) : chapterNumber);
+        savePlacement(id, category == null ? 4 : category, categoryOrder == null ? (displayId == null ? id : displayId) : categoryOrder);
         return detail(id);
     }
+
+    static void validatePlacement(Integer category, Long categoryOrder) {
+        if (category != null && (category < 1 || category > 4)) throw new EduException(400, "课程大类无效");
+        EduDisplayOrder.validate(categoryOrder);
+    }
+
+    private void savePlacement(long id, Integer category, Long categoryOrder) {
+        if (category == null && categoryOrder == null) return;
+        db.update("INSERT INTO edu_course_placement(course_id,category,sort_order) VALUES (?,COALESCE(?,4),COALESCE(?,?)) " +
+                "ON DUPLICATE KEY UPDATE category=COALESCE(?,category),sort_order=COALESCE(?,sort_order)",
+                id, category, categoryOrder, id, category, categoryOrder);
+    }
+
     @Transactional
     public Map<String, Object> update(long id, String title, String description, int status, Long expectedRevision) {
         return update(id, title, description, status, expectedRevision, null);
@@ -250,6 +268,11 @@ public class EduCourseService {
     }
     @Transactional
     public Map<String, Object> update(long id, String title, String description, int status, Long expectedRevision, Long displayId, Long chapterNumber) {
+        return update(id, title, description, status, expectedRevision, displayId, chapterNumber, null, null);
+    }
+    @Transactional
+    public Map<String, Object> update(long id, String title, String description, int status, Long expectedRevision, Long displayId, Long chapterNumber, Integer category, Long categoryOrder) {
+        validatePlacement(category, categoryOrder);
         Access access = new Access(); Map<String, Object> row = course(id, true); requireEdit(access, row); revision(row, expectedRevision); validate(title, description, status); EduDisplayOrder.validate(displayId);
         EduDisplayOrder.validate(chapterNumber);
         // A locking read sees references committed while this transaction was
@@ -259,6 +282,7 @@ public class EduCourseService {
         db.update("UPDATE edu_course SET title=?,description=?,status=?,revision=revision+1 WHERE id=?", title.trim(), description, status, id);
         if (displayId != null) db.update("INSERT INTO edu_course_display(course_id,display_id) VALUES (?,?) ON DUPLICATE KEY UPDATE display_id=VALUES(display_id)", id, displayId);
         if (chapterNumber != null) db.update("INSERT INTO edu_course_chapter(course_id,chapter_number) VALUES (?,?) ON DUPLICATE KEY UPDATE chapter_number=VALUES(chapter_number)", id, chapterNumber);
+        savePlacement(id, category, categoryOrder);
         return detail(id);
     }
     @Transactional

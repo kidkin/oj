@@ -23,7 +23,7 @@
     </section>
     <p v-else-if="!loading" class="edu-empty">无法访问该课程，请检查班级归属或课程发布状态。</p>
     <el-dialog title="编辑共享课程" :visible.sync="metadataDialog" width="min(600px, 94vw)" :close-on-click-modal="false">
-      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程显示ID（排序）" required><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /></el-form-item><el-form-item label="章节序号"><el-input-number v-model="form.chapterNumber" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item><el-form-item label="发布状态"><el-select v-model="form.status"><el-option :value="0" label="草稿" /><el-option :value="1" label="已发布" /><el-option :value="2" label="归档" /></el-select></el-form-item></el-form>
+      <el-form label-position="top"><el-form-item label="课程名称" required><el-input v-model.trim="form.title" maxlength="128" show-word-limit /></el-form-item><el-form-item label="课程显示ID（排序）" required><el-input-number v-model="form.displayId" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /></el-form-item><el-form-item label="章节序号"><el-input-number v-model="form.chapterNumber" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /></el-form-item><el-form-item label="课程大类" required><el-select v-model="form.category"><el-option v-for="category in categories" :key="category.id" :value="category.id" :label="category.title" /></el-select></el-form-item><el-form-item label="大类内顺序" required><el-input-number v-model="form.categoryOrder" :min="1" :max="2147483647" :precision="0" step-strictly controls-position="right" /></el-form-item><el-form-item label="课程介绍"><el-input type="textarea" :rows="5" v-model="form.description" maxlength="10000" show-word-limit /></el-form-item><el-form-item label="发布状态"><el-select v-model="form.status"><el-option :value="0" label="草稿" /><el-option :value="1" label="已发布" /><el-option :value="2" label="归档" /></el-select></el-form-item></el-form>
 
       <span slot="footer"><el-button :disabled="saving" @click="metadataDialog = false">取消</el-button><el-button type="primary" :loading="saving" :disabled="!form.title" @click="saveMetadata">保存并同步到引用班级</el-button></span>
     </el-dialog>
@@ -36,9 +36,10 @@ import eduLayout from '@/common/edu-layout'
 import CourseProblemPicker from './CourseProblemPicker.vue'
 import CourseProblemTable from './CourseProblemTable.vue'
 import LearningProgress from './LearningProgress.vue'
+import {COURSE_CATEGORIES} from '@/common/course-placement'
 export default {
   mixins: [eduLayout], components: {CourseProblemPicker, CourseProblemTable, LearningProgress},
-  data: () => ({access: {}, detail: null, loading: false, saving: false, uploadingIcon: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
+  data: () => ({categories: COURSE_CATEGORIES, access: {}, detail: null, loading: false, saving: false, uploadingIcon: false, metadataDialog: false, pickerDialog: false, editingProblems: false, draftProblems: [], problemsRevision: null, conflict: false, form: {}, states: ['草稿', '已发布', '已归档']}),
   computed: {
     id () { return this.$route.params.courseId },
     shownProblems () { return this.editingProblems ? this.draftProblems : (this.detail ? this.detail.problems : []) },
@@ -60,7 +61,7 @@ export default {
     },
     async removeIcon () { this.uploadingIcon = true; try { this.detail = await edu.removeCourseIcon(this.id, this.detail.revision); this.$message.success('已恢复默认图标') } catch (error) { this.markConflict(error) } finally { this.uploadingIcon = false } },
     async load () { this.loading = true; this.detail = null; this.conflict = false; try { this.detail = await edu.course(this.id) } catch (_) {} finally { this.loading = false } },
-    editMetadata () { this.form = {title: this.detail.title, description: this.detail.description, status: this.detail.status, revision: this.detail.revision, displayId: this.detail.displayId, chapterNumber: this.detail.chapterNumber}; this.metadataDialog = true },
+    editMetadata () { this.form = {title: this.detail.title, description: this.detail.description, status: this.detail.status, revision: this.detail.revision, displayId: this.detail.displayId, chapterNumber: this.detail.chapterNumber, category:this.detail.category, categoryOrder:this.detail.categoryOrder}; this.metadataDialog = true },
     markConflict (error) { this.conflict = !!(error && error.data && error.data.status === 409) },
     async saveMetadata () { if (!Number.isInteger(this.form.displayId) || this.form.displayId < 1) { this.$message.error('请填写课程显示ID'); return }; this.saving = true; try { this.detail = await edu.updateCourse(this.id, this.form); this.metadataDialog = false; this.conflict = false; this.$message.success('课程资料已统一更新') } catch (error) { this.markConflict(error) } finally { this.saving = false } },
     startProblems () { this.draftProblems = this.detail.problems.map(row => ({...row})); this.problemsRevision = this.detail.revision; this.editingProblems = true; this.conflict = false },

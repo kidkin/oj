@@ -29,6 +29,24 @@ class EduCourseServiceTest {
         when(db.queryForList("SELECT id,title,description,owner_uid AS ownerUid,status,revision FROM edu_course WHERE id=? FOR UPDATE", 7L))
                 .thenReturn(Collections.singletonList(row));
     }
+    @Test void categoryChangesNeedOwnershipAndCurrentRevision() {
+        EduCourseService editable = spy(service);
+        doReturn(Collections.emptyMap()).when(editable).detail(7L);
+        editable.update(7L, "课程", "", 1, 3L, null, null, 2, 7L);
+        verify(db).update(startsWith("INSERT INTO edu_course_placement"), eq(7L), eq(2), eq(7L), eq(7L), eq(2), eq(7L));
+        reset(db);
+        assertThrows(EduException.class, () -> service.update(7L, "课程", "", 1, 3L, null, null, 5, 7L));
+        assertThrows(EduException.class, () -> service.update(7L, "课程", "", 1, 3L, null, null, 1, 0L));
+        noWrites();
+    }
+    @Test void courseSummariesAndStageProgressUseConfiguredCategories() {
+        when(db.queryForObject(anyString(), any(Object[].class), eq(Long.class))).thenReturn(0L);
+        service.learningSummary();
+        service.courseStages();
+        verify(db, times(3)).queryForObject(contains("curriculum.category BETWEEN 1 AND 3"), any(Object[].class), eq(Long.class));
+        verify(db).queryForList(contains("GROUP BY COALESCE(cs.category,4)"), eq("owner"), eq("owner"));
+        noWrites();
+    }
     private void noWrites() {
         verify(db, never()).update(anyString(), any(Object[].class));
         verify(db, never()).batchUpdate(anyString(), anyList());

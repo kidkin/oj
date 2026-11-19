@@ -11,25 +11,25 @@ import static org.mockito.Mockito.*;
 
 class PracticeLevelServiceTest {
     @Test void fixedLevelsAndCompetitiveQuotasHaveExactBoundaries() {
-        assertEquals("newbie", PracticeLevelService.level(1, 0, 0).get("key"));
-        assertEquals("pupil", PracticeLevelService.level(2, 99, 100).get("key"));
-        assertEquals("pupil", PracticeLevelService.level(199, 99, 100).get("key"));
-        assertEquals("specialist", PracticeLevelService.level(200, 99, 100).get("key"));
-        assertEquals("specialist", PracticeLevelService.level(499, 99, 100).get("key"));
-        assertEquals("expert", PracticeLevelService.level(500, 99, 100).get("key"));
-        assertEquals("expert", PracticeLevelService.level(899, 1, 100).get("key"));
-        assertEquals("candidate", PracticeLevelService.level(900, 20, 100).get("key"));
-        assertEquals("expert", PracticeLevelService.level(1800, 21, 100).get("key"));
-        assertEquals("candidate", PracticeLevelService.level(1299, 10, 100).get("key"));
-        assertEquals("master", PracticeLevelService.level(1300, 10, 100).get("key"));
-        assertEquals("candidate", PracticeLevelService.level(1800, 11, 100).get("key"));
-        assertEquals("master", PracticeLevelService.level(1599, 5, 100).get("key"));
-        assertEquals("grandmaster", PracticeLevelService.level(1600, 5, 100).get("key"));
-        assertEquals("master", PracticeLevelService.level(1800, 6, 100).get("key"));
-        assertEquals("grandmaster", PracticeLevelService.level(1799, 1, 99).get("key"));
-        assertEquals("legend", PracticeLevelService.level(1800, 1, 99).get("key"));
-        assertEquals("grandmaster", PracticeLevelService.level(1800, 2, 99).get("key"));
-        assertEquals(8, new PracticeLevelService(null).rules().size());
+        assertEquals("bronze", PracticeLevelService.level(1, 1, 100).get("key"));
+        assertEquals("silver", PracticeLevelService.level(2, 99, 100).get("key"));
+        assertEquals("gold", PracticeLevelService.level(200, 99, 100).get("key"));
+        assertEquals("platinum", PracticeLevelService.level(500, 99, 100).get("key"));
+        assertEquals("emerald", PracticeLevelService.level(900, 99, 100).get("key"));
+        assertEquals("emerald", PracticeLevelService.level(1299, 1, 100).get("key"));
+        assertEquals("challenger", PracticeLevelService.level(1300, 1, 100).get("key"));
+        assertEquals("challenger", PracticeLevelService.level(1300, 3, 100).get("key"));
+        assertEquals("master", PracticeLevelService.level(1300, 4, 100).get("key"));
+        assertEquals("master", PracticeLevelService.level(1300, 8, 100).get("key"));
+        assertEquals("diamond", PracticeLevelService.level(1300, 9, 100).get("key"));
+        assertEquals("diamond", PracticeLevelService.level(1300, 0, 100).get("key"));
+        assertEquals("challenger", PracticeLevelService.level(1300, 1, 1).get("key"));
+        List<Map<String,Object>> rules = new PracticeLevelService(null).rules();
+        assertEquals(8, rules.size());
+        assertEquals(5, rules.get(6).get("seats"));
+        assertEquals(3, rules.get(7).get("seats"));
+        assertEquals(rules.get(5).get("minimum"), rules.get(6).get("minimum"));
+        assertEquals(rules.get(5).get("minimum"), rules.get(7).get("minimum"));
     }
 
     private Map<String, Object> user(String uid, String username, String type, long solved) {
@@ -54,7 +54,7 @@ class PracticeLevelServiceTest {
         Map<String, Object> level = service.users(Arrays.asList("u1", "u1"), Collections.singletonList("Student")).get(0);
         List<?> ranked = (List<?>) service.rating(1, 20, "student").get("records");
         assertEquals(250.5, level.get("score"));
-        assertEquals("expert", level.get("key"));
+        assertEquals("platinum", level.get("key"));
         assertEquals(25L, level.get("solvedCount"));
         assertEquals(level.get("score"), ((Map<?, ?>) ranked.get(0)).get("score"));
         assertEquals(level.get("color"), ((Map<?, ?>) ranked.get(0)).get("color"));
@@ -89,6 +89,7 @@ class PracticeLevelServiceTest {
         JdbcTemplate db = mock(JdbcTemplate.class);
         Map<String, Object> trial = user("trial", "Trial", "trial", 35);
         trial.put("scoreUnits", 2200L);
+        trial.put("school", "测试学校");
         Map<String, Object> formal = user("formal", "Formal", "formal", 30);
         formal.put("scoreUnits", 1800L);
         when(db.queryForList(anyString())).thenReturn(Arrays.asList(trial, formal));
@@ -101,11 +102,13 @@ class PracticeLevelServiceTest {
         assertEquals(1, board.get("formalCount"));
         assertEquals(2, board.get("rankedCount"));
         assertEquals("trial", first.get("accountType"));
+        assertEquals("测试学校", first.get("school"));
+        assertEquals("", first.get("title"));
         assertEquals(1100.0, first.get("rankingScore"));
         assertEquals(0.0, first.get("score"));
         assertEquals(0, service.currentEarnedUnits("trial"));
         assertEquals(2, second.get("rank"));
-        assertEquals("legend", second.get("key"));
+        assertEquals("challenger", second.get("key"));
         assertEquals(1800, service.currentEarnedUnits("formal"));
     }
 

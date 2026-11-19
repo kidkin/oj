@@ -4,10 +4,10 @@
       <i class="el-icon-user-solid" />工作人员<span class="practice-points">不参与评级</span>
     </span>
     <span v-else-if="level.accountType === 'trial'" class="practice-level-pill trial-level">
-      <i class="el-icon-user" />试用账号<span class="practice-points">成长分 0</span>
+      <span v-if="level.school" class="school-label">{{ level.school }}</span><span class="practice-points">成长分 0</span>
     </span>
     <el-popover v-else placement="bottom" width="270" trigger="hover">
-      <div class="practice-level-rules"><strong>成长等级</strong><p>成长分按题目难度和课程、周周练、比赛系数计算。同题只取最高一次。</p><div v-for="rule in rules" :key="rule.key" class="practice-rule"><span :style="{color:rule.color}">{{ rule.title }}</span><span>{{ rule.minimum }} 分{{ rule.topPercent ? '且前 ' + rule.topPercent + '%' : '' }}</span></div></div>
+      <div class="practice-level-rules"><strong>成长等级</strong><p>成长分按题目难度和课程、周周练、比赛系数计算。同题只取最高一次。</p><div v-for="rule in rules" :key="rule.key" class="practice-rule"><span :style="{color:rule.color}">{{ rule.title }}</span><span>{{ rule.minimum }} 分{{ rule.seats ? ' · ' + rule.seats + ' 席（第 ' + rule.rankFrom + '–' + rule.rankTo + ' 名）' : '' }}</span></div></div>
       <span slot="reference" class="practice-level-pill" :style="{color:level.color}"><i class="el-icon-medal" />{{ level.title }}<span class="practice-points">成长分 {{ level.score }}</span><i class="el-icon-info" /></span>
     </el-popover>
   </div>

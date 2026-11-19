@@ -1,5 +1,5 @@
 WITH accounts AS (
-    SELECT u.uuid AS uid, u.username, /*account_type*/ AS accountType, /*staff*/ AS staff
+    SELECT u.uuid AS uid, u.username, NULLIF(TRIM(u.school),'') AS school, /*account_type*/ AS accountType, /*staff*/ AS staff
     FROM user_info u
     LEFT JOIN edu_growth_account o ON o.uid = u.uuid
     WHERE u.status = 0
@@ -50,7 +50,7 @@ WITH accounts AS (
     FROM accepted_problems
     GROUP BY uid
 )
-SELECT f.uid, f.username, f.accountType, f.staff, COALESCE(s.solved_count, 0) AS solvedCount, COALESCE(s.score_units, 0) AS scoreUnits
+SELECT f.uid, f.username, f.school, f.accountType, f.staff, COALESCE(s.solved_count, 0) AS solvedCount, COALESCE(s.score_units, 0) AS scoreUnits
 FROM accounts f
 LEFT JOIN scores s ON s.uid = f.uid
 ORDER BY scoreUnits DESC, solvedCount DESC, f.uid

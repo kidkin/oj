@@ -16,12 +16,14 @@ import java.util.*;
 /** Shared growth score and color for the leaderboard, profiles and usernames. */
 @Service
 public class PracticeLevelService {
-    public static final String PROFILE_LOCKED = "正式账号达到绿色等级（1 分）后可修改资料";
+    public static final String PROFILE_LOCKED = "正式账号达到不屈白银（1 分）后可修改资料";
     private static final long GREEN = 1;
-    private static final long[] MINIMUMS = {0, GREEN, 100, 250, 450, 650, 800, 900};
-    private static final int[] TOP_PERCENT = {0, 0, 0, 0, 20, 10, 5, 1};
-    private static final String[] KEYS = {"newbie", "pupil", "specialist", "expert", "candidate", "master", "grandmaster", "legend"};
-    private static final String[] TITLES = {"初学", "起步", "进阶", "熟练", "优秀", "精英", "卓越", "传奇"};
+    private static final long[] MINIMUMS = {0, GREEN, 100, 250, 450, 650, 650, 650};
+    private static final int[] SEATS = {0, 0, 0, 0, 0, 0, 5, 3};
+    private static final int[] RANK_FROM = {0, 0, 0, 0, 0, 0, 4, 1};
+    private static final int[] RANK_TO = {0, 0, 0, 0, 0, 0, 8, 3};
+    private static final String[] KEYS = {"bronze", "silver", "gold", "platinum", "emerald", "diamond", "master", "challenger"};
+    private static final String[] TITLES = {"英勇黄铜", "不屈白银", "荣耀黄金", "华贵铂金", "流光翡翠", "璀璨钻石", "超凡大师", "最强王者"};
     private static final String[] COLORS = {"#777777", "#008000", "#008b8b", "#164dcc", "#a020c0", "#c77700", "#e02020", "#b50920"};
     private static final int[] BASE_POINTS = {1, 2, 3, 5, 8, 13, 21, 34};
     // Scores are stored in half-point units during calculation, so ties compare exactly.
@@ -64,16 +66,11 @@ public class PracticeLevelService {
         }
     }
 
-    private static long seats(int formalCount, int percent) {
-        return formalCount > 0 && percent > 0 ? Math.max(1, (long) formalCount * percent / 100) : 0;
-    }
-
     static Map<String, Object> level(long units, int rank, int formalCount) {
         long scoreUnits = Math.max(0, units);
         int index = 0;
         for (int i = 1; i < MINIMUMS.length; i++) {
-            long seats = seats(formalCount, TOP_PERCENT[i]);
-            if (scoreUnits >= MINIMUMS[i] * 2 && (TOP_PERCENT[i] == 0 || (rank > 0 && rank <= seats))) index = i;
+            if (scoreUnits >= MINIMUMS[i] * 2 && (SEATS[i] == 0 || (rank >= RANK_FROM[i] && rank <= RANK_TO[i]))) index = i;
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("score", scoreUnits / 2.0);
@@ -94,7 +91,10 @@ public class PracticeLevelService {
             row.put("title", TITLES[i]);
             row.put("color", COLORS[i]);
             row.put("minimum", MINIMUMS[i]);
-            row.put("topPercent", TOP_PERCENT[i]);
+            row.put("topPercent", 0);
+            row.put("seats", SEATS[i]);
+            row.put("rankFrom", RANK_FROM[i]);
+            row.put("rankTo", RANK_TO[i]);
             rows.add(row);
         }
         return rows;
@@ -129,6 +129,7 @@ public class PracticeLevelService {
                 Map<String, Object> record = level(formal ? units : 0, tierRank, formalCount);
                 record.put("uid", row.get("uid"));
                 record.put("username", row.get("username"));
+                if (!formal) record.put("school", row.get("school"));
                 record.put("solvedCount", number(row, "solvedCount"));
                 if (formal) byUid.put((String) row.get("uid"), record);
                 if (rankedAccount) {
@@ -138,7 +139,7 @@ public class PracticeLevelService {
                     standing.put("rankingScore", units / 2.0);
                     if (!formal) {
                         standing.put("key", "trial");
-                        standing.put("title", "试用");
+                        standing.put("title", "");
                     }
                     ranked.add(standing);
                 }
@@ -196,9 +197,6 @@ public class PracticeLevelService {
         result.put("rankedCount", current.ranked.size());
         result.put("leaders", current.ranked.subList(0, Math.min(3, current.ranked.size())));
         List<Map<String, Object>> tiers = rules();
-        for (int i = 0; i < tiers.size(); i++) {
-            if (TOP_PERCENT[i] > 0) tiers.get(i).put("seats", seats(current.formalCount, TOP_PERCENT[i]));
-        }
         result.put("rules", tiers);
         result.put("basePoints", BASE_POINTS.clone());
         Map<String, Double> multipliers = new LinkedHashMap<>();
@@ -245,7 +243,7 @@ public class PracticeLevelService {
             args.addAll(names);
         }
         List<Map<String, Object>> rows = db.queryForList(
-                "SELECT u.uuid AS uid,u.username,COALESCE(o.mode,'auto') AS accountMode," +
+                "SELECT u.uuid AS uid,u.username,NULLIF(TRIM(u.school),'') AS school,COALESCE(o.mode,'auto') AS accountMode," +
                 ACCOUNT_TYPE + " AS accountType," + STAFF + " AS staff," +
                 "(SELECT COUNT(DISTINCT a.pid) FROM user_acproblem a WHERE a.uid=u.uuid) AS solvedCount " +
                 "FROM user_info u LEFT JOIN edu_growth_account o ON o.uid=u.uuid WHERE " +
@@ -268,6 +266,7 @@ public class PracticeLevelService {
                 row.put("nextMinimum", null);
                 if (!admin) row.put("score", 0.0);
             }
+            if (!"trial".equals(row.get("accountType"))) row.remove("school");
             row.remove("staff");
             if (!admin) row.remove("accountMode");
         }

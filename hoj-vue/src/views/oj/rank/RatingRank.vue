@@ -3,11 +3,11 @@
     <header class="rating-hero">
       <div class="hero-copy">
         <p class="eyebrow"><i class="el-icon-trophy" aria-hidden="true" /> 学习成长</p>
-        <h1 id="rating-title">成长排行榜</h1>
+        <h1 id="rating-title">排行榜</h1>
         <p class="hero-description">每道有效通过的题目取最高计分。</p>
       </div>
       <dl v-if="multipliers" class="hero-stats">
-        <div><dt>正式账号</dt><dd>{{ formalCount }}</dd></div>
+        <div><dt>段位人数</dt><dd>{{ formalCount }}</dd></div>
         <div><dt>上榜人数</dt><dd>{{ rankedCount }}</dd></div>
       </dl>
     </header>
@@ -22,7 +22,7 @@
               {{ row.username }}
             </router-link>
             <div class="rating-badges">
-              <span v-if="row.accountType === 'trial'" class="account-pill">试用</span>
+              <span v-if="row.accountType === 'trial' && row.school" class="school-label">{{ row.school }}</span>
               <span v-if="row.accountType === 'formal'" class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
             </div>
           </div>
@@ -45,13 +45,13 @@
       </header>
 
       <div v-if="error" class="rating-empty" role="alert">
-        <p>暂时无法加载 成长排行榜</p>
+        <p>暂时无法加载 排行榜</p>
         <el-button size="small" @click="load">重试</el-button>
       </div>
       <div v-else-if="!records.length && !loading" class="rating-empty">
         {{ submittedKeyword ? '没有找到符合条件的用户名' : '暂无上榜记录' }}
       </div>
-      <table v-else class="standings-table" aria-label="成长排行榜排名">
+      <table v-else class="standings-table" aria-label="排行榜排名">
         <thead>
           <tr><th scope="col">排名</th><th scope="col">选手</th><th scope="col" class="solved-col">计分题数</th><th scope="col">榜单分</th></tr>
         </thead>
@@ -61,7 +61,7 @@
             <td>
               <router-link :to="profile(row)" class="rating-name" :title="row.username">{{ row.username }}</router-link>
               <div class="rating-badges table-tier">
-                <span v-if="row.accountType === 'trial'" class="account-pill">试用</span>
+                <span v-if="row.accountType === 'trial' && row.school" class="school-label">{{ row.school }}</span>
                 <span v-if="row.accountType === 'formal'" class="tier-pill" :style="{'--tier-color':row.color}"><i aria-hidden="true" />{{ row.title }}</span>
               </div>
               <span class="mobile-solved">{{ row.solvedCount }} 题</span>
@@ -78,7 +78,7 @@
     </section>
 
     <details v-if="multipliers" class="rating-rules">
-      <summary>成长分与颜色规则</summary>
+      <summary>成长分与段位规则</summary>
       <div class="rules-body">
         <p>普通题 ×{{ multipliers.normal }} · 本班课程 ×{{ multipliers.course }} · 周周练 ×{{ multipliers.weekly }} · 正式比赛 ×{{ multipliers.contest }}</p>
         <ul v-if="basePoints.length" class="rule-list" aria-label="题目基础分">
@@ -88,10 +88,10 @@
         </ul>
         <ul class="rule-list" aria-label="成长等级">
           <li v-for="rule in rules" :key="rule.key" :style="{'--tier-color':rule.color}">
-            <i aria-hidden="true" />{{ rule.title }} {{ rule.minimum }} 分<span v-if="rule.topPercent"> · 前 {{ rule.topPercent }}%（{{ rule.seats }} 席）</span>
+            <i aria-hidden="true" />{{ rule.title }} {{ rule.minimum }} 分<span v-if="rule.seats"> · {{ rule.seats }} 席（第 {{ rule.rankFrom }}–{{ rule.rankTo }} 名）</span>
           </li>
         </ul>
-        <p class="rule-note">试用练习分只用于排名，不计入成长分和积分。成长等级名额按正式账号及其相互排名计算，向下取整，有正式账号时每档至少 1 席。教师和管理员不参与排名。同分先比较计分题数，再按固定账号顺序排列。</p>
+        <p class="rule-note">练习分只用于排名，不计入成长分和积分。钻石及以下按成长分晋级。最强王者为正式账号前 3 名，超凡大师为第 4–8 名，两档均须达到 650 分，未达标席位空缺。教师和管理员不参与排名。同分先比较计分题数，再按固定账号顺序排列。</p>
       </div>
     </details>
   </main>
@@ -170,6 +170,7 @@ export default {
 .hero-stats dt { font-size: 12px; color: #d1ddeb; white-space: nowrap; }
 .hero-stats dd { font-size: 24px; font-weight: 750; font-variant-numeric: tabular-nums; }
 .rating-badges { display:inline-flex; flex-wrap:wrap; align-items:center; gap:5px; }
+.school-label { color:#8a919b; font-size:12px; font-weight:400; }
 .account-pill {
   display:inline-flex; align-items:center; gap:4px; padding:2px 7px; border-radius:999px;
   background:#eef1f5; color:#556478; font-size:12px; font-weight:650; white-space:nowrap;
