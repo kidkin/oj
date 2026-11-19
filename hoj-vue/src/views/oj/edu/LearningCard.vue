@@ -1,9 +1,9 @@
 <template>
   <component :is="restricted ? 'button' : disabled ? 'article' : 'router-link'" :type="restricted ? 'button' : undefined" class="learning-card" :class="{'learning-row': layout === 'row', compact, locked: disabled, restricted}" :to="disabled || restricted ? undefined : to" :aria-label="title + '，' + (disabled || restricted ? disabledHint : progressText)" :aria-disabled="disabled ? 'true' : undefined" @click="restricted && $emit('restricted-click')">
-    <aside class="card-cover" :class="kind">
+    <aside v-if="kind === 'class'" class="card-cover">
       <img v-if="icon && !imageError" :src="icon" alt="" @error="imageError = true">
-      <i v-else :class="kind === 'class' ? 'el-icon-school' : 'el-icon-reading'" aria-hidden="true" />
-      <span>{{ kind === 'class' ? '班级' : '课程' }}</span>
+      <i v-else class="el-icon-school" aria-hidden="true" />
+      <span>班级</span>
     </aside>
     <div class="card-content">
       <h3 :title="title">{{ title }}<span v-if="badge" class="card-badge">{{ badge }}</span></h3>
@@ -40,7 +40,7 @@ export default {
 .learning-card:focus-visible { outline: 3px solid #409eff; outline-offset: 3px; }.locked { cursor: not-allowed; }
 .learning-card.restricted { width:100%; padding:0; font:inherit; text-align:left; cursor:pointer; appearance:none; }
 .card-cover { flex: 0 0 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #4b8bc7; background: #f2f8fe; border-right: 1px solid #e4edf5; font-size: 12px; }
-.card-cover > i { font-size: 48px; }.card-cover.course { color: #c58a32; background: #fffaf1; }.card-cover img { width: 76px; height: 76px; object-fit: contain; }
+.card-cover > i { font-size: 48px; }.card-cover img { width: 76px; height: 76px; object-fit: contain; }
 .card-content { display: flex; flex: 1; flex-direction: column; min-width: 0; }h3 { margin: 0; padding: 11px 14px; color: #a96b17; background: #fff0db; font-size: 17px; line-height: 24px; overflow-wrap: anywhere; }
 .card-badge { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: normal; vertical-align: middle; padding: 0 5px; border: 1px solid #edcf9e; border-radius: 4px; line-height: 19px; }
 .card-body { display: flex; flex: 1; flex-direction: column; justify-content: space-between; gap: 16px; padding: 14px; }.description { margin: 0; color: #6a7784; font-size: 13px; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }

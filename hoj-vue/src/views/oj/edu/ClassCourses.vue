@@ -3,7 +3,7 @@
     <div class="page-header"><h3>班级课程</h3><el-button v-if="canManage" type="primary" :disabled="archived" @click="pickerDialog = true">添加共享课程</el-button></div>
     <div class="course-strips" v-loading="loading">
       <div v-for="row in records" :key="row.id" class="course-strip" :class="{managed:canManage}">
-        <LearningCard layout="row" :to="{path:'/course/' + row.id, query:{classId:String(classId)}}" :title="row | courseTitle" :description="row.description" :icon="row.iconUrl" :owner="row.ownerUsername" :owner-uid="row.ownerUid" :completed="row.completedCount" :total="row.problemCount" />
+        <LearningCard layout="row" :to="{path:'/course/' + row.id, query:{classId:String(classId)}}" :title="row | courseTitle" :description="row.description" :owner="row.ownerUsername" :owner-uid="row.ownerUid" :completed="row.completedCount" :total="row.problemCount" />
         <el-button v-if="canManage" class="remove-reference" type="text" :disabled="saving" @click="detach(row)">移除本班引用</el-button>
       </div>
       <p v-if="!loading && !records.length" class="empty-state">教师还没有为班级添加课程。</p>

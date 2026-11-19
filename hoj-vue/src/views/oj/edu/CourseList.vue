@@ -20,7 +20,7 @@
     </el-form>
     <div v-loading="loading">
       <div v-if="access.isTeacher || activeTrack === 'school'" class="edu-grid">
-        <LearningCard v-for="row in shownRecords" :key="row.id" :to="courseTarget(row)" :title="row | courseTitle" compact :icon="row.iconUrl" :badge="access.isTeacher && row.status !== 1 ? states[row.status] : ''" :completed="row.completedCount" :total="row.problemCount" :show-progress="true" />
+        <LearningCard v-for="row in shownRecords" :key="row.id" :to="courseTarget(row)" :title="row | courseTitle" compact :badge="access.isTeacher && row.status !== 1 ? states[row.status] : ''" :completed="row.completedCount" :total="row.problemCount" :show-progress="true" />
       </div>
       <section v-for="group in groups" v-else :key="group.id" class="course-stage">
         <button type="button" class="stage-toggle" :aria-expanded="String(openStages.includes(group.id))" :aria-controls="'course-stage-' + group.id" @click="toggle(group.id)">
@@ -28,7 +28,7 @@
           <span class="stage-progress"><span>{{ group.progress.completedCount }} / {{ group.progress.problemCount }} 题</span><el-progress :percentage="percentage(group.progress)" :show-text="false" :stroke-width="7" /></span>
         </button>
         <div v-show="openStages.includes(group.id)" :id="'course-stage-' + group.id" class="edu-grid stage-cards">
-          <LearningCard v-for="row in group.records" :key="row.id" :to="courseTarget(row)" :title="row | courseTitle" compact :icon="row.iconUrl" :completed="row.completedCount" :total="row.problemCount" :show-progress="true" />
+          <LearningCard v-for="row in group.records" :key="row.id" :to="courseTarget(row)" :title="row | courseTitle" compact :completed="row.completedCount" :total="row.problemCount" :show-progress="true" />
         </div>
       </section>
       <p v-if="!loading && !shownRecords.length" class="edu-empty">{{ records.length ? '暂无符合条件的课程' : (access.isTeacher ? '暂无课程' : '暂无已加入的课程') }}</p>
