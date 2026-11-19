@@ -56,6 +56,21 @@ def sql(text):
     return run(['docker','exec','-i',ss['hoj-mysql']['Id'],'sh','-c','export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysql -uroot --default-character-set=utf8mb4 --batch --raw --skip-column-names "$@"','cloud-release',database],text.encode())
 
 
+
+def wait_for_migrations(expected, timeout=120):
+    """Container health can precede ApplicationRunner; wait for the exact schema."""
+    deadline = time.monotonic() + timeout
+    while True:
+        actual = dict(row.split('\t') for row in sql('SELECT version,checksum FROM edu_schema_history ORDER BY version;').decode().splitlines())
+        if any(key not in expected or expected[key] != checksum for key, checksum in actual.items()):
+            raise RuntimeError('Database migration checksums differ from the expected release.')
+        if actual == expected:
+            return
+        if time.monotonic() >= deadline:
+            raise RuntimeError('Application database migrations did not finish before release verification.')
+        time.sleep(2)
+
+
 def snapshot():
     result={}
     for table,key in [('user_info','uuid'),('problem','id'),('judge','submit_id'),('edu_class','id'),('edu_course','id'),('edu_class_member','id'),('edu_class_course','id'),('edu_course_problem','id')]:
@@ -218,6 +233,7 @@ def main(request):
             old=json.loads((folder/'previous.compose.private.json').read_text());new=json.loads(compose('config','--format','json'))
             if new['volumes']!=old['volumes']:raise RuntimeError('Update unexpectedly changed data volume mappings.')
             compose('up','-d','--no-build','--pull','never','--wait','--wait-timeout','360',log=folder/'switch.private.log')
+            wait_for_migrations(state['Release']['Migrations'])
             run(['python3',REPO/'scripts/verify_release.py','--release',version],log=folder/'verify.private.log')
             counts=verify_data(before)
             state['Status']='published';state['PublishedAt']=datetime.datetime.now().isoformat();state['Counts']=counts;state['AfterEnvironmentHash']=digest(REPO/'deploy/.env');save(statefile,state)
