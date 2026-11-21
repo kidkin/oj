@@ -27,6 +27,11 @@ public class ReviewController {
     }
     @GetMapping("/rules")
     public CommonResult<Map<String,Object>> rules(){return CommonResult.successResponse(review.settings());}
+    @GetMapping("/dictionary")
+    public CommonResult<Map<String,Object>> dictionary(@RequestParam String category,@RequestParam(defaultValue="") String keyword,
+            @RequestParam(defaultValue="1") int page){
+        return CommonResult.successResponse(review.dictionary(category,keyword,page));
+    }
     @Data public static class Dictionary { private long revision; private String words; }
     @PutMapping("/rules")
     public CommonResult<Boolean> rules(@RequestBody Dictionary body){

@@ -6,6 +6,7 @@ const request = (method, path, data, params) => axios({method, url: '/api/edu' +
 export default {
   reviewQueue: params => request('get', '/review/queue', undefined, params),
   reviewDecision: (id, data) => request('post', `/review/${id}/decision`, data),
+  reviewDictionary: params => request('get', '/review/dictionary', undefined, params),
   reviewRules: () => request('get', '/review/rules'),
   saveReviewRules: data => request('put', '/review/rules', data),
   similarity: params => request('get', '/review/similarity', undefined, params),

@@ -1,0 +1,8 @@
+Source: https://github.com/fwwdn/sensitive-stop-words/tree/a7d06bb1c321e669943b6841570d9da6dad8ce2b
+Apache-2.0. Imported from the following files. Whitespace and delimiters were removed, terms normalized and duplicate entries consolidated. The stopword list is supplied only as an NLP reference.
+politics.txt: 政治类.txt
+adult.txt: 色情类.txt
+ads.txt: 广告.txt
+weapons.txt: 涉枪涉爆违法信息关键词.txt
+sites.txt: 网址.txt
+stopwords.txt: stopword.dic

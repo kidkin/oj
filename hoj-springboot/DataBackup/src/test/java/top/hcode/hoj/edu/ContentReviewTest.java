@@ -9,6 +9,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ContentReviewTest {
+    @Test void matchesEveryBundledEntryAndKeepsDomainBoundaries() {
+        BuiltinReviewDictionary dict=BuiltinReviewDictionary.INSTANCE;
+        int[] counts={303,304,120,434,14592}; int i=0;
+        for(Map<String,Object> category:dict.categories()) {
+            String id=(String)category.get("id");
+            int count=counts[i++];assertEquals(count,category.get("count"));
+            for(int p=1;p<=(count+39)/40;p++){
+                Map<String,Object> page=dict.page(id,"",p);
+                for(Object word:(List<?>)page.get("words")) assertTrue(dict.find(word.toString()).containsKey(word),word.toString());
+            }
+        }
+        assertFalse(dict.find("https://000.2011wyt.com.example.org").containsKey("000.2011wyt.com"));
+        assertTrue(dict.find("https://sub.000.2011wyt.com/query").containsKey("000.2011wyt.com"));
+        assertFalse(dict.find("goal98.netsh.com/bbs/2818109").containsKey("goal98.netsh.com/bbs/281810"));
+        assertTrue(dict.find("for (int i = 0; i < n; ++i) { sum += i; }").isEmpty());
+    }
     @Test void completeTermsAndFallbacks() {
         ReviewMatcher matcher=new ReviewMatcher(Arrays.asList("共产党","中国共产党","ＡＢＣ"));
         assertEquals(3,matcher.find("中国共产党 abc").size());

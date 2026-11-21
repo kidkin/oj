@@ -28,6 +28,11 @@ public class ContentReview {
     }
     public ContentReview(JdbcTemplate db, EduClassService classes) { this.db=db; this.classes=classes; }
 
+    private static Map<String,String> matches(Rules rules,String text) {
+        Map<String,String> result=BuiltinReviewDictionary.INSTANCE.find(text);
+        result.putAll(rules.matcher.find(text));
+        return result;
+    }
     private Rules rules() {
         Map<String,Object> row=currentRules();
         long revision=((Number)row.get("revision")).longValue();
@@ -46,7 +51,15 @@ public class ContentReview {
         if (!classes.hasRole(actor,"root")) throw new EduException(403,"仅超级管理员可执行此操作");
         return actor;
     }
-    public Map<String,Object> settings() { requireRoot(); return currentRules(); }
+    public Map<String,Object> settings() {
+        requireRoot();
+        Map<String,Object> result=new LinkedHashMap<>(currentRules());
+        result.put("categories",BuiltinReviewDictionary.INSTANCE.categories());
+        return result;
+    }
+    public Map<String,Object> dictionary(String category,String keyword,int page){
+        requireRoot(); return BuiltinReviewDictionary.INSTANCE.page(category,keyword,page);
+    }
     @Transactional
     public void configure(long expected,String text) {
         String actor=requireRoot();
@@ -85,7 +98,7 @@ public class ContentReview {
     }
     public boolean code(Judge j) {
         Rules rules=rules();
-        Map<String,String> matches=rules.matcher.find(j.getCode());
+        Map<String,String> matches=matches(rules,j.getCode());
         if (matches.isEmpty()) return true;
         // Submitted source is immutable. Preserve a teacher's decision for that submission and rule version.
         String key=hash("code",String.valueOf(j.getSubmitId()),String.valueOf(rules.revision));
@@ -107,8 +120,8 @@ public class ContentReview {
         Map<String,String> found=new LinkedHashMap<>();
         if (dto.getCodeTemplates()!=null) dto.getCodeTemplates().forEach(t->fields.add(t.getCode()));
         for (String field:fields) if (field!=null && found.size()<20) {
-            found.putAll(rules.matcher.find(field));
-            if (field.contains("<") || field.contains("&")) found.putAll(rules.matcher.find(Jsoup.parse(field).text()));
+            found.putAll(matches(rules,field));
+            if (field.contains("<") || field.contains("&")) found.putAll(matches(rules,Jsoup.parse(field).text()));
         }
         if (found.isEmpty()) return null;
         String actor=classes.actor();

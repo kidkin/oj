@@ -20,8 +20,19 @@
         <el-button v-if="more" size="small" :loading="busy" @click="loadQueue(true)">加载更多</el-button>
       </el-tab-pane>
       <el-tab-pane v-if="!classId" label="关键词设置" name="rules">
+        <h3>已启用的内置词库</h3>
+        <el-radio-group v-model="category" size="small" @change="resetDictionary">
+          <el-radio-button v-for="c in rules.categories" :key="c.id" :label="c.id">{{ c.label }} · {{ c.count }}</el-radio-button>
+        </el-radio-group>
+        <el-form inline class="dictionary-search" @submit.native.prevent="resetDictionary">
+          <el-input v-model="keyword" size="small" maxlength="128" clearable placeholder="搜索本类词条" @clear="resetDictionary" />
+          <el-button size="small" native-type="submit">搜索</el-button>
+        </el-form>
+        <div class="dictionary-terms" v-loading="dictBusy"><span v-for="word in dictionary.words" :key="word">{{ word }}</span><small v-if="!dictionary.words.length">暂无匹配词条</small></div>
+        <el-pagination small layout="prev, pager, next, total" :total="dictionary.total" :page-size="40" :current-page="dictPage" @current-change="readDictionary" />
+        <el-divider />
         <el-form label-position="top" @submit.native.prevent="saveRules">
-          <el-form-item :label="'审核词表 · v' + rules.revision"><el-input type="textarea" v-model="rules.words" :rows="9" maxlength="12000" placeholder="每行一个完整词语" /></el-form-item>
+          <el-form-item :label="'自定义补充词 · v' + rules.revision"><el-input type="textarea" v-model="rules.words" :rows="9" maxlength="12000" placeholder="每行一个完整词语" /></el-form-item>
           <el-button native-type="submit" type="primary" :disabled="!rules.revision || acting">保存新版本</el-button>
         </el-form>
       </el-tab-pane>
@@ -54,7 +65,7 @@ import edu from '@/common/edu-api'
 export default {
   props: {classId: {type: [Number, String], default: null}},
   data () { return {tab: 'queue', state: 'PENDING', rows: [], more: false, busy: false, acting: false,
-    rules: {revision: 0, words: ''}, pid: null, problems: [], family: 'cpp', ac: true, threshold: 75,
+    rules: {revision: 0, words: '', categories: []}, category: 'politics', keyword: '', dictPage: 1, dictBusy: false, dictRequest: 0, dictionary: {words: [], total: 0}, pid: null, problems: [], family: 'cpp', ac: true, threshold: 75,
     searching: false, scanning: false, result: null, expanded: '', queueVersion: 0, searchVersion: 0} },
   watch: {
     tab (value) {
@@ -83,7 +94,17 @@ export default {
         this.$message.success('复核结果已保存'); this.resetQueue()
       } catch (_) {} finally { this.acting = false }
     },
-    async loadRules () { try { this.rules = await edu.reviewRules() } catch (_) {} },
+    async loadRules () { try { this.rules = await edu.reviewRules(); this.resetDictionary() } catch (_) {} },
+    resetDictionary () { this.readDictionary(1) },
+    async readDictionary (page) {
+      const request = ++this.dictRequest
+      this.dictPage = page; this.dictBusy = true
+      try {
+        const result = await edu.reviewDictionary({category: this.category, keyword: this.keyword, page})
+        if (request === this.dictRequest) this.dictionary = result
+      } catch (_) { if (request === this.dictRequest) this.dictionary = {words: [], total: 0} }
+      finally { if (request === this.dictRequest) this.dictBusy = false }
+    },
     async saveRules () {
       this.acting = true
       try { await edu.saveReviewRules(this.rules); await this.loadRules(); this.$message.success('新词表已启用') } catch (_) {} finally { this.acting = false }
@@ -107,6 +128,9 @@ export default {
 }
 </script>
 <style scoped>
+.dictionary-search { display:flex; gap:8px; margin:16px 0; max-width:420px; }
+.dictionary-terms { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.dictionary-terms span { border:1px solid #dbe4eb; border-radius:6px; padding:3px 8px; overflow-wrap:anywhere; }
 .records { min-height:64px; margin:16px 0; }
 .record { border:1px solid #d9e4ea; padding:16px; border-radius:10px; margin:12px 0; }
 small { display:block; color:#516677; margin:6px 0; }
