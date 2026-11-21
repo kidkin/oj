@@ -61,7 +61,7 @@ public class JudgeEntityServiceImpl extends ServiceImpl<JudgeMapper, Judge> impl
         //新建分页
         Page<JudgeVO> page = new Page<>(currentPage, limit);
 
-        IPage<JudgeVO> commonJudgeList = judgeMapper.getCommonJudgeList(page, searchPid, status, username, uid, completeProblemID, gid);
+        IPage<JudgeVO> commonJudgeList = judgeMapper.getCommonJudgeList(page, searchPid, status, username, username != null && !username.isEmpty() && top.hcode.hoj.edu.PublicNames.staff(), uid, completeProblemID, gid);
         List<JudgeVO> records = commonJudgeList.getRecords();
         if (!CollectionUtils.isEmpty(records)) {
             List<Long> pidList = records.stream().map(JudgeVO::getPid).collect(Collectors.toList());
@@ -108,7 +108,7 @@ public class JudgeEntityServiceImpl extends ServiceImpl<JudgeMapper, Judge> impl
         //新建分页
         Page<JudgeVO> page = new Page<>(currentPage, limit);
 
-        return judgeMapper.getContestJudgeList(page, displayId, cid, status, username, uid, beforeContestSubmit,
+        return judgeMapper.getContestJudgeList(page, displayId, cid, status, username, username != null && !username.isEmpty() && top.hcode.hoj.edu.PublicNames.staff(), uid, beforeContestSubmit,
                 rule, startTime, sealRankTime, sealTimeUid, completeProblemID);
     }
 

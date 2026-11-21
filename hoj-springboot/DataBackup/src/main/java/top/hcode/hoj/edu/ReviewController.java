@@ -37,6 +37,13 @@ public class ReviewController {
     public CommonResult<Boolean> rules(@RequestBody Dictionary body){
         review.configure(body.getRevision(),body.getWords()); return CommonResult.successResponse(true);
     }
+    @GetMapping("/submission-similarity")
+    public CommonResult<Map<String,Object>> submissions(@RequestParam long pid,@RequestParam(required=false) Long submitId,
+            @RequestParam(defaultValue="cpp") String family,@RequestParam(defaultValue="30") int days,
+            @RequestParam(defaultValue="75") int threshold,@RequestParam(defaultValue="0") long contestId,
+            @RequestParam(required=false) Long groupId){
+        return CommonResult.successResponse(similarity.submissions(pid,submitId,family,days,threshold,contestId,groupId));
+    }
     @GetMapping("/similarity")
     public CommonResult<Map<String,Object>> scan(@RequestParam long classId,@RequestParam long pid,
             @RequestParam String family,@RequestParam(defaultValue="true") boolean ac,@RequestParam(defaultValue="75") int threshold){

@@ -37,7 +37,8 @@ class ContentReviewTest {
         ContentReview permissions=new ContentReview(db,classes);
         assertThrows(EduException.class,()->permissions.queue(17L,"PENDING",0));
         assertThrows(EduException.class,permissions::settings);
-        assertThrows(EduException.class,()->new ClassSimilarity(db,permissions).compare(17,1,"cpp",true,75));
+        assertThrows(EduException.class,()->new ClassSimilarity(db,permissions,classes).compare(17,1,"cpp",true,75));
+        assertThrows(EduException.class,()->new ClassSimilarity(db,permissions,classes).submissions(1,18L,"python",7,75,0,null));
         verifyNoInteractions(db);
     }
     @Test void snippetsSurviveRenamingAndLayout() {

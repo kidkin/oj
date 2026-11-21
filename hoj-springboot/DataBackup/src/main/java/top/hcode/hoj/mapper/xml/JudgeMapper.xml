@@ -8,7 +8,9 @@
             <where>
                 j.cid = 0 AND j.cpid = 0
                 <if test="username!='' and username!=null">
-                    AND j.username like concat('%',#{username},'%')
+                    AND EXISTS (SELECT 1 FROM user_info account LEFT JOIN edu_display_name dn ON dn.uid=account.uuid
+                             WHERE account.uuid=j.uid AND (LOCATE(#{username}, COALESCE(dn.public_name,account.username))>0
+                             <if test="rosterSearch"> OR LOCATE(#{username},account.username)>0 OR LOCATE(#{username},account.realname)>0 </if>))
                 </if>
                 <if test="status!=null">
                     AND j.status = #{status}
@@ -36,7 +38,7 @@
 
 
     <select id="getContestJudgeList" resultType="top.hcode.hoj.pojo.vo.JudgeVO" useCache="true">
-        select j.submit_id,j.submit_time,j.uid,j.username,cp.display_id,cp.display_title as title,
+        select j.submit_id,j.submit_time,j.uid,j.username,j.pid,cp.display_id,cp.display_title as title,
         j.status,j.share,j.time,j.memory,j.score,j.length,j.language,j.cid,j.cpid,j.judger,j.is_manual
         from judge j right join
         (
@@ -59,7 +61,9 @@
                 AND j.cid = #{cid}
             </if>
             <if test="username!='' and username!=null">
-                AND j.username like concat('%',#{username},'%')
+                AND EXISTS (SELECT 1 FROM user_info account LEFT JOIN edu_display_name dn ON dn.uid=account.uuid
+                             WHERE account.uuid=j.uid AND (LOCATE(#{username}, COALESCE(dn.public_name,account.username))>0
+                             <if test="rosterSearch"> OR LOCATE(#{username},account.username)>0 OR LOCATE(#{username},account.realname)>0 </if>))
             </if>
             <if test="status!=null">
                 AND j.status = #{status}

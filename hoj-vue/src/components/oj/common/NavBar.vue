@@ -128,7 +128,7 @@
               trigger="hover"
             >
               <span class="el-dropdown-link">
-                <span v-user-level="{uid: userInfo.uid, username: userInfo.username}">{{ userInfo.username }}</span><i class="el-icon-caret-bottom"></i>
+                <span v-user-level="{uid: userInfo.uid, username: userInfo.username}">{{ ownDisplayName || userInfo.username }}</span><i class="el-icon-caret-bottom"></i>
               </span>
 
               <el-dropdown-menu slot="dropdown">
@@ -151,7 +151,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <avatar
-              :username="userInfo.username"
+              :username="ownDisplayName || userInfo.username"
               :inline="true"
               :size="30"
               color="#FFF"
@@ -329,12 +329,12 @@
         >
           <mu-button flat>
             <avatar
-              :username="userInfo.username"
+              :username="ownDisplayName || userInfo.username"
               :inline="true"
               :size="30"
               color="#FFF"
               :src="avatar"
-              :title="userInfo.username"
+              :title="ownDisplayName || userInfo.username"
             ></avatar>
             <i class="el-icon-caret-bottom"></i>
           </mu-button>
@@ -545,6 +545,7 @@ export default {
     };
   },
   mounted() {
+    window.addEventListener("hoj-display-name", this.refreshOwnName);
     this.refreshEducationAccess();
     this.switchMode();
     this.setHiddenHeaderHeight();
@@ -556,10 +557,12 @@ export default {
     }
   },
   beforeDestroy() {
+    window.removeEventListener("hoj-display-name", this.refreshOwnName);
     clearInterval(this.msgTimer);
   },
   data() {
     return {
+      ownDisplayName: "",
       educationTeacher: false,
       toolboxLinks,
       mode:'defalut',
@@ -575,7 +578,14 @@ export default {
     };
   },
   methods: {
+    async refreshOwnName() {
+      const token = this.token;
+      this.ownDisplayName = "";
+      if (!this.isAuthenticated) return;
+      try { const name = await edu.myDisplayName(); if (token === this.token) this.ownDisplayName = name; } catch (_) {}
+    },
     async refreshEducationAccess() {
+      this.refreshOwnName();
       this.educationTeacher = false;
       const token = this.token;
       if (!this.isAuthenticated) return;

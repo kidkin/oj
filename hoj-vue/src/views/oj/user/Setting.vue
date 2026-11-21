@@ -1,6 +1,13 @@
 <template>
   <el-card class="box-card">
     <el-collapse v-model="activeName" accordion @change="refreshProfileAccess">
+      <el-collapse-item name="DisplayName" title="公开显示名">
+        <el-form @submit.native.prevent="saveName" class="display-name-form">
+          <el-form-item label="显示名"><el-input v-model.trim="displayName" maxlength="24" show-word-limit /></el-form-item>
+          <p>对外展示这个名字。登录时仍使用原账号名。</p>
+          <el-button type="primary" native-type="submit" :loading="saving" :disabled="!nameLoaded || !displayName">保存显示名</el-button>
+        </el-form>
+      </el-collapse-item>
       <el-collapse-item name="Account">
         <template slot="title">
           <i class="fa fa-gear"> {{ $t('m.Account_Setting') }}</i>
@@ -23,6 +30,7 @@
 </template>
 <script>
 import api from '@/common/api';
+import edu from '@/common/edu-api';
 const Account = () => import('@/components/oj/setting/Account');
 const UserInfo = () => import('@/components/oj/setting/UserInfo');
 export default {
@@ -34,13 +42,23 @@ export default {
     return {
       Account: 'Account',
       UserInfo: 'UserInfo',
-      activeName: 'Account',
+      activeName: 'Account', displayName: '', nameLoaded: false, saving: false,
       profileAccess: null,
       checkingProfile: false,
     };
   },
   methods: {
+    async saveName() {
+      this.saving = true;
+      try { this.displayName = await edu.saveDisplayName(this.displayName); window.dispatchEvent(new Event('hoj-display-name')); this.$message.success('显示名已保存'); }
+      catch (_) {} finally { this.saving = false; }
+    },
     async refreshProfileAccess(name) {
+      if (name === 'DisplayName') {
+        this.nameLoaded = false;
+        try { this.displayName = await edu.myDisplayName(); this.nameLoaded = true; } catch (_) {}
+        return;
+      }
       if (name !== 'UserInfo' || this.checkingProfile) return;
       this.checkingProfile = true;
       this.profileAccess = null;
@@ -57,6 +75,8 @@ export default {
 };
 </script>
 <style scoped>
+.display-name-form { max-width: 360px; padding: 12px 4px; }
+.display-name-form p { color: #526275; margin-bottom: 12px; }
 .profile-settings { min-height: 40px; }
 @media screen and (min-width: 1200px) {
   .box-card {

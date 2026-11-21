@@ -41,6 +41,11 @@
           </div>
         </template>
       </el-alert>
+      <div v-if="submission && submission.submitId" class="submission-tools">
+        <roster-name-toggle @change="getSubmission" />
+        <el-button v-if="canReviewCode" type="primary" plain size="small" @click="reviewRow=submission">这次提交查重</el-button>
+      </div>
+      <submission-review v-if="reviewRow" :row="reviewRow" initial="submission" @close="reviewRow=null" />
       <div v-if="growthInvalid || (isSuperAdmin && submission.submitId)" style="margin-top: 10px;">
         <el-tag v-if="growthInvalid" type="danger" size="small">无效 · 不计成长分</el-tag>
         <el-button v-if="isSuperAdmin && submission.submitId" size="small" plain
@@ -329,6 +334,8 @@
 
 <script>
 import api from "@/common/api";
+import SubmissionReview from '@/components/oj/common/SubmissionReview';
+import RosterNameToggle from '@/components/oj/common/RosterNameToggle';
 import {
   JUDGE_STATUS,
   JUDGE_STATUS_RESERVE,
@@ -344,11 +351,13 @@ import JudgeCase from "@/components/oj/common/JudgeCase";
 export default {
   name: "submissionDetails",
   components: {
+    SubmissionReview, RosterNameToggle,
     Highlight,
     JudgeCase,
   },
   data() {
     return {
+      reviewRow: null,
       submission: {
         code: "",
         submitId: "",
@@ -555,6 +564,10 @@ export default {
     },
   },
   computed: {
+    canReviewCode() {
+      const roles = this.$store.getters.userInfo.roleList || [];
+      return roles.includes('root') || roles.includes('teacher');
+    },
     isSuperAdmin() { return this.$store.getters.isSuperAdmin; },
     status() {
       return {

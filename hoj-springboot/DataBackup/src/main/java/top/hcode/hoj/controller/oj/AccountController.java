@@ -48,7 +48,7 @@ public class AccountController {
     @GetMapping("/get-user-home-info")
     public CommonResult<UserHomeVO> getUserHomeInfo(@RequestParam(value = "uid", required = false) String uid,
                                                     @RequestParam(value = "username", required = false) String username) {
-        return accountService.getUserHomeInfo(uid, username);
+        return accountService.getUserHomeInfo(uid, uid == null || uid.isEmpty() ? username : null);
     }
 
 
@@ -62,7 +62,7 @@ public class AccountController {
     @AnonApi
     public CommonResult<UserCalendarHeatmapVO> getUserCalendarHeatmap(@RequestParam(value = "uid", required = false) String uid,
                                                                       @RequestParam(value = "username", required = false) String username) {
-        return accountService.getUserCalendarHeatmap(uid, username);
+        return accountService.getUserCalendarHeatmap(uid, uid == null || uid.isEmpty() ? username : null);
     }
 
 

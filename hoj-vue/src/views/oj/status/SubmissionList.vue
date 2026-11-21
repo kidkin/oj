@@ -114,7 +114,7 @@
               <vxe-input
                 v-model="formFilter.username"
                 :disabled="formFilter.onlyMine"
-                :placeholder="$t('m.Enter_Author')"
+                :placeholder="canReviewCode ? '搜索显示名、原姓名或账号' : '搜索显示名'"
                 type="search"
                 size="medium"
                 @keyup.enter.native="handleQueryChange('username')"
@@ -123,6 +123,8 @@
             </el-col>
           </el-row>
         </div>
+        <roster-name-toggle @change="getSubmissions" />
+        <submission-review v-if="reviewRow" :row="reviewRow" @close="reviewRow=null" />
         <vxe-table
           border="inner"
           stripe
@@ -378,6 +380,9 @@
               <span v-else>--</span>
             </template>
           </vxe-table-column>
+          <vxe-table-column v-if="canReviewCode" title="代码查重" width="112">
+            <template v-slot="{ row }"><el-button type="text" @click="openReview(row)">查看查重</el-button></template>
+          </vxe-table-column>
           <vxe-table-column
             field="username"
             :title="$t('m.Author')"
@@ -489,6 +494,8 @@
 <script>
 import { mapActions, mapGetters } from "vuex";
 import api from "@/common/api";
+import SubmissionReview from '@/components/oj/common/SubmissionReview';
+import RosterNameToggle from '@/components/oj/common/RosterNameToggle';
 import {
   JUDGE_STATUS,
   CONTEST_STATUS,
@@ -502,10 +509,12 @@ import "element-ui/lib/theme-chalk/display.css";
 export default {
   name: "submissionList",
   components: {
+    SubmissionReview, RosterNameToggle,
     Pagination,
   },
   data() {
     return {
+      reviewRow: null,
       formFilter: {
         onlyMine: false,
         status: "",
@@ -563,6 +572,7 @@ export default {
     this.getData();
   },
   methods: {
+    openReview(row) { this.reviewRow = Object.assign({}, row, {gid: row.gid || this.groupID}); },
     init() {
       this.checkStatusNum = 0;
       this.contestID = this.$route.params.contestID;
@@ -812,7 +822,7 @@ export default {
     goUserHome(username, uid) {
       this.$router.push({
         path: "/user-home",
-        query: { uid, username },
+        query: { uid },
       });
     },
     handleStatusChange(status) {
@@ -934,7 +944,7 @@ export default {
       return "el-tag el-tag--medium status-" + JUDGE_STATUS[status]["color"];
     },
     tableRowClassName({ row, rowIndex }) {
-      if (row.username == this.userInfo.username && this.isAuthenticated) {
+      if (row.uid == this.userInfo.uid && this.isAuthenticated) {
         return "own-submit-row";
       }
     },
@@ -1016,6 +1026,10 @@ export default {
     },
   },
   computed: {
+    canReviewCode() {
+      const roles = this.$store.getters.userInfo.roleList || [];
+      return roles.includes('root') || roles.includes('teacher');
+    },
     ...mapGetters([
       "isAuthenticated",
       "userInfo",
