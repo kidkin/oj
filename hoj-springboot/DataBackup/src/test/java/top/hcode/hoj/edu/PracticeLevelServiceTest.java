@@ -94,6 +94,8 @@ class PracticeLevelServiceTest {
         Map<String, Object> formal = user("formal", "Formal", "formal", 30);
         formal.put("scoreUnits", 1800L);
         when(db.queryForList(anyString())).thenReturn(Arrays.asList(trial, formal));
+        when(db.queryForList(contains("AND u.uuid=?"),eq("trial"))).thenReturn(Collections.singletonList(trial));
+        when(db.queryForList(contains("AND u.uuid=?"),eq("formal"))).thenReturn(Collections.singletonList(formal));
         PracticeLevelService service = new PracticeLevelService(db);
 
         Map<String, Object> board = service.rating(1, 3, "");
