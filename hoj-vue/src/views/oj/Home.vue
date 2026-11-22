@@ -197,7 +197,7 @@ export default {
 .home-empty { padding:25px 16px; display:flex; flex-direction:column; gap:8px; align-items:center; color:#98a9bb; font-size:13px; }.home-empty>i { font-size:30px; color:#cbd9e6; }.contest-empty a { font-size:12px; }.home-alert { margin:5px 12px; width:calc(100% - 24px); }
 @media(max-width:991px) { .home-learning-column { margin-bottom:18px; } }@media(prefers-reduced-motion:reduce) { .place-1 .medal { animation:none; }.rank-link { transition:none; } }
 .footprint-placeholder { background:#fff; padding:24px; border-radius:18px; min-height:190px; }
-.weekly-rank .place-1 .rank-link { min-height:54px; background:linear-gradient(100deg,#ffe099,#fff9e9); border-left:4px solid #ce8808; }
-.weekly-rank .place-2 .rank-link { min-height:46px; background:linear-gradient(100deg,#d7e2f3,#f3f7fd); border-left:4px solid #788fad; }
-.weekly-rank .place-3 .rank-link { min-height:39px; background:linear-gradient(100deg,#f3c9aa,#fff3e9); border-left:4px solid #af693d; }
+.weekly-rank .place-1 .rank-link { min-height:45px; background:linear-gradient(100deg,#ffe099,#fff9e9); border-left:4px solid #ce8808; }
+.weekly-rank .place-2 .rank-link { min-height:41px; background:linear-gradient(100deg,#d7e2f3,#f3f7fd); border-left:4px solid #788fad; }
+.weekly-rank .place-3 .rank-link { min-height:37px; background:linear-gradient(100deg,#f3c9aa,#fff3e9); border-left:4px solid #af693d; }
 </style>

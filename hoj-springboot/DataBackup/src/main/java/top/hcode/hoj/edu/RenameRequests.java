@@ -61,7 +61,7 @@ public class RenameRequests {
     public List<Map<String,Object>> queue(Long classId,long after){
         requireReviewer(classes.actor(),classId);
         String sql="SELECT r.id,u.username,u.realname,COALESCE(n.public_name,u.username) AS currentName,r.public_name AS requestedName,r.requested_at AS requestedAt "
-                +"FROM edu_rename_request r JOIN user_info u ON u.uuid=r.uid LEFT JOIN edu_display_name n ON n.uid=r.uid WHERE r.state='PENDING' AND r.id>? ";
+                +"FROM edu_rename_request r JOIN user_info u ON u.uuid=r.uid LEFT JOIN edu_effective_display_name n ON n.uid=r.uid WHERE r.state='PENDING' AND r.id>? ";
         List<Object> args=new ArrayList<>(); args.add(after);
         if(classId!=null){sql+=" AND "+MEMBER; args.add(classId);}
         return db.queryForList(sql+" ORDER BY r.id LIMIT 51",args.toArray());

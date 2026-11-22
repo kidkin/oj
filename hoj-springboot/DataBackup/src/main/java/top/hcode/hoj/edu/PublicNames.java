@@ -24,7 +24,7 @@ public class PublicNames {
         return viewer.isAuthenticated() && (viewer.hasRole("root") || viewer.hasRole("teacher") || viewer.hasRole("admin"));
     }
     public String mine() {
-        return db.queryForObject("SELECT COALESCE(n.public_name,u.username) FROM user_info u LEFT JOIN edu_display_name n ON n.uid=u.uuid WHERE u.uuid=?",String.class,classes.actor());
+        return db.queryForObject("SELECT COALESCE(n.public_name,u.username) FROM user_info u LEFT JOIN edu_effective_display_name n ON n.uid=u.uuid WHERE u.uuid=?",String.class,classes.actor());
     }
     String validate(String uid,String input) {
         String name = input == null ? "" : input.trim();
@@ -32,7 +32,7 @@ public class PublicNames {
         if (!BuiltinReviewDictionary.INSTANCE.find(name).isEmpty()) throw new EduException(400,"请换一个显示名");
         if (db.queryForObject("SELECT COUNT(*) FROM user_info WHERE uuid<>? AND (username=? OR realname=?)",Long.class,uid,name,name)>0)
             throw new EduException(400,"该显示名不可用");
-        if (db.queryForObject("SELECT COUNT(*) FROM edu_display_name WHERE uid<>? AND public_name=?",Long.class,uid,name)>0)
+        if (db.queryForObject("SELECT COUNT(*) FROM edu_effective_display_name WHERE uid<>? AND public_name=?",Long.class,uid,name)>0)
             throw new EduException(400,"该显示名不可用");
         return name;
     }
@@ -47,7 +47,7 @@ public class PublicNames {
         Map<String,String> labels=new HashMap<>();
         if (uids.isEmpty()) return labels;
         String sql = roster ? "SELECT uuid,COALESCE(NULLIF(TRIM(realname),''),username) FROM user_info WHERE uuid"
-                            : "SELECT uid,public_name FROM edu_display_name WHERE uid";
+                            : "SELECT uid,public_name FROM edu_effective_display_name WHERE uid";
         db.query(sql+" IN ("+String.join(",",Collections.nCopies(uids.size(),"?"))+")",uids.toArray(),
                 (org.springframework.jdbc.core.RowCallbackHandler) rs -> labels.put(rs.getString(1),rs.getString(2)));
         return labels;

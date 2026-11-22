@@ -8,7 +8,7 @@
             <where>
                 j.cid = 0 AND j.cpid = 0
                 <if test="username!='' and username!=null">
-                    AND EXISTS (SELECT 1 FROM user_info account LEFT JOIN edu_display_name dn ON dn.uid=account.uuid
+                    AND EXISTS (SELECT 1 FROM user_info account LEFT JOIN edu_effective_display_name dn ON dn.uid=account.uuid
                              WHERE account.uuid=j.uid AND (LOCATE(#{username}, COALESCE(dn.public_name,account.username))>0
                              <if test="rosterSearch"> OR LOCATE(#{username},account.username)>0 OR LOCATE(#{username},account.realname)>0 </if>))
                 </if>
@@ -61,7 +61,7 @@
                 AND j.cid = #{cid}
             </if>
             <if test="username!='' and username!=null">
-                AND EXISTS (SELECT 1 FROM user_info account LEFT JOIN edu_display_name dn ON dn.uid=account.uuid
+                AND EXISTS (SELECT 1 FROM user_info account LEFT JOIN edu_effective_display_name dn ON dn.uid=account.uuid
                              WHERE account.uuid=j.uid AND (LOCATE(#{username}, COALESCE(dn.public_name,account.username))>0
                              <if test="rosterSearch"> OR LOCATE(#{username},account.username)>0 OR LOCATE(#{username},account.realname)>0 </if>))
             </if>

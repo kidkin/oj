@@ -260,10 +260,13 @@ export default {
 .podium-medal { display:flex; flex-direction:column; justify-content:center; align-items:center; line-height:1; gap:3px; width:48px; height:58px; border-radius:14px; }
 .podium-medal i { font-size:20px; } .rank-number.rank-top { display:inline-flex; align-items:center; justify-content:center; gap:3px; padding:2px 5px; }
 @media (min-width: 731px) {
-  .podium-card.place-1 { min-height:210px; } .podium-card.place-2 { min-height:157px; } .podium-card.place-3 { min-height:106px; }
+  .podium-card { padding-block:10px; }
+  .podium-card.place-1 { min-height:138px; } .podium-card.place-2 { min-height:120px; } .podium-card.place-3 { min-height:102px; }
 }
 @media (max-width: 730px) {
-  .podium-card.place-1 { min-height:106px; } .podium-card.place-2 { min-height:86px; } .podium-card.place-3 { min-height:68px; }
+  .podium-card { padding-block:5px; }
+  .podium-medal { height:49px; }
+  .podium-card.place-1 { min-height:87px; } .podium-card.place-2 { min-height:80px; } .podium-card.place-3 { min-height:73px; }
   .podium-grid { grid-template-columns:minmax(0,1fr); } .podium-size-3 .podium-card { grid-column:auto; grid-row:auto; }
 }
 </style>
