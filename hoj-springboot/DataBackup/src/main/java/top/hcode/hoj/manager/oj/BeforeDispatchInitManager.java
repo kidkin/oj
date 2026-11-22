@@ -43,6 +43,8 @@ import java.util.Objects;
  */
 @Component
 public class BeforeDispatchInitManager {
+    @Autowired
+    private top.hcode.hoj.edu.ContestPaperService contestPaper;
     @org.springframework.beans.factory.annotation.Autowired
     private top.hcode.hoj.edu.ContentReview contentReview;
 
@@ -96,7 +98,7 @@ public class BeforeDispatchInitManager {
             throw new StatusForbiddenException("错误！当前题目已不存在，不可提交！");
         }
 
-        if (problem.getAuth() == 2) {
+        if (problem.getAuth() == 2 || (problem.getAuth() == 3 && contestPaper.paperOnly(problem.getId()))) {
             throw new StatusForbiddenException("错误！当前题目不可提交！");
         }
 
@@ -126,6 +128,7 @@ public class BeforeDispatchInitManager {
 
     @Transactional(rollbackFor = Exception.class)
     public void initContestSubmission(Long cid, String displayId, AccountProfile userRolesVo, Judge judge) throws StatusNotFoundException, StatusForbiddenException {
+        contestPaper.guard(cid, true);
         Contest contest = contestEntityService.getById(cid);
         if (contest == null) {
             throw new StatusNotFoundException("对不起，该比赛不存在！");

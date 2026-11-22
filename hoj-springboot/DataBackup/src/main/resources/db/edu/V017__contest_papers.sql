@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS edu_contest_paper (
+  cid BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  minutes INT NOT NULL DEFAULT 0,
+  questions MEDIUMTEXT NOT NULL,
+  CONSTRAINT fk_edu_paper_contest FOREIGN KEY (cid) REFERENCES contest(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS edu_paper_attempt (
+  cid BIGINT UNSIGNED NOT NULL,
+  uid VARCHAR(32) CHARACTER SET ${userCharset} COLLATE ${userCollation} NOT NULL,
+  started_at DATETIME(3) NOT NULL,
+  ends_at DATETIME(3) NOT NULL,
+  submitted_at DATETIME(3) NULL,
+  answers MEDIUMTEXT NOT NULL,
+  revision INT NOT NULL DEFAULT 0,
+  PRIMARY KEY(cid,uid),
+  CONSTRAINT fk_edu_attempt_user FOREIGN KEY (uid) REFERENCES user_info(uuid) ON DELETE CASCADE,
+  CONSTRAINT fk_edu_attempt_paper FOREIGN KEY (cid) REFERENCES edu_contest_paper(cid) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -48,7 +48,7 @@ public class EduSchemaMigration implements ApplicationRunner {
             statement.execute("CREATE TABLE IF NOT EXISTS edu_schema_history (version VARCHAR(64) PRIMARY KEY, " +
                     "checksum CHAR(64) NOT NULL, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB");
         }
-        for (String version : new String[]{"V001__class_members", "V002__shared_courses", "V003__course_icons", "V004__display_order", "V005__weekly_release", "V006__judge_error_utf8mb4", "V007__course_chapters", "V008__learning_start", "V009__growth_account_types", "V010__growth_reviews_wallet", "V011__course_placement", "V012__content_review", "V013__builtin_review_rules", "V014__display_name","V015__rename_requests","V016__roster_names"}) apply(connection, version);
+        for (String version : new String[]{"V001__class_members", "V002__shared_courses", "V003__course_icons", "V004__display_order", "V005__weekly_release", "V006__judge_error_utf8mb4", "V007__course_chapters", "V008__learning_start", "V009__growth_account_types", "V010__growth_reviews_wallet", "V011__course_placement", "V012__content_review", "V013__builtin_review_rules", "V014__display_name","V015__rename_requests","V016__roster_names","V017__contest_papers"}) apply(connection, version);
     }
 
     private void apply(Connection connection, String version) throws Exception {

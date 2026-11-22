@@ -55,6 +55,8 @@ import java.util.stream.Collectors;
  */
 @Component
 public class JudgeManager {
+    @Autowired
+    private top.hcode.hoj.edu.ContestPaperService contestPaper;
     @org.springframework.beans.factory.annotation.Autowired
     private top.hcode.hoj.edu.ContentReview contentReview;
 
@@ -251,6 +253,7 @@ public class JudgeManager {
 
         // 需要获取一下该token对应用户的数据
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
+        if(judge.getCid()!=null && judge.getCid()>0) contestPaper.guard(judge.getCid(),true);
         if (!Objects.equals(judge.getUid(), userRolesVo.getUid())){
             throw new StatusForbiddenException("非提交该评测的用户不可操作！");
         }

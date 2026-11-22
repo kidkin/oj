@@ -628,6 +628,7 @@
       >{{
         $t('m.Save')
       }}</el-button>
+      <ContestPaperAdmin v-if="$route.params.contestId" :cid="$route.params.contestId"/>
     </el-card>
   </div>
 </template>
@@ -645,6 +646,7 @@ export default {
   components: {
     Editor,
     RankBox,
+    ContestPaperAdmin: () => import("@/components/admin/ContestPaperAdmin.vue"),
   },
   data() {
     return {

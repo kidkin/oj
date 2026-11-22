@@ -168,6 +168,7 @@
               >
             </el-form>
           </el-card>
+          <ContestPaper v-if="contest.id && !passwordFormVisible && $store.getters.isAuthenticated" :key="contest.id" :cid="contest.id"/>
           <el-card class="box-card">
             <Markdown 
               :isAvoidXss="contest.gid != null" 
@@ -358,6 +359,7 @@ import Markdown from "@/components/oj/common/Markdown";
 export default {
   name: 'ContestDetails',
   components: {
+    ContestPaper: () => import("@/components/oj/contest/ContestPaper.vue"),
     Markdown
   },
   data() {

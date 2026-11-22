@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
  */
 @Component
 public class ContestManager {
+    @Autowired
+    private top.hcode.hoj.edu.ContestPaperService contestPaper;
 
     @Autowired
     private ContestEntityService contestEntityService;
@@ -216,6 +218,7 @@ public class ContestManager {
 
 
     public List<ContestProblemVO> getContestProblem(Long cid, Boolean isContainsContestEndJudge) throws StatusFailException, StatusForbiddenException {
+        contestPaper.guard(cid, false);
 
         // 获取当前登录的用户
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
@@ -292,6 +295,7 @@ public class ContestManager {
     }
 
     public List<ProblemFullScreenListVO> getContestFullScreenProblemList(Long cid) throws StatusForbiddenException, StatusFailException {
+        contestPaper.guard(cid, false);
         // 获取当前登录的用户
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
 
@@ -363,6 +367,7 @@ public class ContestManager {
     }
 
     public ProblemInfoVO getContestProblemDetails(Long cid, String displayId, Boolean isContainsContestEndJudge) throws StatusFailException, StatusForbiddenException, StatusNotFoundException {
+        contestPaper.guard(cid, false);
 
         // 获取当前登录的用户
         AccountProfile userRolesVo = (AccountProfile) SecurityUtils.getSubject().getPrincipal();
