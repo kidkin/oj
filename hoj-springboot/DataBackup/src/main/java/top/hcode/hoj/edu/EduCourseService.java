@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 public class EduCourseService {
     private final JdbcTemplate db;
     private final EduClassService classes;
-    @org.springframework.beans.factory.annotation.Autowired private PracticeLevelService practiceLevels;
     private final CourseIconStore icons = new CourseIconStore();
     private Clock learningClock = Clock.system(ZoneId.of("Asia/Shanghai"));
     public EduCourseService(JdbcTemplate db, EduClassService classes) { this.db = db; this.classes = classes; }
@@ -100,9 +99,8 @@ public class EduCourseService {
     /** The signed-in student's private, site-wide activity. */
     public Map<String, Object> learningFootprint() {
         Access access = new Access();
-        Map<String, Object> profile = practiceLevels.currentProfileAccess();
         Map<String, Object> result = new LinkedHashMap<>();
-        boolean enabled = "formal".equals(profile.get("accountType")) && !"staff".equals(profile.get("key"));
+        boolean enabled = !access.teacher && !classes.hasRole(access.uid,"admin") && !classes.hasRole(access.uid,"problem_admin");
         result.put("enabled", enabled);
         if (!enabled) return result;
         LocalDate monday = LocalDate.now(learningClock.withZone(ZoneId.of("Asia/Shanghai")))

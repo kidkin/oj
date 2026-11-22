@@ -171,7 +171,7 @@ public class PracticeLevelService {
     }
 
     long currentEarnedUnits(String uid) {
-        for (Map<String, Object> row : db.queryForList(RATING_QUERY)) {
+        for (Map<String, Object> row : db.queryForList(RATING_QUERY.replace("/*account_scope*/","AND u.uuid=?"),uid)) {
             if (uid.equals(row.get("uid")) && formal(row)) return number(row, "scoreUnits");
         }
         return 0;

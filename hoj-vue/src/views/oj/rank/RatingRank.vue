@@ -16,7 +16,7 @@
       <h2 id="podium-title">榜单前三</h2>
       <div class="podium-grid" :class="'podium-size-' + leaders.length">
         <article v-for="row in leaders" :key="row.uid" class="podium-card" :class="'place-' + row.rank">
-          <span class="podium-medal" :aria-label="'第 ' + row.rank + ' 名'">{{ row.rank }}</span>
+          <span class="podium-medal" :aria-label="'第 ' + row.rank + ' 名'"><i :class="rankIcons[row.rank]" aria-hidden="true" /><strong>{{ row.rank }}</strong></span>
           <div class="podium-person">
             <router-link :to="profile(row)" class="rating-name" :title="row.username">
               {{ row.username }}
@@ -57,7 +57,7 @@
         </thead>
         <tbody>
           <tr v-for="row in records" :key="row.uid">
-            <td><span class="rank-number" :class="row.rank <= 3 ? 'rank-top rank-' + row.rank : ''">{{ row.rank }}</span></td>
+            <td><span class="rank-number" :class="row.rank <= 3 ? 'rank-top rank-' + row.rank : ''"><i v-if="row.rank <= 3" :class="rankIcons[row.rank]" aria-hidden="true" /> {{ row.rank }}</span></td>
             <td>
               <router-link :to="profile(row)" class="rating-name" :title="row.username">{{ row.username }}</router-link>
               <div class="rating-badges table-tier">
@@ -104,7 +104,7 @@ import { PROBLEM_LEVEL } from '@/common/constants'
 export default {
   name: 'RatingRank',
   data: () => ({
-    records: [], leaders: [], rules: [], basePoints: [], multipliers: null, formalCount: 0, rankedCount: 0, total: 0,
+    rankIcons: {1:'el-icon-trophy',2:'el-icon-medal',3:'el-icon-star-on'}, records: [], leaders: [], rules: [], basePoints: [], multipliers: null, formalCount: 0, rankedCount: 0, total: 0,
     page: 1, limit: 20, keyword: '', submittedKeyword: '', loading: false, error: false, requestId: 0
   }),
   mounted () { this.load() },
@@ -252,5 +252,18 @@ export default {
   .table-tier { margin: 3px 0 0; }
   .mobile-solved { display: inline; margin-left: 6px; font-size: 12px; color: #576579; }
   .board-pagination { text-align: center; }
+}
+.podium-card { box-sizing:border-box; border-top:5px solid var(--accent); }
+.podium-card.place-1 { --accent:#c18408; --medal-bg:#ffcf58; --medal-ink:#553803; background:linear-gradient(145deg,#ffdf88,#fff6d8); }
+.podium-card.place-2 { --accent:#7189ac; --medal-bg:#c5d6ed; --medal-ink:#304765; background:linear-gradient(145deg,#d4e1f2,#f0f5fb); }
+.podium-card.place-3 { --accent:#ae653c; --medal-bg:#efb18a; --medal-ink:#633519; background:linear-gradient(145deg,#f2c4a5,#fff0e6); }
+.podium-medal { display:flex; flex-direction:column; justify-content:center; align-items:center; line-height:1; gap:3px; width:48px; height:58px; border-radius:14px; }
+.podium-medal i { font-size:20px; } .rank-number.rank-top { display:inline-flex; align-items:center; justify-content:center; gap:3px; padding:2px 5px; }
+@media (min-width: 731px) {
+  .podium-card.place-1 { min-height:210px; } .podium-card.place-2 { min-height:157px; } .podium-card.place-3 { min-height:106px; }
+}
+@media (max-width: 730px) {
+  .podium-card.place-1 { min-height:106px; } .podium-card.place-2 { min-height:86px; } .podium-card.place-3 { min-height:68px; }
+  .podium-grid { grid-template-columns:minmax(0,1fr); } .podium-size-3 .podium-card { grid-column:auto; grid-row:auto; }
 }
 </style>

@@ -3,6 +3,11 @@
     <el-row :gutter="24" :class="{ 'home-row--footprint': hasFootprint }">
       <el-col v-if="hasMainPanel" :md="15" :sm="24" :xs="24" class="home-learning-column">
         <LearningSummary v-if="hasFootprint" :key="footprintToken" :summary="footprint" />
+        <section v-else-if="footprintToken" class="footprint-placeholder" aria-live="polite">
+          <h2>我的学习足迹</h2>
+          <el-button v-if="footprintError" size="small" @click="loadFootprint(footprintToken)">重新加载</el-button>
+          <i v-else class="el-icon-loading" aria-label="正在加载" />
+        </section>
         <section v-else class="home-carousel-card" aria-label="首页轮播图">
           <el-carousel :interval="5000" height="clamp(220px, 34vw, 480px)"
             :arrow="carouselImages.length > 1 ? 'hover' : 'never'"
@@ -66,7 +71,7 @@ const WEEKLY_RANK_LIMIT = 5
 const RECENT_CONTEST_LIMIT = 2
 export default {
   name: 'home', components: { Avatar, ContestCard, LearningSummary },
-  data: () => ({ footprint: null, defaultCarouselImage, carouselImages: [{url: defaultCarouselImage}], carouselRequested: false, weeklyRank: [], previousRank: false, rankFetchedAt: 0, recentContests: [], rankLoading: false, rankLoaded: false, rankError: false, contestLoading: false, contestLoaded: false, contestError: false, refreshTimer: null, refreshActive: false }),
+  data: () => ({ footprint: null, footprintError: false, defaultCarouselImage, carouselImages: [{url: defaultCarouselImage}], carouselRequested: false, weeklyRank: [], previousRank: false, rankFetchedAt: 0, recentContests: [], rankLoading: false, rankLoaded: false, rankError: false, contestLoading: false, contestLoaded: false, contestError: false, refreshTimer: null, refreshActive: false }),
   computed: {
     token () { return this.$store.getters.token },
     isStaff () {
@@ -76,7 +81,7 @@ export default {
     showCarousel () { return !this.token || this.isStaff },
     footprintToken () { return this.showCarousel ? '' : this.token },
     hasFootprint () { return Boolean(this.footprintToken && this.footprint && this.footprint.enabled) },
-    hasMainPanel () { return this.showCarousel || this.hasFootprint }
+    hasMainPanel () { return this.showCarousel || !!this.footprintToken }
   },
   watch: {
     footprintToken: {immediate: true, handler: 'loadFootprint'},
@@ -95,12 +100,12 @@ export default {
   },
   methods: {
     async loadFootprint (token) {
-      this.footprint = null
+      this.footprint = null; this.footprintError = false
       if (!token) return
       try {
         const result = await edu.learningFootprint()
         if (token === this.footprintToken) this.footprint = result
-      } catch (_) {}
+      } catch (_) { if (token === this.footprintToken) this.footprintError = true }
     },
     async loadCarousel (visible) {
       if (!visible || this.carouselRequested) return
@@ -191,4 +196,8 @@ export default {
 .contest-list { display:grid; gap:8px; padding:0 16px 15px; }
 .home-empty { padding:25px 16px; display:flex; flex-direction:column; gap:8px; align-items:center; color:#98a9bb; font-size:13px; }.home-empty>i { font-size:30px; color:#cbd9e6; }.contest-empty a { font-size:12px; }.home-alert { margin:5px 12px; width:calc(100% - 24px); }
 @media(max-width:991px) { .home-learning-column { margin-bottom:18px; } }@media(prefers-reduced-motion:reduce) { .place-1 .medal { animation:none; }.rank-link { transition:none; } }
+.footprint-placeholder { background:#fff; padding:24px; border-radius:18px; min-height:190px; }
+.weekly-rank .place-1 .rank-link { min-height:54px; background:linear-gradient(100deg,#ffe099,#fff9e9); border-left:4px solid #ce8808; }
+.weekly-rank .place-2 .rank-link { min-height:46px; background:linear-gradient(100deg,#d7e2f3,#f3f7fd); border-left:4px solid #788fad; }
+.weekly-rank .place-3 .rank-link { min-height:39px; background:linear-gradient(100deg,#f3c9aa,#fff3e9); border-left:4px solid #af693d; }
 </style>

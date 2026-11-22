@@ -2,7 +2,7 @@ WITH accounts AS (
     SELECT u.uuid AS uid, u.username, NULLIF(TRIM(u.school),'') AS school, /*account_type*/ AS accountType, /*staff*/ AS staff
     FROM user_info u
     LEFT JOIN edu_growth_account o ON o.uid = u.uuid
-    WHERE u.status = 0
+    WHERE u.status = 0 /*account_scope*/
 ), weekly_problems AS (
     SELECT tp.pid, MIN(COALESCE(w.published_at, t.gmt_create)) AS published_at
     FROM training_problem tp

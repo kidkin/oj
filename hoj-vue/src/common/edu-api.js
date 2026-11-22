@@ -4,6 +4,9 @@ import axios from 'axios'
 const request = (method, path, data, params) => axios({method, url: '/api/edu' + path, data, params}).then(r => r.data.data)
 
 export default {
+  nameStatus: () => request('get', '/display-name/status'),
+  nameQueue: (classId,after) => request('get', '/display-name/queue', undefined, {classId,after}),
+  nameDecision: (id,classId,approve) => request('post', '/display-name/'+id+'/decision',undefined,{classId,approve}),
   myDisplayName: () => request('get', '/display-name'),
   saveDisplayName: displayName => request('put', '/display-name', {displayName}),
   submissionSimilarity: params => request('get', '/review/submission-similarity', undefined, params),

@@ -4,8 +4,12 @@
       <el-collapse-item name="DisplayName" title="公开显示名">
         <el-form @submit.native.prevent="saveName" class="display-name-form">
           <el-form-item label="显示名"><el-input v-model.trim="displayName" maxlength="24" show-word-limit /></el-form-item>
-          <p>对外展示这个名字。登录时仍使用原账号名。</p>
-          <el-button type="primary" native-type="submit" :loading="saving" :disabled="!nameLoaded || !displayName">保存显示名</el-button>
+          <div v-if="nameState && !nameState.direct">
+            <p>当前显示名：{{ nameState.current }}</p>
+            <p>改名每次 {{ nameState.cost }} 积分，审核通过时扣除。可用积分 {{ nameState.balance }}。</p>
+            <p v-if="nameState.latest">最近申请：{{ nameState.latest.requestedName }} · {{ {PENDING:'待审核',APPROVED:'已通过',REJECTED:'已驳回'}[nameState.latest.state] }}</p>
+          </div>
+          <el-button type="primary" native-type="submit" :loading="saving" :disabled="!nameLoaded || !displayName || (!nameState.direct && (nameState.balance < nameState.cost || (nameState.latest && nameState.latest.state === 'PENDING') || displayName === nameState.current))">{{ nameState && nameState.direct ? '保存显示名' : '申请改名' }}</el-button>
         </el-form>
       </el-collapse-item>
       <el-collapse-item name="Account">
@@ -42,7 +46,7 @@ export default {
     return {
       Account: 'Account',
       UserInfo: 'UserInfo',
-      activeName: 'Account', displayName: '', nameLoaded: false, saving: false,
+      activeName: 'Account', displayName: '', nameState: null, nameLoaded: false, saving: false,
       profileAccess: null,
       checkingProfile: false,
     };
@@ -50,13 +54,13 @@ export default {
   methods: {
     async saveName() {
       this.saving = true;
-      try { this.displayName = await edu.saveDisplayName(this.displayName); window.dispatchEvent(new Event('hoj-display-name')); this.$message.success('显示名已保存'); }
+      try { await edu.saveDisplayName(this.displayName); if (this.nameState.direct) window.dispatchEvent(new Event('hoj-display-name')); this.$message.success(this.nameState.direct ? '显示名已保存' : '申请已提交，等待教师审核'); await this.refreshProfileAccess('DisplayName'); }
       catch (_) {} finally { this.saving = false; }
     },
     async refreshProfileAccess(name) {
       if (name === 'DisplayName') {
         this.nameLoaded = false;
-        try { this.displayName = await edu.myDisplayName(); this.nameLoaded = true; } catch (_) {}
+        try { this.nameState = await edu.nameStatus(); this.displayName = this.nameState.current; this.nameLoaded = true; } catch (_) {}
         return;
       }
       if (name !== 'UserInfo' || this.checkingProfile) return;
