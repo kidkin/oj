@@ -19,5 +19,10 @@ public class ContestPaperController {
     @PostMapping("/submit") public CommonResult<?> submit(@PathVariable long cid,@RequestBody JsonNode data) {return CommonResult.successResponse(service.save(cid,data,true));}
     @GetMapping("/settings") public CommonResult<?> settings(@PathVariable long cid) {return CommonResult.successResponse(service.settings(cid));}
     @PutMapping("/settings") public CommonResult<?> settings(@PathVariable long cid,@RequestBody JsonNode data) {service.configure(cid,data);return CommonResult.successResponse();}
+    @PostMapping("/results/{uid}/restart")
+    public CommonResult<?> restart(@PathVariable long cid,@PathVariable String uid,@RequestParam long started) {
+        service.reset(cid,uid,started);
+        return CommonResult.successResponse();
+    }
     @GetMapping("/results") public CommonResult<?> results(@PathVariable long cid) {return CommonResult.successResponse(service.results(cid));}
 }

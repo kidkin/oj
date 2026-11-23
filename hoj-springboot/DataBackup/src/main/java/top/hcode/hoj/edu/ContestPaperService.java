@@ -80,12 +80,13 @@ public class ContestPaperService {
         ObjectNode out=json.createObjectNode();
         out.put("minutes",p==null?0:(int)p.get("minutes"));
         out.set("questions",p==null?json.createArrayNode():parse((String)p.get("questions")));
+        out.put("locked",count("SELECT EXISTS(SELECT 1 FROM edu_paper_attempt WHERE cid=?) OR EXISTS(SELECT 1 FROM edu_paper_retake WHERE cid=?)",cid,cid)>0);
         return out;
     }
     @Transactional
     public void configure(long cid,JsonNode data) {
         Contest c=contest(cid); requireManager(c); lockContest(cid);
-        if(count("SELECT COUNT(*) FROM edu_paper_attempt WHERE cid=?",cid)>0) throw new EduException(409,"已有学生开考，试卷与计时已锁定");
+        if(count("SELECT EXISTS(SELECT 1 FROM edu_paper_attempt WHERE cid=?) OR EXISTS(SELECT 1 FROM edu_paper_retake WHERE cid=?)",cid,cid)>0) throw new EduException(409,"已有学生开考，试卷与计时已锁定");
         int minutes=data.path("minutes").asInt(-1);
         if(minutes<0 || minutes>10080 || minutes*60000L>=c.getEndTime().getTime()-c.getStartTime().getTime()) throw new EduException(400,"个人时长必须短于比赛开放时段");
         JsonNode qs=data.path("questions");
@@ -139,6 +140,14 @@ public class ContestPaperService {
     private int programScore(long cid,String uid) {
         return db.queryForObject("SELECT COALESCE(SUM(best),0) FROM (SELECT MAX(score) AS best FROM contest_record WHERE cid=? AND uid=? GROUP BY pid) scores",Integer.class,cid,uid);
     }
+    private List<Map<String,Object>> programs(long cid,String uid) {
+        return db.queryForList("SELECT cp.display_id AS id,cp.display_title AS title," +
+                "IF(p.type=1,p.io_score,NULL) AS points,COALESCE(r.attempts,0) AS submissions,r.score " +
+                "FROM contest_problem cp JOIN problem p ON p.id=cp.pid " +
+                "LEFT JOIN (SELECT cpid,COUNT(*) AS attempts,MAX(score) AS score FROM contest_record " +
+                "WHERE cid=? AND uid=? GROUP BY cpid) r ON r.cpid=cp.id " +
+                "WHERE cp.cid=? ORDER BY cp.display_id",cid,uid,cid);
+    }
     public ObjectNode state(long cid) {
         ObjectNode out=json.createObjectNode();
         Map<String,Object> p=config(cid);
@@ -150,10 +159,13 @@ public class ContestPaperService {
         out.put("now",t).put("minutes",mins).put("open",c.getStartTime().getTime()).put("lastStart",cutoff(c,mins));
         String uid=actor().getUid();
         Map<String,Object> a=attempt(cid,uid,false);
-        if(a==null) return out;
+        if(a==null) {
+            out.put("retake",count("SELECT EXISTS(SELECT 1 FROM edu_paper_retake WHERE cid=? AND uid=?)",cid,uid)>0);
+            return out;
+        }
         JsonNode qs=parse((String)p.get("questions")),answers=parse((String)a.remove("answers"));
         out.set("attempt",json.valueToTree(a));out.set("questions",publicItems(qs));out.set("answers",answers);
-        out.set("programs",json.valueToTree(db.queryForList("SELECT display_id AS id,display_title AS title FROM contest_problem WHERE cid=? ORDER BY display_id",cid)));
+        out.set("programs",json.valueToTree(programs(cid,uid)));
         out.put("closed",closed(a,t));
         if(closed(a,t)) out.put("writtenScore",writtenScore(qs,answers)).put("programScore",programScore(cid,uid));
         return out;
@@ -167,14 +179,17 @@ public class ContestPaperService {
         int mins=(int)p.get("minutes");long t=now();
         if(t<c.getStartTime().getTime() || t>=cutoff(c,mins)) throw new EduException(403,"当前不在允许开始的时段内");
         long end=mins>0?t+mins*60000L:c.getEndTime().getTime();
-        db.update("INSERT INTO edu_paper_attempt(cid,uid,started_at,ends_at,answers) VALUES(?,?,FROM_UNIXTIME(?/1000.0),FROM_UNIXTIME(?/1000.0),'{}')",cid,actor().getUid(),t,end);
+        String uid=actor().getUid();
+        int revision=count("SELECT COALESCE(MAX(revision)+1,0) FROM edu_paper_retake WHERE cid=? AND uid=?",cid,uid);
+        db.update("INSERT INTO edu_paper_attempt(cid,uid,started_at,ends_at,answers,revision) VALUES(?,?,FROM_UNIXTIME(?/1000.0),FROM_UNIXTIME(?/1000.0),'{}',?)",cid,uid,t,end,revision);
         return state(cid);
     }
     @Transactional
     public JsonNode save(long cid,JsonNode data,boolean finish) {
         Contest c=contest(cid); admission(c);
         Map<String,Object> a=attempt(cid,actor().getUid(),true);
-        if(a==null || closed(a,now())) throw new EduException(403,"已经交卷或答题时间已到");
+        if(a==null) throw new EduException(409,"答题会话已变更，请重新载入试卷");
+        if(closed(a,now())) throw new EduException(403,"已经交卷或答题时间已到");
         if(data.path("revision").asInt(-1)!=number(a.get("revision"))) throw new EduException(409,"其他页面已保存，请重新载入试卷");
         JsonNode answers=data.path("answers"),qs=parse((String)config(cid).get("questions"));
         if(!answers.isObject() || answers.size()>qs.size()) throw new EduException(400,"答案格式错误");
@@ -190,16 +205,66 @@ public class ContestPaperService {
         if(changed!=1) throw new EduException(403,"个人答题时间已到");
         return state(cid);
     }
+    @Transactional
+    public void reset(long cid,String uid,long started) {
+        Contest c=contest(cid);
+        requireManager(c);
+        lockContest(cid);
+        Map<String,Object> p=config(cid);
+        if(p==null) throw new EduException(404,"本场未启用试卷");
+        if(now()>=cutoff(c,(int)p.get("minutes"))) throw new EduException(409,"最晚开考时间已过，无法重新开考");
+        Map<String,Object> a=attempt(cid,uid,true);
+        if(a==null || number(a.get("started"))!=started) throw new EduException(409,"该学生的答卷已变更，请刷新列表");
+        // Keep judges and their source code for staff. Detach only these submissions from the official contest scores.
+        db.update("INSERT INTO edu_paper_retake(cid,uid,reset_by,started_at,ends_at,submitted_at,answers,revision,program_score) " +
+                "SELECT cid,uid,?,started_at,ends_at,submitted_at,answers,revision,? " +
+                "FROM edu_paper_attempt WHERE cid=? AND uid=?",actor().getUid(),programScore(cid,uid),cid,uid);
+        Long id=db.queryForObject("SELECT LAST_INSERT_ID()",Long.class);
+        db.update("INSERT INTO edu_paper_retired_submission(submit_id,retake_id) " +
+                "SELECT submit_id,? FROM contest_record WHERE cid=? AND uid=?",id,cid,uid);
+        db.update("DELETE FROM contest_record WHERE cid=? AND uid=?",cid,uid);
+        db.update("DELETE FROM edu_paper_attempt WHERE cid=? AND uid=?",cid,uid);
+    }
+
     public List<Map<String,Object>> results(long cid) {
         requireManager(contest(cid));
         Map<String,Object> p=config(cid); if(p==null) return Collections.emptyList();
         JsonNode qs=parse((String)p.get("questions"));
-        List<Map<String,Object>> rows=db.queryForList("SELECT a.uid,u.username,a.started_at AS started,a.ends_at AS deadline,a.submitted_at AS submitted,a.answers FROM edu_paper_attempt a JOIN user_info u ON u.uuid=a.uid WHERE a.cid=? ORDER BY a.started_at",cid);
+        List<Map<String,Object>> rows=db.queryForList("SELECT a.uid,u.username,UNIX_TIMESTAMP(a.started_at)*1000 AS started,UNIX_TIMESTAMP(a.ends_at)*1000 AS deadline,UNIX_TIMESTAMP(a.submitted_at)*1000 AS submitted,a.answers FROM edu_paper_attempt a JOIN user_info u ON u.uuid=a.uid WHERE a.cid=? ORDER BY a.started_at",cid);
+        Map<String,Map<String,Object>> students=new LinkedHashMap<>();
         for(Map<String,Object> r:rows) {
-            JsonNode ans=parse((String)r.remove("answers")); Map<String,String> details=new LinkedHashMap<>();
-            for(JsonNode q:qs) details.put(q.get("label").asText(),ans.path(q.get("id").asText()).asText(""));
-            r.put("programScore",programScore(cid,(String)r.get("uid"))); r.put("details",details); r.put("writtenScore",writtenScore(qs,ans));
+            String uid=(String)r.get("uid");
+            formatResult(r,qs,programScore(cid,uid));
+            students.put(uid,r);
         }
-        return rows;
+        List<Map<String,Object>> history=db.queryForList("SELECT h.id,h.uid,u.username,UNIX_TIMESTAMP(h.started_at)*1000 AS started," +
+                "UNIX_TIMESTAMP(h.reset_at)*1000 AS resetAt,h.answers,h.program_score AS programScore " +
+                "FROM edu_paper_retake h JOIN user_info u ON u.uuid=h.uid WHERE h.cid=? ORDER BY h.id DESC",cid);
+        Map<String,List<Map<String,Object>>> past=new LinkedHashMap<>();
+        for(Map<String,Object> r:history) {
+            String uid=(String)r.get("uid");
+            if(!students.containsKey(uid)) {
+                Map<String,Object> pending=new LinkedHashMap<>();
+                pending.put("uid",uid);
+                pending.put("username",r.get("username"));
+                students.put(uid,pending);
+            }
+            formatResult(r,qs,(int)number(r.get("programScore")));
+            past.computeIfAbsent(uid,k->new ArrayList<>()).add(r);
+        }
+        for(Map.Entry<String,Map<String,Object>> student:students.entrySet()) {
+            student.getValue().put("history",past.getOrDefault(student.getKey(),Collections.emptyList()));
+        }
+        return new ArrayList<>(students.values());
+    }
+    private void formatResult(Map<String,Object> row,JsonNode questions,int programScore) {
+        JsonNode answers=parse((String)row.remove("answers"));
+        Map<String,String> details=new LinkedHashMap<>();
+        for(JsonNode q:questions) {
+            details.put(q.get("label").asText(),answers.path(q.get("id").asText()).asText(""));
+        }
+        row.put("programScore",programScore);
+        row.put("details",details);
+        row.put("writtenScore",writtenScore(questions,answers));
     }
 }
