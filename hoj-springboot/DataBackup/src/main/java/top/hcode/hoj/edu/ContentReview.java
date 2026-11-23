@@ -96,6 +96,9 @@ public class ContentReview {
                 String.join("\n",excerpts),rules.revision);
         return db.queryForObject("SELECT decision FROM edu_content_review WHERE fingerprint=?",String.class,key);
     }
+    public void privatePaperCode(String code) {
+        if (!matches(rules(), code).isEmpty()) throw new EduException(400, "代码包含审核词条，请检查后重新提交");
+    }
     public boolean code(Judge j) {
         Rules rules=rules();
         Map<String,String> matches=matches(rules,j.getCode());

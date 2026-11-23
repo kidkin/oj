@@ -12,6 +12,7 @@ import top.hcode.hoj.common.exception.SystemError;
 import top.hcode.hoj.dao.JudgeServerEntityService;
 import top.hcode.hoj.pojo.dto.CompileDTO;
 import top.hcode.hoj.pojo.dto.TestJudgeReq;
+import top.hcode.hoj.pojo.dto.PaperCodeJob;
 import top.hcode.hoj.pojo.dto.TestJudgeRes;
 import top.hcode.hoj.pojo.entity.judge.Judge;
 import top.hcode.hoj.pojo.dto.ToJudgeDTO;
@@ -65,6 +66,22 @@ public class JudgeController {
         return CommonResult.successResponse("判题机评测完成！");
     }
 
+
+    @Autowired
+    private top.hcode.hoj.dao.ProblemEntityService paperProblems;
+    @Autowired
+    private top.hcode.hoj.judge.JudgeContext paperJudge;
+
+    @PostMapping("/paper-code")
+    public CommonResult<HashMap<String,Object>> paperCode(@RequestBody PaperCodeJob job) {
+        if (!Objects.equals(job.getToken(), judgeToken)) return CommonResult.errorResponse(ResultStatus.ACCESS_DENIED);
+        if (job.getId()<=0 || job.getPid()<=0 || StringUtils.isEmpty(job.getUid()) ||
+                StringUtils.isEmpty(job.getLanguage()) || StringUtils.isEmpty(job.getCode()) || job.getCode().length()>65535)
+            return CommonResult.errorResponse("Invalid paper job");
+        top.hcode.hoj.pojo.entity.problem.Problem problem=paperProblems.getById(job.getPid());
+        if (problem==null || Boolean.TRUE.equals(problem.getIsRemote())) return CommonResult.errorResponse("Paper problem unavailable");
+        return CommonResult.successResponse(paperJudge.paperCode(problem,job));
+    }
 
     @PostMapping(value = "/test-judge")
     public CommonResult<TestJudgeRes> submitProblemTestJudge(@RequestBody TestJudgeReq testJudgeReq) {

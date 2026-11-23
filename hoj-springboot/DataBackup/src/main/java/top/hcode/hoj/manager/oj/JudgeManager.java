@@ -119,6 +119,9 @@ public class JudgeManager {
 
         boolean isContestSubmission = judgeDto.getCid() != null && judgeDto.getCid() != 0;
         boolean isTrainingSubmission = judgeDto.getTid() != null && judgeDto.getTid() != 0;
+        if (isContestSubmission && contestPaper.deferred(judgeDto.getCid())) {
+            throw new StatusForbiddenException("本场比赛只接受编译检查，请刷新比赛题目页后提交");
+        }
 
         SwitchConfig switchConfig = nacosSwitchConfig.getSwitchConfig();
         if (!isContestSubmission && switchConfig.getDefaultSubmitInterval() > 0) { // 非比赛提交有限制限制
@@ -187,6 +190,10 @@ public class JudgeManager {
         Problem problem = problemEntityService.getById(testJudgeDto.getPid());
         if (problem == null) {
             throw new StatusFailException("当前题目不存在！不支持在线调试！");
+        }
+
+        if (problem.getAuth() == 3 && contestPaper.deferredProblem(problem.getId())) {
+            throw new StatusForbiddenException("本场比赛只开放编译检查");
         }
 
         String uniqueKey = "TEST_JUDGE_" + IdUtil.simpleUUID();

@@ -693,6 +693,14 @@
                       :closable="false"
                     >{{ $t('m.You_have_submitted_a_solution') }}</el-alert>
                   </div>
+                  <div v-if="paperCompile.enabled" class="compile-panel">
+                    <strong>编译检查</strong>
+                    <p>可反复提交。最后一次编译通过的代码用于正式评测。</p>
+                    <details v-for="row in paperCompile.rows" :key="row.id">
+                      <summary>{{ {'QUEUED':'等待编译','PASSED':'编译通过','FAILED':'编译失败','ERROR':'编译服务暂不可用'}[row.status] }} · {{ row.language }}</summary>
+                      <pre v-if="row.diagnostics" v-text="row.diagnostics"></pre>
+                    </details>
+                  </div>
                   <div v-if="contestEnded && !statusVisible">
                     <el-alert
                       type="warning"
@@ -733,17 +741,17 @@
                     size="small"
                     :loading="submitting"
                     @click.native="submitCode"
-                    :disabled="problemSubmitDisabled || submitted || submitDisabled"
+                    :disabled="paperCompile.enabled ? !paperCompile.writable : problemSubmitDisabled || submitted || submitDisabled"
                     class="fl-right"
                   >
                     <span v-if="submitting">{{ $t('m.Submitting') }}</span>
-                    <span v-else>{{ $t('m.Submit') }}</span>
+                    <span v-else>{{ paperCompile.enabled ? '提交并检查编译' : $t('m.Submit') }}</span>
                   </el-button>
                   <el-tag
                     type="success"
                     :class="openTestCaseDrawer?'tj-btn active':'tj-btn non-active'"
                     @click.native="openTestJudgeDrawer"
-                    v-if="!submitDisabled"
+                    v-if="!submitDisabled && !paperCompile.enabled"
                     effect="plain"
                   >
                     <svg
@@ -848,6 +856,7 @@ import {
 } from "@/common/constants";
 import { pie, largePie } from "./chartData";
 import api from "@/common/api";
+import edu from "@/common/edu-api";
 import myMessage from "@/common/message";
 import { addCodeBtn } from "@/common/codeblock";
 import CodeMirror from "@/components/oj/common/CodeMirror.vue";
@@ -865,9 +874,12 @@ export default {
     ProblemHorizontalMenu,
     Markdown
   },
+  beforeDestroy() { clearTimeout(this.paperCompileTimer); },
   data() {
     return {
       statusVisible: false,
+      paperCompile: {enabled:false, rows:[]},
+      paperCompileTimer: null,
       captchaRequired: false,
       graphVisible: false,
       submissionExists: false,
@@ -1269,6 +1281,10 @@ export default {
         this.groupID = this.$route.params.groupID;
       }
       this.problemID = this.$route.params.problemID;
+      clearTimeout(this.paperCompileTimer);
+      this.paperCompile = {enabled:false, rows:[]};
+      if (this.$route.params.contestID && this.isAuthenticated) this.loadPaperCompile();
+
       if (this.$route.params.trainingID) {
         this.trainingID = this.$route.params.trainingID;
       }
@@ -1570,6 +1586,31 @@ export default {
       );
     },
 
+    paperCompilePath() {
+      return '/code/' + encodeURIComponent(this.$route.params.problemID);
+    },
+    async loadPaperCompile() {
+      const cid = this.$route.params.contestID;
+      if (!cid) return;
+      const endpoint = this.paperCompilePath();
+      clearTimeout(this.paperCompileTimer);
+      try {
+        const data = await edu.paper(cid, endpoint, 'get');
+        if (cid !== this.$route.params.contestID || endpoint !== this.paperCompilePath()) return;
+        this.paperCompile = data;
+        if ((data.rows || []).some(row => row.status === 'QUEUED')) {
+          this.paperCompileTimer = setTimeout(() => this.loadPaperCompile(), 1600);
+        }
+      } catch (error) { /* Request errors are displayed by the shared client. */ }
+    },
+    async submitPaperCompile() {
+      this.submitting = true;
+      try {
+        await edu.paper(this.$route.params.contestID, this.paperCompilePath(), 'post', {language:this.language, code:this.code});
+        await this.loadPaperCompile();
+      } catch (error) { /* Request errors are displayed by the shared client. */ }
+      finally { this.submitting = false; }
+    },
     submitCode() {
       if (this.code.trim() === "") {
         myMessage.error(this.$i18n.t("m.Code_can_not_be_empty"));
@@ -1578,6 +1619,11 @@ export default {
 
       if (this.code.length > 65535) {
         myMessage.error(this.$i18n.t("m.Code_Length_can_not_exceed_65535"));
+        return;
+      }
+
+      if (this.paperCompile.enabled) {
+        this.submitPaperCompile();
         return;
       }
 
@@ -2047,7 +2093,9 @@ a {
     height: 100%;
   }
 }
-/deep/ .el-card__header {
+.compile-panel{clear:both;border:1px solid #b7cfe6;background:#f2f7fd;border-radius:11px;margin:12px 0;padding:12px}
+.compile-panel p{margin:6px 0}.compile-panel details{padding:5px 0}.compile-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}
+ /deep/ .el-card__header {
   border-bottom: 0px;
   padding-bottom: 0px;
 }

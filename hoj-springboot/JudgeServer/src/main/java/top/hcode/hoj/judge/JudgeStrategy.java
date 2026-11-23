@@ -16,6 +16,7 @@ import top.hcode.hoj.dao.JudgeEntityService;
 import top.hcode.hoj.judge.entity.LanguageConfig;
 import top.hcode.hoj.judge.entity.Pair_;
 import top.hcode.hoj.pojo.dto.TestJudgeReq;
+import top.hcode.hoj.pojo.dto.PaperCodeJob;
 import top.hcode.hoj.pojo.dto.TestJudgeRes;
 import top.hcode.hoj.pojo.entity.judge.Judge;
 import top.hcode.hoj.pojo.entity.judge.JudgeCase;
@@ -47,6 +48,10 @@ public class JudgeStrategy {
     private JudgeRun judgeRun;
 
     public HashMap<String, Object> judge(Problem problem, Judge judge) {
+        return judge(problem, judge, true);
+    }
+
+    HashMap<String, Object> judge(Problem problem, Judge judge, boolean persistCases) {
 
         HashMap<String, Object> result = new HashMap<>();
         // 编译好的临时代码文件id
@@ -79,11 +84,12 @@ public class JudgeStrategy {
                 result.put("memory", 0);
                 return result;
             }
-            // 更新状态为评测数据中
-            UpdateWrapper<Judge> judgeUpdateWrapper = new UpdateWrapper<>();
-            judgeUpdateWrapper.set("status", Constants.Judge.STATUS_JUDGING.getStatus())
-                    .eq("submit_id", judge.getSubmitId());
-            judgeEntityService.update(judgeUpdateWrapper);
+            if (persistCases) {
+                UpdateWrapper<Judge> judgeUpdateWrapper = new UpdateWrapper<>();
+                judgeUpdateWrapper.set("status", Constants.Judge.STATUS_JUDGING.getStatus())
+                        .eq("submit_id", judge.getSubmitId());
+                judgeEntityService.update(judgeUpdateWrapper);
+            }
 
             // 获取题目数据的评测模式
             String infoJudgeCaseMode = testCasesInfo.getStr("judgeCaseMode", Constants.JudgeCaseMode.DEFAULT.getMode());
@@ -101,7 +107,7 @@ public class JudgeStrategy {
                     judgeCaseMode);
 
             // 对全部测试点结果进行评判,获取最终评判结果
-            return getJudgeInfo(allCaseResultList, problem, judge, judgeCaseMode);
+            return getJudgeInfo(allCaseResultList, problem, judge, judgeCaseMode, persistCases);
         } catch (SystemError systemError) {
             result.put("code", Constants.Judge.STATUS_SYSTEM_ERROR.getStatus());
             result.put("errMsg", "Oops, something has gone wrong with the judgeServer. Please report this to administrator.");
@@ -140,6 +146,30 @@ public class JudgeStrategy {
             if (!StringUtils.isEmpty(userFileId)) {
                 SandboxRun.delFile(userFileId);
             }
+        }
+        return result;
+    }
+
+    HashMap<String,Object> compilePaper(Problem problem,PaperCodeJob job) {
+        HashMap<String,Object> result=new HashMap<>();
+        String fileId=null;
+        try {
+            LanguageConfig language=languageConfigLoader.getLanguageConfigByName(job.getLanguage());
+            if(language==null || language.getCompileCommand()==null) {
+                result.put("status", Constants.Judge.STATUS_COMPILE_ERROR.getStatus());
+                result.put("diagnostics","该语言没有配置编译检查");
+                return result;
+            }
+            fileId=Compiler.compile(language,job.getCode(),job.getLanguage(),JudgeUtils.getProblemExtraFileMap(problem,"user"));
+            result.put("status", Constants.Judge.STATUS_ACCEPTED.getStatus());
+        } catch (CompileError e) {
+            result.put("status", Constants.Judge.STATUS_COMPILE_ERROR.getStatus());
+            result.put("diagnostics",mergeNonEmptyStrings(e.getStdout(),e.getStderr()));
+        } catch (Exception e) {
+            log.warn("Paper compilation failed ({})", e.getClass().getSimpleName());
+            result.put("status", Constants.Judge.STATUS_SYSTEM_ERROR.getStatus());
+        } finally {
+            if(!StringUtils.isEmpty(fileId)) SandboxRun.delFile(fileId);
         }
         return result;
     }
@@ -352,7 +382,7 @@ public class JudgeStrategy {
     public HashMap<String, Object> getJudgeInfo(List<JSONObject> testCaseResultList,
                                                 Problem problem,
                                                 Judge judge,
-                                                String judgeCaseMode) {
+                                                String judgeCaseMode, boolean persistCases) {
 
         boolean isACM = Objects.equals(problem.getType(), Constants.Contest.TYPE_ACM.getCode());
 
@@ -416,9 +446,7 @@ public class JudgeStrategy {
             allCaseResList.add(judgeCase);
         });
 
-        // 更新到数据库
-        boolean addCaseRes = JudgeCaseEntityService.saveBatch(allCaseResList);
-        if (!addCaseRes) {
+        if (persistCases && !JudgeCaseEntityService.saveBatch(allCaseResList)) {
             log.error("题号为：" + problem.getId() + "，提交id为：" + judge.getSubmitId() + "的各个测试数据点的结果更新到数据库操作失败");
         }
 

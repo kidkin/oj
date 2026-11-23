@@ -10,7 +10,11 @@ import top.hcode.hoj.common.result.CommonResult;
 @RequestMapping("/api/edu/contest-paper/{cid}")
 public class ContestPaperController {
     private final ContestPaperService service;
-    public ContestPaperController(ContestPaperService service) {this.service=service;}
+    private final PaperCodeService code;
+    public ContestPaperController(ContestPaperService service,PaperCodeService code) {
+        this.service=service;
+        this.code=code;
+    }
     @ExceptionHandler(EduException.class)
     public CommonResult<Void> error(EduException e) {return CommonResult.errorResponse(e.getMessage(),e.getStatus());}
     @GetMapping public CommonResult<?> state(@PathVariable long cid) {return CommonResult.successResponse(service.state(cid));}
@@ -22,6 +26,29 @@ public class ContestPaperController {
     @PostMapping("/results/{uid}/restart")
     public CommonResult<?> restart(@PathVariable long cid,@PathVariable String uid,@RequestParam long started) {
         service.reset(cid,uid,started);
+        return CommonResult.successResponse();
+    }
+    @PostMapping("/clear-preview")
+    public CommonResult<?> clearPreview(@PathVariable long cid) {
+        service.clearPreview(cid);
+        return CommonResult.successResponse();
+    }
+    @GetMapping("/code/{problem}")
+    public CommonResult<?> codeStatus(@PathVariable long cid,@PathVariable String problem) {
+        return CommonResult.successResponse(code.status(cid,problem));
+    }
+    @PostMapping("/code/{problem}")
+    public CommonResult<?> submitCode(@PathVariable long cid,@PathVariable String problem,@RequestBody JsonNode data) {
+        return CommonResult.successResponse(code.submit(cid,problem,data));
+    }
+    @PostMapping("/results/{uid}/grade")
+    public CommonResult<?> grade(@PathVariable long cid,@PathVariable String uid,@RequestParam long started) {
+        code.grade(cid,uid,started);
+        return CommonResult.successResponse();
+    }
+    @PostMapping("/results/{uid}/publish")
+    public CommonResult<?> publish(@PathVariable long cid,@PathVariable String uid,@RequestParam long started) {
+        code.publish(cid,uid,started);
         return CommonResult.successResponse();
     }
     @GetMapping("/results") public CommonResult<?> results(@PathVariable long cid) {return CommonResult.successResponse(service.results(cid));}

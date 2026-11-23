@@ -7,6 +7,7 @@ import top.hcode.hoj.dao.ContestRecordEntityService;
 import top.hcode.hoj.dao.UserAcproblemEntityService;
 import top.hcode.hoj.judge.entity.LanguageConfig;
 import top.hcode.hoj.pojo.dto.TestJudgeReq;
+import top.hcode.hoj.pojo.dto.PaperCodeJob;
 import top.hcode.hoj.pojo.dto.TestJudgeRes;
 import top.hcode.hoj.pojo.entity.judge.Judge;
 import top.hcode.hoj.pojo.entity.problem.Problem;
@@ -37,6 +38,21 @@ public class JudgeContext {
     private LanguageConfigLoader languageConfigLoader;
 
     public Judge Judge(Problem problem, Judge judge) {
+        return evaluate(problem, judge, true);
+    }
+
+    public HashMap<String,Object> paperCode(Problem problem,PaperCodeJob job) {
+        if(!job.isGrading()) return judgeStrategy.compilePaper(problem,job);
+        Judge source=new Judge().setPid(job.getPid()).setSubmitId(-job.getId()).setLanguage(job.getLanguage())
+                .setUid(job.getUid()).setCode(job.getCode());
+        Judge evaluated=evaluate(problem,source,false);
+        HashMap<String,Object> result=new HashMap<>();
+        result.put("status",evaluated.getStatus());
+        result.put("score",evaluated.getScore()==null?0:evaluated.getScore());
+        return result;
+    }
+
+    private Judge evaluate(Problem problem, Judge judge, boolean persistCases) {
 
         // c和c++为一倍时间和空间，其它语言为2倍时间和空间
         LanguageConfig languageConfig = languageConfigLoader.getLanguageConfigByName(judge.getLanguage());
@@ -47,7 +63,7 @@ public class JudgeContext {
             problem.setMemoryLimit(problem.getMemoryLimit() * 2);
         }
 
-        HashMap<String, Object> judgeResult = judgeStrategy.judge(problem, judge);
+        HashMap<String, Object> judgeResult = judgeStrategy.judge(problem, judge, persistCases);
 
         Judge finalJudgeRes = new Judge();
         finalJudgeRes.setSubmitId(judge.getSubmitId());

@@ -15,6 +15,7 @@ import top.hcode.hoj.dao.judge.JudgeEntityService;
 import top.hcode.hoj.dao.judge.JudgeServerEntityService;
 import top.hcode.hoj.dao.judge.impl.RemoteJudgeAccountEntityServiceImpl;
 import top.hcode.hoj.pojo.dto.CompileDTO;
+import top.hcode.hoj.pojo.dto.PaperCodeJob;
 import top.hcode.hoj.pojo.dto.TestJudgeReq;
 import top.hcode.hoj.pojo.dto.TestJudgeRes;
 import top.hcode.hoj.pojo.dto.ToJudgeDTO;
@@ -255,6 +256,22 @@ public class Dispatcher {
         return result;
     }
 
+
+    public JSONObject paperCode(PaperCodeJob request) {
+        JudgeServer server = chooseUtils.chooseServer(false);
+        if (server == null) return null;
+        try {
+            JSONObject response = restTemplate.postForObject("http://" + server.getUrl() + "/paper-code", request, JSONObject.class);
+            if (response != null && response.getInt("status") == ResultStatus.SUCCESS.getStatus()) {
+                return response.getJSONObject("data");
+            }
+        } catch (Exception e) {
+            log.warn("调用试卷判题机失败 ({})", e.getClass().getSimpleName());
+        } finally {
+            releaseJudgeServer(server.getId());
+        }
+        return null;
+    }
 
     private void checkResult(CommonResult<Void> result, Long submitId) {
 

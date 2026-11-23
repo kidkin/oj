@@ -11,6 +11,12 @@
     </template>
     <template v-else>
       <p class="deadline">个人截止时间 {{ stamp(paper.attempt.deadline) }}</p>
+      <div v-if="programs.length" class="program-banner">
+        <div><strong>程序设计题 · {{ programs.length }} 道</strong>
+          <p>{{ paper.deferred ? '考中可反复提交，系统只检查编译。成绩由老师统一公布。' : '请进入每道程序题页面提交代码。' }}</p>
+        </div>
+        <el-button size="small" type="primary" plain @click="jump('program-'+programs[0].id)">前往程序设计题</el-button>
+      </div>
       <div class="paper-layout">
         <nav class="answer-card" aria-label="答题卡">
           <h3>答题卡</h3>
@@ -37,13 +43,19 @@
             </el-radio-group>
             <el-input v-else v-model="answers[q.id]" maxlength="1000" :aria-label="q.label" :disabled="locked || busyFinal" @input="schedule(q.id)"/>
           </div>
-          <div v-if="programs.length" class="paper-question">
+          <section v-if="programs.length" class="paper-question program-section">
             <h3>程序设计</h3>
-            <div v-for="p in programs" :key="p.id" :ref="'q-program-'+p.id" class="program-item">
-              <router-link :to="{name:'ContestProblemDetails',params:{contestID:cid,problemID:p.id}}" target="_blank" @click.native="flush">{{ p.id }} · {{ p.title }} ↗</router-link>
-              <span>{{ p.submissions ? (p.score == null ? '评测中' : '已送评') : '未送评' }}<template v-if="p.points!=null"> · {{ p.score == null ? p.points+' 分' : p.score+' / '+p.points+' 分' }}</template></span>
+            <div class="program-grid">
+              <router-link v-for="p in programs" :key="p.id" :ref="'q-program-'+p.id" class="program-item"
+                :to="{name:'ContestProblemDetails',params:{contestID:cid,problemID:p.id}}" target="_blank" @click.native="flush">
+                <span class="program-letter">{{ p.id }}</span>
+                <div><strong>{{ p.title }}</strong>
+                  <p>{{ programStatus(p) }}<template v-if="p.points!=null"> · {{ p.score == null ? '满分 '+p.points : p.score+' / '+p.points }} 分</template></p>
+                </div>
+                <b>{{ locked ? '查看题目' : '进入答题' }} ↗</b>
+              </router-link>
             </div>
-          </div>
+          </section>
           <div v-if="info.length" class="paper-question"><h3>考生资料</h3>
             <label v-for="q in info" :key="q.id" :ref="'q-'+q.id">{{ q.label }}
               <el-input v-model="answers[q.id]" maxlength="1000" :disabled="locked || busyFinal" @input="schedule(q.id)"/>
@@ -56,7 +68,11 @@
             <el-button :disabled="busy || busyFinal" @click="saveNow">保存草稿</el-button>
           </div>
           <el-button v-if="conflict" @click="load()">重新读取试卷</el-button>
-          <div v-if="paper.closed" class="paper-result">
+          <div v-if="paper.closed && paper.deferred && !paper.published" class="paper-result">
+            已收卷，成绩将在教师公布后显示。
+            <el-button size="small" :loading="busy" @click="load()">查询公布状态</el-button>
+          </div>
+          <div v-if="paper.closed && (!paper.deferred || paper.published)" class="paper-result">
             客观题 {{ paper.writtenScore }} 分 · 编程题 {{ paper.programScore }} 分 · 合计 {{ paper.writtenScore+paper.programScore }} 分
             <el-button v-if="programs.length" size="small" :loading="busy" @click="load()">刷新评测结果</el-button>
           </div>
@@ -117,12 +133,17 @@ export default {
   methods: {
     stamp(t) { return new Date(Number(t)).toLocaleString('zh-CN',{hour12:false}) },
     letter(index) { return String.fromCharCode(65+index) },
+    programStatus(p) {
+      if (this.paper.deferred) return Number(p.compiled) ? '已有编译通过的代码' : (p.submissions ? '已提交代码' : '尚未提交')
+      return p.submissions ? '已送评' : '未送评'
+    },
     answered(q) { return Boolean((this.answers[q.id] || '').trim()) },
     jump(id) {
       this.active = id
       const ref = this.$refs['q-'+id]
       const target = Array.isArray(ref) ? ref[0] : ref
-      if (target) target.scrollIntoView({block:'center', behavior:'smooth'})
+      const element = target && (target.$el || target)
+      if (element) element.scrollIntoView({block:'center', behavior:'smooth'})
     },
     apply(state, restore) {
       this.paper = state
@@ -208,7 +229,7 @@ export default {
         return
       }
       const unsubmitted = this.programs.filter(p => !p.submissions).map(p => p.id)
-      const reminder = unsubmitted.length ? '程序题 '+unsubmitted.join('、')+' 可能尚未送评。' : ''
+      const reminder = unsubmitted.length ? '程序题 '+unsubmitted.join('、')+' 可能尚未提交。' : ''
       try {
         await this.$confirm(reminder+'交卷后会停止接收作答。确定交卷吗？','提交试卷')
       } catch (e) { return }
@@ -239,6 +260,13 @@ export default {
 .paper-question .el-radio,.paper-question label{display:block;margin:9px 0;white-space:normal;line-height:1.55}
 .paper-question .el-input{max-width:680px;display:block}.required{color:#a52d2d}
 .program-item,.paper-result,.paper-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.program-item{justify-content:space-between;padding:10px 0}.paper-result{margin:12px 0}
+ .program-banner,.program-item{border:1px solid #a9c9ed;border-radius:12px;background:#eef6ff;color:#13446d}
+.program-banner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;padding:14px 16px}
+.program-banner p,.program-item p{margin:4px 0 0}
+.program-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:10px}
+.program-item{display:grid;grid-template-columns:36px 1fr;gap:8px 10px;padding:12px;text-decoration:none}
+.program-item:hover,.program-item:focus-visible{border-color:#4b8ac5;background:#e3f1ff}
+.program-item b{grid-column:2;font-size:13px}.program-letter{align-self:start;text-align:center;border-radius:7px;background:white;padding:8px 0;font-weight:bold}
+.paper-result{margin:12px 0}
 @media(max-width:710px){.paper-layout{grid-template-columns:1fr;gap:16px}.answer-card{position:static;max-height:none}}
 </style>

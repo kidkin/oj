@@ -2,6 +2,7 @@
   <section class="paper-admin">
     <h3>试卷与计时</h3>
     <p v-if="locked" class="muted">已有学生开考。可查看答卷或为指定学生安排重考。</p>
+    <el-button v-if="locked && canClearPreview" size="small" type="warning" plain @click="clearPreview">清除我的试答，解锁编辑</el-button>
     <fieldset :disabled="locked || !ready">
       <el-radio-group v-model="personal" :disabled="locked || !ready">
         <el-radio :label="false">统一截止时间</el-radio>
@@ -10,6 +11,9 @@
       <p v-if="personal">个人时长（分钟）
         <el-input-number v-model="minutes" :min="1" :max="10080" :disabled="locked"/>
         最晚开考时间为比赛结束时间减去个人时长。
+      </p>
+      <p>
+        <el-checkbox v-model="deferred" :disabled="locked">答题期间仅检查编译，教师评测后手动公布成绩</el-checkbox>
       </p>
       <div class="paper-tools" v-if="!locked">
         <el-button size="small" @click="add('choice')">添加单选题</el-button>
@@ -50,6 +54,11 @@
     </fieldset>
     <el-button @click="results">查看答卷与成绩</el-button>
     <el-dialog title="答卷与成绩" :visible.sync="show" append-to-body width="min(960px, 96vw)">
+      <div v-if="deferred" class="paper-tools">
+        <el-button :disabled="working || !gradeRows.length" @click="batch('grade', gradeRows)">评测已交卷学生</el-button>
+        <el-button :disabled="working || !publishRows.length" type="primary" @click="batch('publish', publishRows)">公布已完成成绩</el-button>
+        <el-button :disabled="working" @click="results">刷新成绩</el-button>
+      </div>
       <el-input v-model="search" placeholder="输入账号、姓名或联系方式查询"/>
       <el-table :data="filtered" row-key="uid">
         <el-table-column type="expand">
@@ -66,8 +75,13 @@
         <el-table-column prop="writtenScore" label="客观题"/>
         <el-table-column prop="programScore" label="编程题"/>
         <el-table-column label="总分"><template slot-scope="{row}">{{ row.started ? row.writtenScore+row.programScore : '—' }}</template></el-table-column>
-        <el-table-column label="操作" width="115">
+        <el-table-column v-if="deferred" label="评测" min-width="95">
+          <template slot-scope="{row}">{{ gradeLabels[row.gradeStatus] || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" :width="deferred ? 206 : 115">
           <template slot-scope="{row}">
+            <el-button v-if="deferred && gradeable(row)" :disabled="working" type="text" @click="batch('grade',[row])">评测</el-button>
+            <el-button v-if="deferred && row.gradeStatus==='GRADED'" :disabled="working" type="text" @click="batch('publish',[row])">公布</el-button>
             <el-button v-if="row.started" type="text" :disabled="resetting===row.uid" @click="restart(row)">允许重考</el-button>
           </template>
         </el-table-column>
@@ -79,13 +93,16 @@
 import edu from '@/common/edu-api'
 
 const types = {choice: '单选题', blank: '填空题', info: '考生资料'}
+const gradeLabels = {WAITING:'待评测', RUNNING:'评测中', ERROR:'评测失败', GRADED:'待公布', PUBLISHED:'已公布'}
 export default {
   props: {cid: {required: true}},
   data() {
-    return {types, personal: false, minutes: 120, questions: [], ready: false, locked: false, saving: false,
+    return {types, gradeLabels, deferred: false, working: false, canClearPreview: false, personal: false, minutes: 120, questions: [], ready: false, locked: false, saving: false,
       opened: '', nextId: 0, show: false, rows: [], search: '', resetting: ''}
   },
   computed: {
+    gradeRows() { return this.rows.filter(this.gradeable) },
+    publishRows() { return this.rows.filter(row => row.gradeStatus === 'GRADED') },
     filtered() {
       const key = this.search.trim().toLowerCase()
       return this.rows.filter(row => !key ||
@@ -103,6 +120,8 @@ export default {
         this.minutes = settings.minutes || 120
         this.questions = this.editable(settings.questions)
         this.locked = settings.locked
+        this.deferred = Boolean(settings.deferred)
+        this.canClearPreview = Boolean(settings.canClearPreview)
         this.ready = true
       } catch (e) { /* Request layer displays the server error. */ }
     }}
@@ -175,10 +194,41 @@ export default {
       }
       this.saving = true
       try {
-        await edu.paper(this.cid, '/settings', 'put', {minutes: this.personal ? this.minutes : 0, questions})
+        await edu.paper(this.cid, '/settings', 'put', {minutes: this.personal ? this.minutes : 0, questions, deferred:this.deferred})
         this.$message.success('试卷已保存')
       } catch (e) { /* Request layer displays the server error. */ }
       finally { this.saving = false }
+    },
+    async clearPreview() {
+      try {
+        await this.$confirm('清除你在这场比赛的试答并解锁试卷编辑？','清除试答',{type:'warning'})
+        await edu.paper(this.cid,'/clear-preview','post')
+        this.locked = false
+        this.canClearPreview = false
+        this.$message.success('已解锁试卷编辑')
+      } catch (e) { /* Cancellation and API errors are handled by the existing controls. */ }
+    },
+    gradeable(row) {
+      return row.started && (row.submitted || Number(row.deadline) <= Date.now()) &&
+        (row.gradeStatus === 'WAITING' || row.gradeStatus === 'ERROR')
+    },
+    async batch(action, rows) {
+      const label = action === 'grade' ? '发起评测' : '公布成绩'
+      try {
+        await this.$confirm(label+'（'+rows.length+' 人）？',label,{type:'warning'})
+      } catch (e) { return }
+      this.working = true
+      try {
+        let succeeded = 0
+        for (const row of rows) {
+          try {
+            await edu.paper(this.cid, '/results/'+encodeURIComponent(row.uid)+'/'+action+'?started='+row.started,'post')
+            succeeded++
+          } catch (e) { /* Keep processing the remaining students. */ }
+        }
+        await this.results()
+        if (succeeded) this.$message.success(label+'成功 '+succeeded+' 人')
+      } finally { this.working = false }
     },
     async results() {
       try {

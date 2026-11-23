@@ -27,20 +27,20 @@ public class ContestPaperService {
     public ContestPaperService(JdbcTemplate db,ObjectMapper json,ContestEntityService contests,ContestValidator access,GroupValidator groups) {
         this.db=db; this.json=json; this.contests=contests; this.access=access; this.groups=groups;
     }
-    private AccountProfile actor() { return (AccountProfile)SecurityUtils.getSubject().getPrincipal(); }
+    AccountProfile actor() { return (AccountProfile)SecurityUtils.getSubject().getPrincipal(); }
     private boolean manager(Contest c, AccountProfile a) {
         return a!=null && (SecurityUtils.getSubject().hasRole("root") || a.getUid().equals(c.getUid())
                 || (Boolean.TRUE.equals(c.getIsGroup()) && groups.isGroupRoot(a.getUid(),c.getGid())));
     }
-    private Contest contest(long id) {
+    Contest contest(long id) {
         Contest c=contests.getById(id);
         if(c==null) throw new EduException(404,"比赛不存在");
         return c;
     }
-    private void requireManager(Contest c) {
+    void requireManager(Contest c) {
         if(!manager(c,actor())) throw new EduException(403,"仅比赛管理员可管理试卷与成绩");
     }
-    private void admission(Contest c) {
+    void admission(Contest c) {
         AccountProfile a=actor();
         if(manager(c,a)) return;
         if(a==null || !Boolean.TRUE.equals(c.getVisible())) throw new EduException(403,"请登录并进入已开放的比赛");
@@ -71,6 +71,21 @@ public class ContestPaperService {
         if(states.isEmpty()) throw new StatusForbiddenException("请先在比赛首页点击开始比赛");
         if(writing && states.get(0)==0) throw new StatusForbiddenException("已经交卷或个人答题时间已到");
     }
+    public boolean deferred(long cid) {
+        return count("SELECT EXISTS(SELECT 1 FROM edu_paper_deferred WHERE cid=?)",cid)>0;
+    }
+    public boolean deferredProblem(long pid) {
+        return count("SELECT EXISTS(SELECT 1 FROM contest_problem cp JOIN edu_paper_deferred d ON d.cid=cp.cid WHERE cp.pid=?)",pid)>0;
+    }
+    Map<String,Object> deferredGrade(long cid,String uid,long started) {
+        return db.queryForMap("SELECT CASE WHEN g.published_at IS NOT NULL THEN 'PUBLISHED' "+
+                "WHEN g.cid IS NULL THEN 'WAITING' WHEN COALESCE(s.errors,0)>0 THEN 'ERROR' "+
+                "WHEN COALESCE(s.pending,0)>0 THEN 'RUNNING' ELSE 'GRADED' END AS status, COALESCE(s.score,0) AS score "+
+                "FROM (SELECT ? AS cid) c LEFT JOIN edu_paper_grade g ON g.cid=c.cid AND g.uid=? AND g.attempt_key=? "+
+                "LEFT JOIN (SELECT SUM(grade_state='ERROR') AS errors,SUM(grade_state='QUEUED') AS pending,SUM(score) AS score "+
+                "FROM edu_paper_code WHERE cid=? AND uid=? AND attempt_key=?) s ON 1=1",
+                cid,uid,started,cid,uid,started);
+    }
     public boolean paperOnly(long pid) {
         return count("SELECT COUNT(*) FROM contest_problem cp JOIN edu_contest_paper p ON p.cid=cp.cid WHERE cp.pid=?",pid)>0;
     }
@@ -80,9 +95,31 @@ public class ContestPaperService {
         ObjectNode out=json.createObjectNode();
         out.put("minutes",p==null?0:(int)p.get("minutes"));
         out.set("questions",p==null?json.createArrayNode():parse((String)p.get("questions")));
+        out.put("deferred",deferred(cid));
+        out.put("canClearPreview",canClearPreview(cid));
         out.put("locked",count("SELECT EXISTS(SELECT 1 FROM edu_paper_attempt WHERE cid=?) OR EXISTS(SELECT 1 FROM edu_paper_retake WHERE cid=?)",cid,cid)>0);
         return out;
     }
+    private boolean canClearPreview(long cid) {
+        String uid=actor().getUid();
+        return count("SELECT EXISTS(SELECT 1 FROM edu_paper_attempt WHERE cid=? AND uid=?) "+
+                "AND NOT EXISTS(SELECT 1 FROM edu_paper_attempt WHERE cid=? AND uid<>?) "+
+                "AND NOT EXISTS(SELECT 1 FROM edu_paper_retake WHERE cid=?)",cid,uid,cid,uid,cid)>0;
+    }
+
+    @Transactional
+    public void clearPreview(long cid) {
+        requireManager(contest(cid));
+        lockContest(cid);
+        String uid=actor().getUid();
+        if(attempt(cid,uid,true)==null || !canClearPreview(cid))
+            throw new EduException(409,"只能清除自己的试答，且当前不能有学生答卷");
+        db.update("DELETE FROM edu_paper_code WHERE cid=? AND uid=?",cid,uid);
+        db.update("DELETE FROM edu_paper_grade WHERE cid=? AND uid=?",cid,uid);
+        db.update("DELETE FROM contest_record WHERE cid=? AND uid=?",cid,uid);
+        db.update("DELETE FROM edu_paper_attempt WHERE cid=? AND uid=?",cid,uid);
+    }
+
     @Transactional
     public void configure(long cid,JsonNode data) {
         Contest c=contest(cid); requireManager(c); lockContest(cid);
@@ -107,15 +144,20 @@ public class ContestPaperService {
             }
             if(type.equals("choice")) for(JsonNode op:options) if(!op.isTextual() || op.asText().trim().isEmpty()) throw new EduException(400,"选项不可为空："+id);
         }
-        if(minutes==0 && qs.size()==0) db.update("DELETE FROM edu_contest_paper WHERE cid=?",cid);
+        boolean compileOnly=data.path("deferred").asBoolean(false);
+        if(compileOnly && count("SELECT EXISTS(SELECT 1 FROM contest_problem cp JOIN problem p ON p.id=cp.pid WHERE cp.cid=? AND (p.is_remote=1 OR p.type<>1))",cid)>0)
+            throw new EduException(400,"仅编译赛制要求使用本地 OI 编程题");
+        if(minutes==0 && qs.size()==0 && !compileOnly) db.update("DELETE FROM edu_contest_paper WHERE cid=?",cid);
         else db.update("INSERT INTO edu_contest_paper(cid,minutes,questions) VALUES(?,?,?) ON DUPLICATE KEY UPDATE minutes=VALUES(minutes),questions=VALUES(questions)",cid,minutes,qs.toString());
+        if(compileOnly) db.update("INSERT IGNORE INTO edu_paper_deferred(cid) VALUES(?)",cid);
+        else db.update("DELETE FROM edu_paper_deferred WHERE cid=?",cid);
     }
-    private Map<String,Object> attempt(long cid,String uid,boolean lock) {
+    Map<String,Object> attempt(long cid,String uid,boolean lock) {
         List<Map<String,Object>> rows=db.queryForList("SELECT UNIX_TIMESTAMP(started_at)*1000 AS started,UNIX_TIMESTAMP(ends_at)*1000 AS deadline,submitted_at IS NOT NULL AS finished, answers,revision FROM edu_paper_attempt WHERE cid=? AND uid=?"+(lock?" FOR UPDATE":""),cid,uid);
         return rows.isEmpty()?null:rows.get(0);
     }
-    private long now() {return db.queryForObject("SELECT UNIX_TIMESTAMP(NOW(3))*1000",Long.class);}
-    private boolean closed(Map<String,Object> a,long time) {
+    long now() {return db.queryForObject("SELECT UNIX_TIMESTAMP(NOW(3))*1000",Long.class);}
+    boolean closed(Map<String,Object> a,long time) {
         return number(a.get("deadline"))<=time || truth(a.get("finished"));
     }
     private long number(Object v) {return ((Number)v).longValue();}
@@ -148,6 +190,19 @@ public class ContestPaperService {
                 "WHERE cid=? AND uid=? GROUP BY cpid) r ON r.cpid=cp.id " +
                 "WHERE cp.cid=? ORDER BY cp.display_id",cid,uid,cid);
     }
+    private List<Map<String,Object>> deferredPrograms(long cid,String uid,long started,boolean published) {
+        List<Map<String,Object>> rows=db.queryForList("SELECT cp.display_id AS id,cp.display_title AS title,p.io_score AS points, "+
+                "COALESCE(s.submissions,0) AS submissions,COALESCE(s.compiled,0) AS compiled,s.score "+
+                "FROM contest_problem cp JOIN problem p ON p.id=cp.pid "+
+                "LEFT JOIN (SELECT cpid,COUNT(*) AS submissions,SUM(compile_state='PASSED') AS compiled,MAX(score) AS score "+
+                "FROM edu_paper_code WHERE cid=? AND uid=? AND attempt_key=? GROUP BY cpid) s ON s.cpid=cp.id "+
+                "WHERE cp.cid=? ORDER BY cp.display_id",cid,uid,started,cid);
+        for(Map<String,Object> row:rows) {
+            if(!published) row.remove("score");
+            else if(row.get("score")==null) row.put("score",0);
+        }
+        return rows;
+    }
     public ObjectNode state(long cid) {
         ObjectNode out=json.createObjectNode();
         Map<String,Object> p=config(cid);
@@ -156,6 +211,8 @@ public class ContestPaperService {
         Contest c=contest(cid); admission(c);
         int mins=(int)p.get("minutes");
         long t=now();
+        boolean deferred=deferred(cid);
+        out.put("deferred",deferred);
         out.put("now",t).put("minutes",mins).put("open",c.getStartTime().getTime()).put("lastStart",cutoff(c,mins));
         String uid=actor().getUid();
         Map<String,Object> a=attempt(cid,uid,false);
@@ -165,9 +222,19 @@ public class ContestPaperService {
         }
         JsonNode qs=parse((String)p.get("questions")),answers=parse((String)a.remove("answers"));
         out.set("attempt",json.valueToTree(a));out.set("questions",publicItems(qs));out.set("answers",answers);
-        out.set("programs",json.valueToTree(programs(cid,uid)));
-        out.put("closed",closed(a,t));
-        if(closed(a,t)) out.put("writtenScore",writtenScore(qs,answers)).put("programScore",programScore(cid,uid));
+        long started=number(a.get("started"));
+        boolean finished=closed(a,t);
+        out.put("closed",finished);
+        if(deferred) {
+            Map<String,Object> grade=deferredGrade(cid,uid,started);
+            boolean published="PUBLISHED".equals(grade.get("status"));
+            out.put("published",published);
+            out.set("programs",json.valueToTree(deferredPrograms(cid,uid,started,published)));
+            if(published) out.put("writtenScore",writtenScore(qs,answers)).put("programScore",(int)number(grade.get("score")));
+        } else {
+            out.set("programs",json.valueToTree(programs(cid,uid)));
+            if(finished) out.put("writtenScore",writtenScore(qs,answers)).put("programScore",programScore(cid,uid));
+        }
         return out;
     }
     @Transactional
@@ -215,10 +282,11 @@ public class ContestPaperService {
         if(now()>=cutoff(c,(int)p.get("minutes"))) throw new EduException(409,"最晚开考时间已过，无法重新开考");
         Map<String,Object> a=attempt(cid,uid,true);
         if(a==null || number(a.get("started"))!=started) throw new EduException(409,"该学生的答卷已变更，请刷新列表");
+        int oldProgramScore=deferred(cid)?(int)number(deferredGrade(cid,uid,started).get("score")):programScore(cid,uid);
         // Keep judges and their source code for staff. Detach only these submissions from the official contest scores.
         db.update("INSERT INTO edu_paper_retake(cid,uid,reset_by,started_at,ends_at,submitted_at,answers,revision,program_score) " +
                 "SELECT cid,uid,?,started_at,ends_at,submitted_at,answers,revision,? " +
-                "FROM edu_paper_attempt WHERE cid=? AND uid=?",actor().getUid(),programScore(cid,uid),cid,uid);
+                "FROM edu_paper_attempt WHERE cid=? AND uid=?",actor().getUid(),oldProgramScore,cid,uid);
         Long id=db.queryForObject("SELECT LAST_INSERT_ID()",Long.class);
         db.update("INSERT INTO edu_paper_retired_submission(submit_id,retake_id) " +
                 "SELECT submit_id,? FROM contest_record WHERE cid=? AND uid=?",id,cid,uid);
@@ -232,9 +300,14 @@ public class ContestPaperService {
         JsonNode qs=parse((String)p.get("questions"));
         List<Map<String,Object>> rows=db.queryForList("SELECT a.uid,u.username,UNIX_TIMESTAMP(a.started_at)*1000 AS started,UNIX_TIMESTAMP(a.ends_at)*1000 AS deadline,UNIX_TIMESTAMP(a.submitted_at)*1000 AS submitted,a.answers FROM edu_paper_attempt a JOIN user_info u ON u.uuid=a.uid WHERE a.cid=? ORDER BY a.started_at",cid);
         Map<String,Map<String,Object>> students=new LinkedHashMap<>();
+        boolean deferred=deferred(cid);
         for(Map<String,Object> r:rows) {
             String uid=(String)r.get("uid");
-            formatResult(r,qs,programScore(cid,uid));
+            if(deferred) {
+                Map<String,Object> grade=deferredGrade(cid,uid,number(r.get("started")));
+                formatResult(r,qs,(int)number(grade.get("score")));
+                r.put("gradeStatus",grade.get("status"));
+            } else formatResult(r,qs,programScore(cid,uid));
             students.put(uid,r);
         }
         List<Map<String,Object>> history=db.queryForList("SELECT h.id,h.uid,u.username,UNIX_TIMESTAMP(h.started_at)*1000 AS started," +
