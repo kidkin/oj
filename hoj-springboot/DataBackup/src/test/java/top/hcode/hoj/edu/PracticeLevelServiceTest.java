@@ -49,7 +49,6 @@ class PracticeLevelServiceTest {
         score.put("scoreUnits", 501L);
         score.put("solvedCount", 25L);
         when(db.queryForList(anyString())).thenReturn(Collections.singletonList(score));
-        when(db.queryForList("SELECT uid,public_name FROM edu_effective_display_name")).thenReturn(Collections.emptyList());
         when(db.queryForList(anyString(), eq("u1"), eq("Student"))).thenReturn(Collections.singletonList(formal));
         PracticeLevelService service = new PracticeLevelService(db);
         Map<String, Object> level = service.users(Arrays.asList("u1", "u1"), Collections.singletonList("Student")).get(0);

@@ -12,7 +12,7 @@
             effect="dark"
           >
           <div class="logo" @click="changeWebLanguage(webLanguage == 'zh-CN' ? 'en-US' : 'zh-CN')">
-            <img :src="imgUrl" alt="Online Judge Admin" />
+            <img :src="imgUrl" alt="羚力编程" />
           </div>
         </el-tooltip>
         <el-menu-item index="/admin/">
@@ -563,7 +563,7 @@ export default {
       mobileNar: false,
       currentPath: '',
       routeList: [],
-      imgUrl: require('@/assets/backstage.png'),
+      imgUrl: require('@/assets/logo.png'),
       languages:[]
     };
   },
@@ -643,9 +643,10 @@ export default {
 }
 .vertical_menu .logo img {
   background-color: #fff;
-  border: 3px solid #fff;
-  width: 110px;
-  height: 110px;
+  width: 150px;
+  max-width: 90%;
+  height: 58px;
+  object-fit: contain;
 }
 .fa-size {
   text-align: center;

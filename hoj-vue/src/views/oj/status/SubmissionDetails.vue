@@ -42,7 +42,6 @@
         </template>
       </el-alert>
       <div v-if="submission && submission.submitId" class="submission-tools">
-        <roster-name-toggle @change="getSubmission" />
         <el-button v-if="canReviewCode" type="primary" plain size="small" @click="reviewRow=submission">这次提交查重</el-button>
       </div>
       <submission-review v-if="reviewRow" :row="reviewRow" initial="submission" @close="reviewRow=null" />
@@ -335,7 +334,6 @@
 <script>
 import api from "@/common/api";
 import SubmissionReview from '@/components/oj/common/SubmissionReview';
-import RosterNameToggle from '@/components/oj/common/RosterNameToggle';
 import {
   JUDGE_STATUS,
   JUDGE_STATUS_RESERVE,
@@ -351,7 +349,7 @@ import JudgeCase from "@/components/oj/common/JudgeCase";
 export default {
   name: "submissionDetails",
   components: {
-    SubmissionReview, RosterNameToggle,
+    SubmissionReview,
     Highlight,
     JudgeCase,
   },

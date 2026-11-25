@@ -5,11 +5,6 @@ const request = (method, path, data, params) => axios({method, url: '/api/edu' +
 
 export default {
   paper: (cid, suffix, method, data) => request(method, '/contest-paper/' + cid + suffix, data),
-  nameStatus: () => request('get', '/display-name/status'),
-  nameQueue: (classId,after) => request('get', '/display-name/queue', undefined, {classId,after}),
-  nameDecision: (id,classId,approve) => request('post', '/display-name/'+id+'/decision',undefined,{classId,approve}),
-  myDisplayName: () => request('get', '/display-name'),
-  saveDisplayName: displayName => request('put', '/display-name', {displayName}),
   submissionSimilarity: params => request('get', '/review/submission-similarity', undefined, params),
   reviewQueue: params => request('get', '/review/queue', undefined, params),
   reviewDecision: (id, data) => request('post', `/review/${id}/decision`, data),

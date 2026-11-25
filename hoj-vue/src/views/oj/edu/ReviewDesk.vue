@@ -19,19 +19,6 @@
         </div>
         <el-button v-if="more" size="small" :loading="busy" @click="loadQueue(true)">加载更多</el-button>
       </el-tab-pane>
-      <el-tab-pane label="改名审核" name="renames">
-        <el-button size="small" :loading="namesBusy" @click="loadNames(false)">刷新申请</el-button>
-        <el-table :data="renameRows" empty-text="暂无待审核的改名申请">
-          <el-table-column label="学生"><template slot-scope="s">{{ s.row.realname || s.row.username }}</template></el-table-column>
-          <el-table-column prop="currentName" label="当前显示名"/>
-          <el-table-column prop="requestedName" label="申请显示名"/>
-          <el-table-column label="审核" min-width="160"><template slot-scope="s">
-            <el-button type="primary" size="mini" :disabled="namesBusy" @click="decideName(s.row,true)">通过</el-button>
-            <el-button size="mini" :disabled="namesBusy" @click="decideName(s.row,false)">驳回</el-button>
-          </template></el-table-column>
-        </el-table>
-        <el-button v-if="moreNames" :loading="namesBusy" size="small" @click="loadNames(true)">加载更多申请</el-button>
-      </el-tab-pane>
       <el-tab-pane v-if="!classId" label="关键词设置" name="rules">
         <h3>已启用的内置词库</h3>
         <el-radio-group v-model="category" size="small" @change="resetDictionary">
@@ -77,12 +64,11 @@
 import edu from '@/common/edu-api'
 export default {
   props: {classId: {type: [Number, String], default: null}},
-  data () { return {renameRows: [], namesBusy: false, moreNames: false, tab: 'queue', state: 'PENDING', rows: [], more: false, busy: false, acting: false,
+  data () { return {tab: 'queue', state: 'PENDING', rows: [], more: false, busy: false, acting: false,
     rules: {revision: 0, words: '', categories: []}, category: 'politics', keyword: '', dictPage: 1, dictBusy: false, dictRequest: 0, dictionary: {words: [], total: 0}, pid: null, problems: [], family: 'cpp', ac: true, threshold: 75,
     searching: false, scanning: false, result: null, expanded: '', queueVersion: 0, searchVersion: 0} },
   watch: {
     tab (value) {
-      if (value === 'renames') this.loadNames(false)
       if (value === 'rules') this.loadRules()
       if (value === 'compare' && !this.problems.length) this.findProblems('')
     },
@@ -90,20 +76,6 @@ export default {
   },
   mounted () { this.resetQueue() },
   methods: {
-    async loadNames (append) {
-      if (this.namesBusy) return
-      this.namesBusy = true
-      try {
-        const rows = await edu.nameQueue(this.classId,append ? this.renameRows[this.renameRows.length-1].id : 0)
-        this.renameRows = (append ? this.renameRows : []).concat(rows.slice(0,50)); this.moreNames = rows.length > 50
-      } catch (_) {} finally { this.namesBusy = false }
-    },
-    async decideName (row,approve) {
-      if (this.namesBusy) return
-      this.namesBusy = true
-      try { await edu.nameDecision(row.id,this.classId,approve); this.$message.success(approve ? '已通过，已扣 50 积分' : '已驳回申请') }
-      catch (_) {} finally { this.namesBusy = false; await this.loadNames(false) }
-    },
     resetQueue () { this.rows = []; this.more = false; this.loadQueue(false) },
     async loadQueue (append) {
       const version = ++this.queueVersion

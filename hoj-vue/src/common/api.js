@@ -30,9 +30,6 @@ axios.interceptors.request.use(
     if(config.url != '/api/login' && config.url != '/api/admin/login'){
       token && (config.headers.Authorization = token);
     }
-    if (token && config.url.startsWith('/api/') && sessionStorage.getItem('hoj-name-view') === 'roster') {
-      config.headers['X-HOJ-Names'] = 'roster'
-    }
     let type = config.url.split("/")[2];
     if (type === 'admin') { // 携带请求区别是否为admin
       config.headers['Url-Type'] = type

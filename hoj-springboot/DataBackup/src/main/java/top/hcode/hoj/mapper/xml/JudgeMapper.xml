@@ -8,9 +8,7 @@
             <where>
                 j.cid = 0 AND j.cpid = 0
                 <if test="username!='' and username!=null">
-                    AND EXISTS (SELECT 1 FROM user_info account LEFT JOIN edu_effective_display_name dn ON dn.uid=account.uuid
-                             WHERE account.uuid=j.uid AND (LOCATE(#{username}, COALESCE(dn.public_name,account.username))>0
-                             <if test="rosterSearch"> OR LOCATE(#{username},account.username)>0 OR LOCATE(#{username},account.realname)>0 </if>))
+                    AND j.username like concat('%',#{username},'%')
                 </if>
                 <if test="status!=null">
                     AND j.status = #{status}
@@ -62,9 +60,7 @@
                 AND NOT EXISTS (SELECT 1 FROM edu_paper_retired_submission retired WHERE retired.submit_id=j.submit_id)
             </if>
             <if test="username!='' and username!=null">
-                AND EXISTS (SELECT 1 FROM user_info account LEFT JOIN edu_effective_display_name dn ON dn.uid=account.uuid
-                             WHERE account.uuid=j.uid AND (LOCATE(#{username}, COALESCE(dn.public_name,account.username))>0
-                             <if test="rosterSearch"> OR LOCATE(#{username},account.username)>0 OR LOCATE(#{username},account.realname)>0 </if>))
+                AND j.username like concat('%',#{username},'%')
             </if>
             <if test="status!=null">
                 AND j.status = #{status}

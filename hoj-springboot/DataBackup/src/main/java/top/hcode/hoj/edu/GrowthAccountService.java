@@ -66,8 +66,6 @@ public class GrowthAccountService {
         return result;
     }
 
-    long availableUnits(String uid) { return levels.currentEarnedUnits(uid)-spent(uid); }
-
     private long spent(String uid) {
         return db.queryForObject("SELECT COALESCE(SUM(units),0) FROM edu_growth_wallet_debit WHERE uid=?", Long.class, uid);
     }

@@ -30,7 +30,6 @@ public interface JudgeMapper extends BaseMapper<Judge> {
                                       @Param("searchPid") String searchPid,
                                       @Param("status") Integer status,
                                       @Param("username") String username,
-                                      @Param("rosterSearch") boolean rosterSearch,
                                       @Param("uid") String uid,
                                       @Param("completeProblemID") Boolean completeProblemID,
                                       @Param("gid") Long gid);
@@ -40,7 +39,6 @@ public interface JudgeMapper extends BaseMapper<Judge> {
                                        @Param("cid") Long cid,
                                        @Param("status") Integer status,
                                        @Param("username") String username,
-                                      @Param("rosterSearch") boolean rosterSearch,
                                        @Param("uid") String uid,
                                        @Param("beforeContestSubmit") Boolean beforeContestSubmit,
                                        @Param("rule") String rule,

@@ -114,7 +114,7 @@
               <vxe-input
                 v-model="formFilter.username"
                 :disabled="formFilter.onlyMine"
-                :placeholder="canReviewCode ? '搜索显示名、原姓名或账号' : '搜索显示名'"
+                :placeholder="$t('m.Enter_Author')"
                 type="search"
                 size="medium"
                 @keyup.enter.native="handleQueryChange('username')"
@@ -123,7 +123,6 @@
             </el-col>
           </el-row>
         </div>
-        <roster-name-toggle @change="getSubmissions" />
         <submission-review v-if="reviewRow" :row="reviewRow" @close="reviewRow=null" />
         <vxe-table
           border="inner"
@@ -495,7 +494,6 @@
 import { mapActions, mapGetters } from "vuex";
 import api from "@/common/api";
 import SubmissionReview from '@/components/oj/common/SubmissionReview';
-import RosterNameToggle from '@/components/oj/common/RosterNameToggle';
 import {
   JUDGE_STATUS,
   CONTEST_STATUS,
@@ -509,7 +507,7 @@ import "element-ui/lib/theme-chalk/display.css";
 export default {
   name: "submissionList",
   components: {
-    SubmissionReview, RosterNameToggle,
+    SubmissionReview,
     Pagination,
   },
   data() {

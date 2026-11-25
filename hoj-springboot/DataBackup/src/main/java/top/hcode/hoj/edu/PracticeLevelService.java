@@ -184,11 +184,8 @@ public class PracticeLevelService {
         List<Map<String, Object>> matches = current.ranked;
         if (!search.isEmpty()) {
             matches = new ArrayList<>();
-            Map<String,String> aliases=new HashMap<>();
-            for (Map<String,Object> n: db.queryForList("SELECT uid,public_name FROM edu_effective_display_name"))
-                aliases.put((String)n.get("uid"),(String)n.get("public_name"));
             for (Map<String, Object> record : current.ranked) {
-                if (aliases.getOrDefault(record.get("uid").toString(),record.get("username").toString()).toLowerCase(Locale.ROOT).contains(search)) matches.add(record);
+                if (record.get("username").toString().toLowerCase(Locale.ROOT).contains(search)) matches.add(record);
             }
         }
         int limit = Math.max(1, Math.min(100, requestedLimit));
